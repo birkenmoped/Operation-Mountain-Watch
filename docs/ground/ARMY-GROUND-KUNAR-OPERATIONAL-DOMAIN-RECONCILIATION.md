@@ -229,6 +229,27 @@ Jan-2010 possible two-gun position = observed; type/continuity unresolved
 no fixed M777/L118 production requirement
 ```
 
+## 9.1 Wright fire-support working baseline
+
+Owner decision 27.09.2026: Die beste aktuell vorliegende Evidenz wird fuer die OMW-Arbeitsbaseline verwendet.
+
+```text
+Camp Wright / Asadabad as 155-mm artillery firing location in 2010 = CONFIRMED
+two-gun 155-mm field-artillery platoon supporting TF No Slack from Asadabad = CONFIRMED by U.S. Army Combat Studies Institute
+B Battery / 3-321 Field Artillery, 2nd Platoon, M777 at FOB Wright in 2010 = SUPPORTED by DVIDS
+one 155-mm howitzer destroyed at Camp Wright on 15.11.2010 = REPORTED by contemporaneous conflict report
+OMW working unit attribution = B Battery / 3-321 Field Artillery, 2nd Platoon
+exact July-2011 continuity of the same platoon = NOT independently confirmed
+```
+
+Die offene Juli-2011-Kontinuitaet hebt die im OMW-Zeitraum belastbar belegte standortgebundene Wright-Fire-Support-Faehigkeit nicht auf. Fuer die aktuelle OMW-Foundation wird daher `TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2` als site-bound Fire-Support-Repräsentation der Wright-Domaene gefuehrt. `L118_Unit` ist dabei ein DCS-Proxy und keine Behauptung des historischen Wright-Geschuetztyps.
+
+Quellen:
+
+- U.S. Army Combat Studies Institute, *Vanguard of Valor*, Kapitel zu Operation STRONG EAGLE: Team Wolverine/TF No Slack wurde unter anderem durch die aus Camp Wright/Asadabad feuernden 155-mm-Haubitzen unterstuetzt; die Zusammenfassung nennt ein two-gun platoon of 155mm field artillery from nearby Asadabad: <https://www.armyupress.army.mil/Portals/7/combat-studies-institute/csi-books/VanguardOfValor.pdf>
+- DVIDS Story 52264, *Top Chi reaches out, touches insurgent forces*, 01.07.2010: B Battery / 3-321 Field Artillery, 2nd Platoon und M777 am FOB Wright; Battery-Platoons auf Wright, Bostick und Blessing verteilt: <https://www.dvidshub.net/news/52264/top-chi-reaches-out-touches-insurgent-forces>
+- Global Conflict Maps, 15.11.2010, Bericht zum Angriff auf Camp/FOB Wright mit Zerstoerung einer 155-mm-Haubitze: <https://www.globalconflictmaps.com/2010/11/15/forward-operating-base-wright-in-asadabad-afghanistan-attacked-by-rocket-propelled-grenade/>
+
 ## 10. Accepted technical evidence
 
 Acceptance 9-2:
@@ -251,7 +272,7 @@ Not required to close the current GROUNDBASE foundation:
 ```text
 exact July-2011 Joyce company distribution
 exact July-2011 Bostick maneuver company/platoon distribution
-exact July-2011 Wright artillery assignment
+exact July-2011 continuity of the B/3-321 FA / 2nd Platoon Wright working attribution
 Jalalabad exact ground QRF/base-defense formation
 Ground-order generation
 OPSTRANSPORT

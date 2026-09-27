@@ -145,6 +145,9 @@ TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1
 TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2
   2 x L118_Unit
 
+TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2
+  2 x L118_Unit
+
 TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2
   2 x 2B11 mortar
 ```
@@ -163,6 +166,15 @@ BOSTICK
   historical M777 capability is documented
   two L118_Unit represent the current OMW DCS proxy choice
   L118 is not asserted as the historical system
+
+WRIGHT
+  Camp Wright / Asadabad is confirmed as a 155-mm artillery firing location in 2010
+  U.S. Army Combat Studies Institute evidence describes a two-gun 155-mm field-artillery platoon supporting TF No Slack from Asadabad
+  DVIDS evidence identifies B Battery / 3-321 Field Artillery, 2nd Platoon, with M777 at FOB Wright in 2010
+  the 15.11.2010 Camp Wright attack report records destruction of one 155-mm howitzer
+  two L118_Unit represent the current OMW DCS proxy choice
+  L118 is not asserted as the historical Wright weapon type
+  exact July-2011 battery/platoon continuity remains unproven; B/3-321 FA / 2nd Platoon is the current OMW working assignment from the best available evidence
 
 HONAKER
   2011 local mortar capability is confirmed
@@ -228,6 +240,9 @@ LOGISTICS
 
 UTILITY / COMMAND
   2 HMMWV held outside an autonomous mission PLATOON
+
+SITE-BOUND FIRE SUPPORT
+  TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2
 ```
 
 Family checksum:
@@ -274,6 +289,8 @@ Family checksum:
 ```
 
 No mine-clearing capability is asserted by the engineer-support abstraction.
+
+The Wright fire-support representation is site-bound and is not part of the mobile `VEHICLE = 22` family checksum. Owner decision 27.09.2026 adopts the best currently available historical reconstruction for OMW: Wright operated as a 155-mm artillery firing location; B Battery / 3-321 Field Artillery, 2nd Platoon is used as the working unit attribution, while exact July-2011 continuity remains an evidence limitation rather than a reason to omit the local fire-support capability.
 
 ## 9. FOB Bostick
 
@@ -428,6 +445,6 @@ exact Fortress vehicle-family split and PLATOON multiplicities
 exact Honaker vehicle-family split and PLATOON multiplicities
 Ground-order generation
 exact Joyce/Bostick formation distribution
-exact Wright artillery assignment
+exact July-2011 Wright artillery formation continuity beyond the current B/3-321 FA / 2nd Platoon working attribution
 OPSTRANSPORT-based infantry transport/dismount behavior
 ```

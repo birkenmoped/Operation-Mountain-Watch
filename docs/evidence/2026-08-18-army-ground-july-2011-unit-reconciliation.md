@@ -154,25 +154,54 @@ Das verhindert eine falsche 1:1-Ableitung von Battalion-HQ-Standort auf lokale C
 
 ## 5. Wright / Artillerie
 
+### 5.1 Zusammengefuehrte Wright-Evidenz
+
 Die bisherige Primärquelle DVIDS Story 52264 belegt `Bravo Battery, 3-321 Field Artillery` mit `2nd Platoon` und M777 am FOB Wright im Jahr 2010. Sie sagt zugleich, dass Bravo Battery Platoons auf Wright, Bostick und Blessing verteilt hatte und bis 2011 im Land bleiben sollte.
 
-Diese Aussage ist **kein Nachweis**, dass dasselbe 2nd Platoon oder dieselbe B-Battery-Verteilung im Juli 2011 unverändert auf Wright stand. Im aktuellen Review wurde keine belastbare offizielle Quelle gefunden, die eine konkrete Juli-2011-Battery-/Platoon-Zuordnung auf Wright festschreibt.
+Die vom Projektinhaber am 27.09.2026 eingebrachte U.S.-Army-Quelle *Vanguard of Valor* verstaerkt den Standortnachweis erheblich. Im Kapitel zu Operation STRONG EAGLE wird Team Wolverine / TF No Slack beschrieben. Der Company Fire Support Officer koordinierte unter anderem die `155-mm howitzers supporting the operation from Camp Wright in Asadabad`. Die zusammenfassende Bewertung des Gefechts beschreibt zusaetzlich ein `two gun platoon of 155mm field artillery from nearby Asadabad`.
 
-Quelle:
+Ein weiterer zeitnaher Bericht vom 15.11.2010 beschreibt einen Angriff auf Camp/FOB Wright und nennt unter den zerstoerten Gegenstaenden eine 155-mm-Haubitze. Diese Sekundaerquelle wird nicht fuer eine exakte Einheitsidentifikation verwendet, stuetzt aber die fortdauernde physische 155-mm-Praesenz in Wright im November 2010.
 
+Quellen:
+
+- U.S. Army Combat Studies Institute, *Vanguard of Valor*, Kapitel Operation STRONG EAGLE: <https://www.armyupress.army.mil/Portals/7/combat-studies-institute/csi-books/VanguardOfValor.pdf>
 - DVIDS Story 52264, *Top Chi reaches out, touches insurgent forces*, 01.07.2010: <https://www.dvidshub.net/news/52264/top-chi-reaches-out-touches-insurgent-forces>
+- Global Conflict Maps, *Forward Operating Base Wright in Asadabad, Afghanistan Attacked by Rocket-Propelled Grenade*, 15.11.2010: <https://www.globalconflictmaps.com/2010/11/15/forward-operating-base-wright-in-asadabad-afghanistan-attacked-by-rocket-propelled-grenade/>
 
-Damit bleibt verbindlich:
+### 5.2 Owner-Entscheidung: beste verfuegbare OMW-Arbeitsbaseline
+
+Owner decision 27.09.2026: Fuer Wright wird die beste derzeit vorliegende Quellenlage als OMW-Arbeitsbaseline verwendet. Dabei wird zwischen belegter Standort-/Faehigkeitslage und nicht separat bewiesener Juli-2011-Kontinuitaet unterschieden.
 
 ```text
-Wright historical M777 capability in OMW period:
-  CONFIRMED
+Camp Wright / Asadabad as 155-mm artillery firing location:
+  CONFIRMED for 2010
 
-Wright exact July-2011 artillery battery/platoon:
-  OPEN
+two-gun 155-mm field-artillery platoon supporting TF No Slack from Asadabad:
+  CONFIRMED for Operation STRONG EAGLE
+
+B Battery / 3-321 Field Artillery, 2nd Platoon, M777 at FOB Wright:
+  SUPPORTED for 2010 by DVIDS
+
+155-mm howitzer physically present at Camp Wright on 15.11.2010:
+  SUPPORTED by contemporaneous attack reporting
+
+OMW working artillery attribution for Wright:
+  B Battery / 3-321 Field Artillery, 2nd Platoon
+
+exact independent proof that the same platoon remained unchanged in July 2011:
+  NOT ESTABLISHED
 ```
 
-Eine M777- oder Proxy-Gruppe darf für die Juli-2011-Foundation daher nicht allein aus dem 2010er Wright-Nachweis als historisch exakt attribuiert werden.
+Damit ist die **Wright site-bound artillery capability fuer OMW gesetzt**. Die offene Juli-2011-Kontinuitaet wird als Evidenzgrenze dokumentiert, nicht mehr als Grund, die lokale Fire-Support-Repräsentation offen zu lassen.
+
+Die aktuelle physische OMW-Repräsentation
+
+```text
+TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2
+  2 x L118_Unit
+```
+
+ist deshalb als standortgebundener Fire-Support-Proxy der Wright-Domaene zulaessig. `L118_Unit` ist ein DCS-Proxy; OMW behauptet damit **nicht**, dass L118 das historische Wright-System war.
 
 ## 6. Konsequenz für die nächste OMW-Designstufe
 
@@ -199,8 +228,9 @@ GROUND_NODE_BOSTICK
 
 GROUND_NODE_WRIGHT
   July-2011 security basis: 1-14th Illinois ADT SECFOR
-  historical M777 presence: CONFIRMED for 2010
-  exact July-2011 artillery element: OPEN
+  site-bound 155-mm artillery capability: CONFIRMED for 2010
+  OMW working artillery attribution: B Battery / 3-321 Field Artillery, 2nd Platoon
+  exact independent proof of unchanged July-2011 platoon continuity: OPEN
 ```
 
 Daraus dürfen im nächsten Schritt Rollen-**Kandidaten** für PLATOON-Pools abgeleitet werden. Eine endgültige PLATOON-Struktur, Gruppengröße, DCS-Fahrzeugausstattung oder Artillerie-Proxyentscheidung bleibt eine separate OMW-Designentscheidung und benötigt anschließend MOOSE-/DCS-Tests.

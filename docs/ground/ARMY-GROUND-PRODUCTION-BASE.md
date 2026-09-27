@@ -107,10 +107,11 @@ TPL_BLUE_GND_QRF_*
 TPL_BLUE_GND_INF_RIFLE_SQUAD_9
 TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1
 TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2
+TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2
 TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2
 ```
 
-Insbesondere bleiben die standortgebundenen ARTY-/Mörsergruppen an ihren exakten Mission-Editor-Stellungen.
+Insbesondere bleiben die standortgebundenen ARTY-/Mörsergruppen an ihren exakten Mission-Editor-Stellungen. Dies umfasst nach Owner-Entscheidung vom 27.09.2026 ausdrücklich auch `TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2`; die Wright-Gruppe repräsentiert die historisch belegte lokale 155-mm-Fire-Support-Fähigkeit als DCS-L118-Proxy.
 
 ## Lokale Build-Verifikation 21.08.2026
 
