@@ -934,3 +934,23 @@ Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A9
 | `LEGION.UnRecruitAssets(...)` | `SOURCE_REVIEWED` | Releases descriptor reservation after Functional ARTY terminal state. |
 
 No method in this section is upgraded to DCS validation by the source review alone.
+
+## FSSR active-ME-ARTY adoption source review – 27.09.2026
+
+Pinned MOOSE:
+
+```text
+release 2.9.18
+commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+| Method / path | Status | OMW finding |
+|---|---|---|
+| `BRIGADE:AddPlatoon(...)` -> `AddAssetToPlatoon(...)` -> `WAREHOUSE:AddAsset(...)` | `SOURCE_REVIEWED` | Cannot adopt the current live fixed battery; `WAREHOUSE:AddAsset` removes a live group after registration. |
+| `COHORT:AddAsset(Asset)` | `SOURCE_REVIEWED` | Attaches an already-existing `WAREHOUSE.Assetitem`; it is not a public live-GROUP registration/adoption API. |
+| `LEGION:onafterAssetSpawned(...)` | `SOURCE_REVIEWED_INTERNAL_LIFECYCLE` | Creates the ARMYGROUP wrapper for a registered spawned asset after the Warehouse/Legion spawn event. Not a public adoption shortcut. |
+| `COHORT:RecruitAssets(...)` spawned branch | `SOURCE_REVIEWED` | Spawned cohort assets are recruitable when their `asset.flightgroup` exists/alive and combat-ready. This does not make arbitrary live ME groups recruitable. |
+| `BRIGADE:LoadBackAssetInPosition(...)` | `SOURCE_REVIEWED` | Restores a previously registered asset by spawning it with `SPAWN:NewWithAlias(...):SpawnFromCoordinate(...)` and then calling `__AssetSpawned(...)`; it does not adopt the existing live ME group. |
+
+No public pinned-MOOSE method was verified that adopts an arbitrary already-active ME GROUP into a BRIGADE/PLATOON as a spawned recruitable asset without a physical lifecycle change.

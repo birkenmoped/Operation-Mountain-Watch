@@ -136,6 +136,47 @@ Damit ist die bereits aktive Functional-ARTY-Batterie nicht ohne Lifecycle-Aende
 
 `COHORT:GetMissionRange(WeaponTypes)` addiert `engageRange` und registrierte WeaponRange-Daten. `COHORT:SetMissionRange(...)` ist ein Missionsradius, kein automatisch aus DCS ausgelesener Waffenreichweitenbeweis. A10 darf deshalb keine angeblichen L118-/2B11-Waffenreichweiten erfinden.
 
+### 4.1 Source-Review 27.09.2026 – bereits aktive ME-Batterie als COMMANDER-Asset
+
+Der gepinnte MOOSE-Source wurde nach der Wright-/Ground-Reconciliation erneut gezielt auf einen oeffentlichen Adopt-/Register-Pfad fuer bereits aktive Mission-Editor-Gruppen geprueft.
+
+Befund:
+
+```text
+BRIGADE:AddPlatoon(...)
+-> BRIGADE:AddAssetToPlatoon(...)
+-> WAREHOUSE:AddAsset(...)
+-> live group is removed/despawned
+
+COHORT:AddAsset(Asset)
+-> accepts an existing WAREHOUSE.Assetitem only
+-> does not register an arbitrary live DCS/MOOSE GROUP
+-> does not create the required ARMYGROUP lifecycle wrapper
+
+LEGION:onafterAssetSpawned(...)
+-> creates ARMYGROUP for a registered/spawned warehouse asset
+-> is reached through the Warehouse/Legion spawn lifecycle
+
+COHORT:RecruitAssets(...)
+-> CAN recruit asset.spawned == true
+-> but only if that asset already belongs to the cohort and has a live asset.flightgroup
+```
+
+`BRIGADE:LoadBackAssetInPosition(...)` ist **kein AdoptExistingGroup-Pfad**. Im gepinnten Source setzt die Methode ein bereits registriertes Asset auf `spawned=true`, erzeugt die physische Gruppe mit `SPAWN:NewWithAlias(...):SpawnFromCoordinate(...)` neu und ruft anschliessend `__AssetSpawned(...)` auf. Sie ist fuer das Wiederherstellen zuvor gefieldeter BRIGADE-Assets gedacht und wuerde die bestehende site-bound ME-Batterie nicht einfach uebernehmen.
+
+Im geprueften oeffentlichen API-Scope wurde **keine** Methode gefunden, die eine bereits aktive beliebige ME-Gruppe ohne Despawn/Respawn als neues `WAREHOUSE.Assetitem` + `PLATOON`/`BRIGADE`-Asset adoptiert.
+
+Damit gilt fuer A10 weiterhin:
+
+```text
+existing active ME battery
+!= directly COMMANDER-recruitable asset
+unless its physical lifecycle is changed to MOOSE materialization
+or a separate selection representation is used
+```
+
+Dieser Befund ist `SOURCE_REVIEWED`, nicht DCS-validiert.
+
 ## 5. Preflight-Blocker
 
 Die aktuelle Mission hat eine physische Fixed-Fire-Support-Ebene. Fuer den Selection-only-Vertrag fehlt dagegen eine owner-approved MOOSE-Recruitment-Repräsentation, die
@@ -193,13 +234,24 @@ OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-DESCRIPTOR-REGISTRY-1
 
 The registry uses the existing external-support COMMANDER as the MOOSE selection authority. It never queues the descriptor AUFTRAG and rejects any descriptor that is already physically spawned.
 
-Mission Editor contract still required before the A10 runtime harness can be released:
+Der bereits implementierte Option-A-Descriptor bleibt technisch ein moeglicher Weg, weil er die MOOSE-Selektion von der unveraenderten physischen ME-Batterie trennt. Nach der erneuten Owner-Rueckfrage vom 27.09.2026 wird jedoch **keine Mission-Editor-Descriptor-Fixture angelegt**, bis diese Repräsentationsentscheidung erneut bestaetigt oder durch eine andere owner-approved Lifecycle-Entscheidung ersetzt wurde.
+
+Aktueller Entscheidungsraum:
 
 ```text
-four separate late-activation/non-alive descriptor template groups
-one per Bostick/Wright/Fortress/Honaker fixed battery
-not the live battery groups themselves
+A) keep active site-bound ME batteries unchanged
+   + separate one-to-one MOOSE selection descriptor
+
+B) change physical initial lifecycle
+   -> battery becomes a MOOSE-registered asset and is materialized by MOOSE
+   -> requires explicit owner approval + scoped DCS revalidation
+
+C) custom provider selector over existing Functional ARTY instances
+   -> bypasses COMMANDER/LEGION asset selection
+   -> non-MOOSE/parallel selection exception; requires explicit owner approval
 ```
+
+Es wurde kein vierter oeffentlicher MOOSE-Pfad nachgewiesen, der eine bereits aktive ME-Batterie direkt in `COMMANDER/LEGION` adoptiert.
 
 The exact ARTY min/max selection ranges are also still configuration data and must be explicitly established; no L118/2B11 range is guessed by the Base.
 
@@ -238,8 +290,8 @@ ARTY Option-A descriptor source: SOURCE_IMPLEMENTED
 unit/CI: PASS at ee431db16c2fb3f3bf4fa2c33a0da4ff0363ded6
 A10 mission preflight: COMPLETE
 A10 Option-A descriptor source: IMPLEMENTED / DCS_PENDING
-A10 runtime harness: NOT RELEASED until ME descriptor templates + explicit range configuration exist
-A10 DCS status: BLOCKED_ON_DESCRIPTOR_FIXTURE_AND_RANGE_CONFIG
+A10 runtime harness: NOT RELEASED until selection-representation decision + explicit range configuration are closed
+A10 DCS status: BLOCKED_ON_SELECTION_REPRESENTATION_AND_RANGE_CONFIG
 Strategic Resupply: NOT STARTED; waits for ARTY closure
 ```
 
@@ -301,4 +353,4 @@ mission/fire-support-strategic-resupply/dist/OMW_FireSupStratResupply_Base.lua
 
 Damit ist die Production-Base-27-Provenienz fuer diesen Source-Stand als `VERIFIED_LOCAL_BUILD` geschlossen.
 
-Dies ist **keine DCS-Acceptance**. A10 bleibt bis zur Bereitstellung der Option-A Descriptor-Fixtures und der expliziten ARTY-Range-Konfiguration `DCS_PENDING`.
+Dies ist **keine DCS-Acceptance**. A10 bleibt bis zur erneuten Schliessung der Selection-Repräsentationsentscheidung und der expliziten ARTY-Range-Konfiguration `DCS_PENDING`.

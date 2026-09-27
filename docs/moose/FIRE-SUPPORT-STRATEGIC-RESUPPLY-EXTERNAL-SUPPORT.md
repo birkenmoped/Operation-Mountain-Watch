@@ -512,3 +512,57 @@ mapped ARTY physical group mismatch -> reject
 Der Descriptor-Cohort setzt den breiten COHORT-Default mit `SetMissionRange(0)` ausser Kraft und verwendet `AddWeaponRange(min,max,Auto)`. Min/Max muessen explizit aus der zustaendigen Fach-/DCS-Konfiguration kommen; die Base erfindet keine L118-/2B11-Reichweite.
 
 Der vorhandene external-support COMMANDER bleibt auch fuer Option A die Auswahl-/Reservierungsautoritaet. Die Trennung liegt nicht in einem zweiten C2-Owner, sondern darin, dass der ARTY-Selection-AUFTRAG niemals gequeued wird; nur `CanMission` und `RecruitAssetsForMission` werden fuer den Descriptor-Pfad verwendet.
+
+## Addendum 27.09.2026 – active ME battery adoption source review
+
+Nach der Ground-/Wright-Reconciliation wurde der gepinnte MOOSE-Source erneut darauf geprueft, ob eine bereits aktive site-bound Mission-Editor-Batterie direkt als COMMANDER/LEGION-Asset uebernommen werden kann.
+
+Source-Befund:
+
+```text
+BRIGADE:AddPlatoon
+-> BRIGADE:AddAssetToPlatoon
+-> WAREHOUSE:AddAsset
+-> live group is removed
+
+COHORT:AddAsset
+-> only attaches an existing WAREHOUSE.Assetitem to a cohort
+-> does not adopt/register an arbitrary live GROUP
+
+LEGION:onafterAssetSpawned
+-> creates the ARMYGROUP wrapper after the Warehouse/Legion spawn lifecycle
+
+COHORT:RecruitAssets
+-> supports already spawned assets
+-> prerequisite: asset is already a cohort asset and has a live asset.flightgroup
+
+BRIGADE:LoadBackAssetInPosition
+-> not adoption
+-> SPAWN:NewWithAlias(...):SpawnFromCoordinate(...)
+-> __AssetSpawned(...)
+-> intended to restore previously fielded BRIGADE assets
+```
+
+Im geprueften oeffentlichen API-Scope existiert damit kein nachgewiesener AdoptExistingGroup-Pfad fuer eine beliebige bereits aktive ME-Gruppe.
+
+Konsequenz fuer Fixed ARTY:
+
+```text
+physical site-bound battery stays active in ME
++
+MOOSE COMMANDER/LEGION must own provider selection
+=
+requires a separate selectable representation
+
+OR
+
+change the physical initial lifecycle so MOOSE materializes the battery
+
+OR
+
+approve a non-COMMANDER custom provider selector
+```
+
+Option A bleibt source-seitig konsistent mit der ersten Variante, wird aber nach der Owner-Rueckfrage vom 27.09.2026 nicht weiter bis zu neuen ME-Descriptor-Fixtures fortgesetzt, bevor die Repräsentationsentscheidung erneut geschlossen ist.
+
+Status: `SOURCE_REVIEWED / DCS_PENDING`.

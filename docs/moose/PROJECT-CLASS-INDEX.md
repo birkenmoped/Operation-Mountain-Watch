@@ -156,7 +156,7 @@ Wichtige Grenzen bleiben:
 ```text
 - SetReturnToLegion(false) ist noch nicht im Ground-Scope DCS-validiert.
 - WAREHOUSE:SetSpawnZone(...) ist für die Joyce-ACCESS-Zone source-geprüft, aber DCS-Pathfinding/Materialisierung offen.
-- BRIGADE:LoadBackAssetInPosition nutzt SpawnFromCoordinate und bleibt für beobachtbare Reconstitution ausgeschlossen.
+- BRIGADE:LoadBackAssetInPosition nutzt SpawnFromCoordinate und bleibt für beobachtbare Reconstitution ausgeschlossen. Der erneute FSSR-Source-Review vom 27.09.2026 bestätigt zusätzlich: die Methode adoptiert keine bereits aktive ME-Gruppe; sie materialisiert ein zuvor registriertes BRIGADE-Asset neu und ruft danach den AssetSpawned-Lifecycle auf.
 - immobile ARMYGROUP RTZ kann teleportieren und bleibt im sichtbaren OMW-Bereich ausgeschlossen.
 - Returned -> WAREHOUSE AddAsset entfernt die physische Gruppe; Return-Handoff benötigt eigenen Test.
 - OPSTRANSPORT coordinate unload materialisiert per _Respawn und benötigt eigenen Test.
@@ -800,3 +800,19 @@ OMW_FireSupStratResupply_CasMissionFactory
 ```
 
 The production CAS lifecycle is a reuse boundary. Future Acceptance code may stimulate and observe it but must not duplicate routing, detection, release, RTB/recovery, landing or asset-return ownership.
+
+### 27.09.2026 – Fixed ARTY active-ME adoption boundary
+
+Fuer die FSSR-A10-Frage wurde der BRIGADE/PLATOON/WAREHOUSE/COHORT-Pfad erneut gegen den gepinnten Source geprueft.
+
+```text
+arbitrary already-active ME GROUP
+-> no verified public adopt/register API
+-> cannot become COMMANDER-recruitable merely through COHORT:AddAsset
+
+spawned cohort asset
+-> recruitable by COHORT:RecruitAssets
+-> only after normal Warehouse/Legion asset registration + AssetSpawned lifecycle
+```
+
+Damit bleibt die direkte Nutzung der bereits aktiven site-bound Functional-ARTY-Gruppen als COMMANDER-Assets ohne Lifecycle-Aenderung **nicht source-belegt**. Status: `SOURCE_REVIEWED / DCS_PENDING`.
