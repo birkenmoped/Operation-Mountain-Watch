@@ -816,3 +816,21 @@ spawned cohort asset
 ```
 
 Damit bleibt die direkte Nutzung der bereits aktiven site-bound Functional-ARTY-Gruppen als COMMANDER-Assets ohne Lifecycle-Aenderung **nicht source-belegt**. Status: `SOURCE_REVIEWED / DCS_PENDING`.
+
+### 01.10.2026 – Fixed ARTY real-asset direction
+
+Owner-approved direction now permits MOOSE to materialize the four site-bound Fixed-ARTY/Mortar groups, provided their current exact ME emplacement/formation is preserved and no later movement is allowed. The prior unspawned selection-descriptor concept is superseded before DCS validation.
+
+Preferred MOOSE lifecycle:
+
+```text
+late-activation existing template
+-> PLATOON / BRIGADE / WAREHOUSE.Assetitem
+-> exact one-time Warehouse materialization at original template route point
+-> LEGION AssetSpawned
+-> real ARMYGROUP
+-> COMMANDER selection/reservation
+-> existing Functional ARTY fire-control owner
+```
+
+Pinned `ARTY.db` provides the selection envelopes `L118_Unit = 500..17500 m` and `2B11 mortar = 500..7000 m`; no external weapon-range guess is required.

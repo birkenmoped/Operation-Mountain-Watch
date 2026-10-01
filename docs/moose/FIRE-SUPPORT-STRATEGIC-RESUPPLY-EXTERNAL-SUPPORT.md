@@ -566,3 +566,33 @@ approve a non-COMMANDER custom provider selector
 Option A bleibt source-seitig konsistent mit der ersten Variante, wird aber nach der Owner-Rueckfrage vom 27.09.2026 nicht weiter bis zu neuen ME-Descriptor-Fixtures fortgesetzt, bevor die Repräsentationsentscheidung erneut geschlossen ist.
 
 Status: `SOURCE_REVIEWED / DCS_PENDING`.
+
+## Owner-Entscheidung 01.10.2026 – reale Fixed-ARTY-Assets statt Selection-Descriptor
+
+Der Projektinhaber erlaubt fuer die vier site-bound ARTY/Mortar-Gruppen nun die MOOSE-eigene Materialisierung, sofern die heutigen exakten Stellungen und die interne Formation erhalten bleiben und die Gruppen danach nicht verlegt werden.
+
+Damit ist die bisherige Option-A-Descriptor-Loesung fachlich **superseded before DCS validation**. Zielzustand:
+
+```text
+existing site-bound ME group/template
+= one PLATOON asset
+= one WAREHOUSE.Assetitem
+= one spawned ARMYGROUP
+= COMMANDER-selectable real provider
+= same physical group used by Functional ARTY
+```
+
+Der Selection-only-Vertrag bleibt bestehen: `COMMANDER:CanMission(...)` und `COMMANDER:RecruitAssetsForMission(...)` duerfen das reale spawned Asset auswaehlen/reservieren; der Selection-AUFTRAG wird nicht gequeued. Functional `ARTY:AssignTargetCoord(...)` bleibt der einzige Fire-Control-Pfad.
+
+Der gepinnte Source bietet fuer die exakte Positionserhaltung den regulaeren Warehouse-Spawnpfad. `WAREHOUSE:_SpawnAssetGroundNaval(...)` erhaelt die Unit-Offets relativ zum ersten Template-Wegpunkt. Ein runtime-erzeugter `ZONE_RADIUS` mit Radius 0 am originalen ersten Template-Wegpunkt liefert source-seitig exakt diesen Punkt. Der site-eigene normale Spawnzone-Vertrag muss unmittelbar nach der einmaligen Fire-Support-Materialisierung wiederhergestellt werden.
+
+Range-Konfiguration wird nicht mehr als offener Architekturblocker gefuehrt. Der gepinnte `ARTY.db` enthaelt:
+
+```text
+L118_Unit   500 m .. 17500 m
+2B11 mortar 500 m .. 7000 m
+```
+
+Diese pinned-MOOSE-Daten sind fuer `COHORT:AddWeaponRange(...)` zu verwenden (`UTILS.MetersToNM`).
+
+Status: `SOURCE_REVIEWED / IMPLEMENTATION_PENDING / DCS_PENDING`.

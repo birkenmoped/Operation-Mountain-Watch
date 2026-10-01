@@ -954,3 +954,18 @@ Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A9
 | `BRIGADE:LoadBackAssetInPosition(...)` | `SOURCE_REVIEWED` | Restores a previously registered asset by spawning it with `SPAWN:NewWithAlias(...):SpawnFromCoordinate(...)` and then calling `__AssetSpawned(...)`; it does not adopt the existing live ME group. |
 
 No public pinned-MOOSE method was verified that adopts an arbitrary already-active ME GROUP into a BRIGADE/PLATOON as a spawned recruitable asset without a physical lifecycle change.
+
+## FSSR real Fixed-ARTY asset materialization review – 01.10.2026
+
+| Method / source | Status | OMW finding |
+|---|---|---|
+| `WAREHOUSE:_SpawnAssetGroundNaval(...)` | `SOURCE_REVIEWED_INTERNAL_LIFECYCLE` | Standard ground-asset materialization translates every unit by the delta between chosen spawn coordinate and original template route point; exact original coordinate preserves exact ME unit geometry. |
+| `ZONE_RADIUS:GetRandomVec2(...)` with radius 0 | `SOURCE_REVIEWED` | Source resolves inner=0 / outer=0 and therefore returns the zone center. OMW use as exact bootstrap spawn point remains DCS_PENDING. |
+| `LEGION:onafterAssetSpawned(...)` | `SOURCE_REVIEWED_INTERNAL_LIFECYCLE` | Creates the real ARMYGROUP wrapper and binds `asset.flightgroup` after Warehouse spawn. |
+| `COHORT:RecruitAssets(...)` spawned branch | `SOURCE_REVIEWED` | Real spawned artillery assets are recruitable when alive/combat-ready and not reserved/rearming/returning. |
+| `ARTY.db["L118_Unit"]` | `SOURCE_REVIEWED` | Pinned range data: 500..17500 m. |
+| `ARTY.db["2B11 mortar"]` | `SOURCE_REVIEWED` | Pinned range data: 500..7000 m. |
+| `UTILS.MetersToNM(...)` | `SOURCE_REVIEWED` | Conversion path for PLATOON `AddWeaponRange(...)`. |
+| `BRIGADE:LoadBackAssetInPosition(...)` | `SOURCE_REVIEWED` | Exact coordinate materialization exists, but remains a persistence/load-back API and is not the preferred normal initial-bootstrap path. |
+
+Owner decision 01.10.2026 permits MOOSE materialization of the four real site-bound ARTY/Mortar assets. Descriptor-only representation is therefore superseded before DCS validation.

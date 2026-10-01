@@ -290,8 +290,8 @@ ARTY Option-A descriptor source: SOURCE_IMPLEMENTED
 unit/CI: PASS at ee431db16c2fb3f3bf4fa2c33a0da4ff0363ded6
 A10 mission preflight: COMPLETE
 A10 Option-A descriptor source: IMPLEMENTED / DCS_PENDING
-A10 runtime harness: NOT RELEASED until selection-representation decision + explicit range configuration are closed
-A10 DCS status: BLOCKED_ON_SELECTION_REPRESENTATION_AND_RANGE_CONFIG
+A10 runtime harness: NOT RELEASED until real-asset bootstrap/materialization source + ME late-activation fixture are ready
+A10 DCS status: BLOCKED_ON_REAL_ASSET_BOOTSTRAP_AND_ME_FIXTURE
 Strategic Resupply: NOT STARTED; waits for ARTY closure
 ```
 
@@ -354,3 +354,84 @@ mission/fire-support-strategic-resupply/dist/OMW_FireSupStratResupply_Base.lua
 Damit ist die Production-Base-27-Provenienz fuer diesen Source-Stand als `VERIFIED_LOCAL_BUILD` geschlossen.
 
 Dies ist **keine DCS-Acceptance**. A10 bleibt bis zur erneuten Schliessung der Selection-Repräsentationsentscheidung und der expliziten ARTY-Range-Konfiguration `DCS_PENDING`.
+
+## 9.1 Owner-Entscheidung 01.10.2026 – reale ARTY/Mortar-Assets duerfen durch MOOSE materialisiert werden
+
+Der Projektinhaber hat die bisherige Randbedingung aufgehoben, dass die vier site-bound Fire-Support-Gruppen bereits aktiv im Mission Editor stehen muessen. Zulaessig ist nun:
+
+```text
+same existing ME groups/templates
+-> Late Activation / not physically active at mission start
+-> PLATOON + BRIGADE registration
+-> real WAREHOUSE.Assetitem
+-> MOOSE materialization
+-> asset.spawned=true
+-> real ARMYGROUP
+-> COMMANDER/LEGION recruitment of the real asset
+```
+
+Unveraendert bindend:
+
+```text
+- exact current emplacement must be preserved
+- exact relative gun/mortar formation must be preserved
+- no post-spawn relocation of the fixed battery
+- no RTZ/RELOCATE/PATROL/ONGUARD movement contract for these batteries
+- selection-only AUFTRAG is never queued through COMMANDER:AddMission
+- existing Functional ARTY instance remains sole fire-control owner
+- accepted M1083/CampaignState rearm lifecycle remains authoritative
+```
+
+### Exact-position MOOSE source path
+
+Im gepinnten `Moose.lua` nutzt `WAREHOUSE:_SpawnAssetGroundNaval(...)` die konfigurierte Warehouse-Spawnzone und verschiebt jede Unit relativ zum ersten Template-Wegpunkt:
+
+```text
+TX = spawnX + (unitTemplateX - originalRoutePointX)
+TY = spawnY + (unitTemplateY - originalRoutePointY)
+```
+
+Liegt der Spawnpunkt exakt auf dem urspruenglichen ersten Template-Wegpunkt, bleiben daher alle Unit-X/Y-Positionen exakt auf der heutigen ME-Geometrie.
+
+`ZONE_RADIUS:GetRandomVec2(...)` liefert bei `Radius=0` den Zonenmittelpunkt, weil inner=0 und outer=0 verwendet werden. Damit ist source-seitig ein exakter, nicht zufaelliger Spawnpunkt darstellbar. Dieser konkrete Radius-0-Einsatz ist `SOURCE_REVIEWED`, aber noch `DCS_PENDING`.
+
+Der bevorzugte Lifecycle fuer A10 ist deshalb der regulaere Warehouse-/Legion-Pfad:
+
+```text
+register one real PLATOON asset from the existing late-activation group
+-> temporarily bind the site BRIGADE spawn zone to a zero-radius runtime ZONE_RADIUS
+   centered on the original template route point
+-> self-request exactly that registered Assetitem
+-> WAREHOUSE _SpawnAssetGroundNaval
+-> LEGION AssetSpawned
+-> ARMYGROUP wrapper
+-> restore the site's normal BRIGADE spawn zone
+```
+
+`BRIGADE:LoadBackAssetInPosition(...)` bleibt als source-verifizierter exakter Spawnmechanismus bekannt, wird fuer den regulaeren OMW-Initialstart aber nicht bevorzugt, weil die Methode dokumentiert fuer das Wiederherstellen zuvor gefieldeter/persistierter BRIGADE-Assets vorgesehen ist.
+
+### Range-Blocker geschlossen durch gepinnte MOOSE-ARTY-Datenbank
+
+Der erneute Review des exakt verwendeten `Moose.lua` hat fuer die beiden aktuellen DCS-Typen bereits MOOSE-eigene Range-Daten gefunden:
+
+```text
+ARTY.db["L118_Unit"]
+  minrange = 500 m
+  maxrange = 17500 m
+
+ARTY.db["2B11 mortar"]
+  minrange = 500 m
+  maxrange = 7000 m
+```
+
+Diese Werte stammen aus der gepinnten MOOSE-Quelle und werden daher fuer die MOOSE-Selection-Range verwendet; es werden keine externen Realweltwerte erfunden. Fuer `COHORT:AddWeaponRange(...)` sind die Werte ueber `UTILS.MetersToNM(...)` umzusetzen.
+
+Die A10-Blocker reduzieren sich damit auf:
+
+```text
+1. source implementation of real-asset bootstrap/materialization
+2. ME change of the four existing site-bound groups to Late Activation without moving/renaming them
+3. DCS proof of exact spawn positions/formation
+4. DCS proof that COMMANDER selects the real spawned asset and Functional ARTY fires without movement
+5. rearm/regression proof against accepted M1083 lifecycle
+```
