@@ -652,3 +652,119 @@ DCS acceptance = PENDING
 ```
 
 Workflow-Grenze: ChatGPT liefert ausschließlich den reproduzierbaren LUA-Build und die zugehörige Provenienz. Der Projektinhaber bringt das erzeugte A10-LUA selbst in die gewünschte MIZ ein; ChatGPT mutiert die MIZ in diesem Workflow nicht.
+
+## 9.7 DCS runtime acceptance 02.10.2026 – PASS
+
+Realer DCS-Lauf:
+
+```text
+DCS:
+2.9.30.28536 MT
+
+Mission:
+OMW_Template_v25_GroundWorks_base.miz
+tested mission artifact SHA-256:
+95F28962F15659399051813F426A1401797EA95F931588349F9EAB1523E28232
+
+Acceptance bundle:
+OMW_FireSupStratResupply_Production_Base_Acceptance_10.lua
+SHA-256:
+FA0CD024F050BA19DECAEE9AB1EF71C35B976346A327D118EFCC59DC249C84C9
+
+Source commit:
+4c8793a9b155f85e7a229117725fca55f58987c3
+
+MOOSE:
+2.9.18
+commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+Der hochgeladene `dcs.log` enthält zwei aufeinanderfolgende Versuche. Der erste Versuch scheiterte um 19:10:01 mit:
+
+```text
+[PRODUCTION BASE A10][FAIL] ARTY_TEMPLATE_MUST_BE_LATE_ACTIVATION site=FORTRESS
+```
+
+DCS wurde anschließend beendet und die Mission erneut gestartet. Der zweite Lauf ist der maßgebliche Acceptance-Lauf und endete mit PASS.
+
+### Zweiter Lauf – beobachtete Evidenz
+
+Alle vier realen Fixed-Fire-Support-Assets wurden durch MOOSE materialisiert:
+
+```text
+FORTRESS -> FortressArtillery_AID-219#001
+BOSTICK  -> BostickArtillery_AID-220#001
+WRIGHT   -> WrightArtillery_AID-221#001
+HONAKER  -> HonakerMortar_AID-222#001
+```
+
+Die Positionsprüfung bestand für alle sieben physischen Geschütze/Mörser. Beobachtete maximale Abweichung zur ursprünglichen Asset-Template-Position:
+
+```text
+0.014 m
+```
+
+Damit ist die Exact-Position-Anforderung innerhalb der A10-Toleranz von 1.0 m erfüllt.
+
+Der geometrisch abgeleitete Zielpunkt war gleichzeitig für Wright und Honaker reichweitenfähig:
+
+```text
+WRIGHT distance 4610.4 m / max 17500.0 m
+HONAKER distance 4737.7 m / max 7000.0 m
+```
+
+MOOSE/COMMANDER wählte anschließend das reale Wright-Asset:
+
+```text
+provider=BDE_FSSR_A10_WRIGHT
+asset=WrightArtillery_AID-221#001
+initialAmmo=300
+```
+
+Functional ARTY startete das Feuer. Nach CeaseFire wurde die MOOSE-Selection-Reservation freigegeben; der Ammo-Stand betrug danach 296. Die Batterie blieb nach dem Feuer auf ihrer materialisierten Position.
+
+Der akzeptierte M1083-Rearm-Pfad wurde anschließend auf derselben Wright-Batterie ausgeführt:
+
+```text
+transactionId=FSSR-A10-REARM-WRIGHT
+resourceBefore=30
+status=WAITING_FOR_SUPPORT
+consumption committed
+rearm completed
+finalAmmo=301
+M1083 returned to Warehouse stock
+```
+
+Nach dem Rearm bestand die No-Movement-Prüfung erneut.
+
+Terminale A10-Meldung:
+
+```text
+[PRODUCTION BASE A10][PASS]
+real MOOSE ARTY assets materialized at exact ME positions;
+Wright and Honaker were both eligible;
+COMMANDER selected the real spawned asset;
+Functional ARTY fired without battery movement;
+selection reservation released;
+accepted M1083/CampaignState rearm completed and returned to stock.
+```
+
+Bewertung:
+
+```text
+real MOOSE fixed-ARTY/Mortar materialization = PASS
+exact emplacement preservation             = PASS
+multiple eligible provider setup           = PASS
+COMMANDER real-asset selection              = PASS
+Functional ARTY single-owner fire path      = PASS
+selection reservation release               = PASS
+fixed-battery no-movement invariant         = PASS
+accepted M1083/CampaignState rearm reuse     = PASS
+M1083 return-to-stock                        = PASS
+A10 overall                                 = PASS
+```
+
+Der nach Missionsende geloggte `bhHook.lua`-Fehler (`tcp` nil) liegt außerhalb des A10-Lifecycles und trat erst nach `Dispatcher Stop` auf; er beeinflusst den dokumentierten A10-PASS nicht.
+
+Status: `DCS_PASS / ACCEPTED_TECHNICAL_BASELINE candidate on this exact provenance`.

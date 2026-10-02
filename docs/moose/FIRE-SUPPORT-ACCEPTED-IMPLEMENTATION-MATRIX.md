@@ -557,3 +557,25 @@ CI mission     = PASS (#1092)
 ```
 
 Dies ist Build-/Source-Evidenz, keine DCS-Acceptance des neuen RealAssetRegistry-Lifecycles.
+
+### A10 DCS acceptance – 02.10.2026
+
+Production Base A10 hat den neuen Real-Asset-ARTY-Lifecycle unter DCS 2.9.30.28536 MT erfolgreich durchlaufen.
+
+```text
+source commit:
+4c8793a9b155f85e7a229117725fca55f58987c3
+
+mission SHA-256:
+95F28962F15659399051813F426A1401797EA95F931588349F9EAB1523E28232
+
+A10 bundle SHA-256:
+FA0CD024F050BA19DECAEE9AB1EF71C35B976346A327D118EFCC59DC249C84C9
+
+MOOSE:
+2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+```
+
+Beobachtet: exact-position MOOSE materialization aller vier site-bound Fire-Support-Assets, zwei gleichzeitig geeignete Provider (Wright/Honaker), MOOSE/COMMANDER-Auswahl des realen Wright-Assets, Functional ARTY 300 -> 296, Reservation Release, keine Batteriebewegung, accepted M1083/CampaignState rearm, 301 rounds nach Rearm und M1083 Return-to-Stock.
+
+Status für diesen exakten Stand: `DCS_PASS`.

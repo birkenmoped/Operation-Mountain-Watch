@@ -634,3 +634,8 @@ Für die A10-Revalidation bleibt der akzeptierte M1083-Materialisierungspfad unv
 Dies vermeidet einen MOOSE-Spawnzonen-Konflikt: `SetSpawnZone` gilt für die gesamte BRIGADE/WAREHOUSE-Instanz. Die Site-BRIGADE kann gleichzeitig QRF-/ACCESS-Verträge besitzen; der M1083-Service benötigt dagegen seine validierte `ZON_BLUE_GND_*_RESUPPLY`-Zone. Die beiden BRIGADE-Instanzen besitzen unterschiedliche physische Assetmengen und keine gemeinsame strategische Resource. `GROUND_AMMO_PACKAGE` bleibt ausschließlich im CampaignState.
 
 Der A10-Harness verwendet für Wright/Honaker einen geometrisch aus den vorhandenen Template-Positionen abgeleiteten Überlappungszielpunkt und gleiche Cohort-Performance. Damit wird keine Batterie durch den Harness ausgewählt; COMMANDER/LEGION bleibt die Auswahlautorität.
+### Runtime evidence 02.10.2026 – RealAssetRegistry A10 PASS
+
+Der RealAssetRegistry-/Selection-only-Pfad ist im realen DCS-Lauf bestätigt. MOOSE materialisierte alle vier Fixed-Fire-Support-Assets praktisch auf den ursprünglichen ME-Positionen (maximale beobachtete Abweichung 0.014 m). Wright und Honaker waren gleichzeitig reichweitenfähig; COMMANDER/LEGION wählte das reale Wright-Asset. Der bestehende Functional-ARTY-Owner feuerte 4 Schuss, die Selection-Reservation wurde bei CeaseFire freigegeben, die Batterie blieb ortsfest, und der akzeptierte M1083-/CampaignState-Rearm stellte den Bestand anschließend auf 301 wieder her und führte den Support-Truck in den Warehouse-Stock zurück.
+
+Damit ist der frühere Descriptor-Ansatz für diesen Lifecycle nicht mehr erforderlich.
