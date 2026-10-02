@@ -171,3 +171,15 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 | `OMW-GROUND-FUEL-RESUPPLY-ACCEPTANCE-1` | `mission/tests/ground-resupply-execution/ACCEPTANCE-2.md` | `HISTORICAL_TEST_FIXTURE` | historischer/inconclusive FUELSUPPLY-Versuch |
 | `OMW-GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1` | `mission/tests/ground-resupply-execution/ACCEPTANCE-3.md` | `ACCEPTED_TECHNICAL_BASELINE` | Stage 1C neutraler NOTHING-Transport |
 | `OMW-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2` | `mission/tests/ground-resupply-execution/ACCEPTANCE-4.md` | `ACCEPTED_TECHNICAL_BASELINE` | Stage 1B2 One-Shot FUELSUPPLY |
+
+| `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-7` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-7.md` | `PLANNED`; Joyce production QRF plus MOOSE-selected attack-helicopter CAS with fail-closed owner-route binding, supported-element/no-contact release and physical recovery |
+
+| `OMW-MOOSE-ACCEPTED-LIFECYCLE-PRESERVATION-LAW` | `docs/moose/ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md` | `BINDING`; mandatory anti-regression law for inherited accepted/binding runtime lifecycles and Acceptance harness boundaries |
+
+| `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-9` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-9.md` | `PLANNED`; observer-only validation of shared production CAS lifecycle after lifecycle-preservation reconciliation |
+
+| `OMW-HANDOFF-FSSR-FINAL-BASE-PREPARATION-20260920` | `docs/handoffs/2026-09-20-fssr-final-base-preparation-handoff.md` | `PLANNED`; vollständige Übergabe nach A9-PASS, Lifecycle-Gesetze und Vorbereitung der finalen FSSR-`_base` |
+| `OMW-HANDOFF-FSSR-BASE-MULTISITE-20261002` | `docs/handoffs/2026-10-02-fssr-base-multisite-handoff.md` | `PLANNED`; Folgechat-Übergabe nach A10-PASS, Strategic-Resupply-/Multi-Demand-Entwicklung und A11-Multi-FOB/COP-Ziel |
+
+| `OMW-RESULT-FSSR-PRODUCTION-BASE-A9-DCS-PASS-20260920` | `results/2026-09-20-production-base-acceptance9-dcs-pass.md` | `PLANNED`; realer A9-DCS-PASS, CAS owner-route/release/recovery und geschlossene post-return False-Loss-Regression |
+| `OMW-RESULT-FSSR-PRODUCTION-BASE-A10-REAL-ARTY-DCS-PASS-20261002` | `results/2026-10-02-production-base-acceptance10-real-arty-dcs-pass.md` | `ACCEPTED_TECHNICAL_BASELINE`; realer A10-DCS-PASS fuer RealAssetRegistry, MOOSE Fixed-ARTY-Selektion, Functional ARTY und M1083-Rearm |
