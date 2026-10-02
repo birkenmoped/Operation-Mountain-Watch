@@ -16,6 +16,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - OMW-HANDOFF-FSSR-STATUS-APPENDIX-20260913
 superseded_by:
+  - OMW-HANDOFF-FSSR-BASE-MULTISITE-20261002
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
 validated_in_dcs: false

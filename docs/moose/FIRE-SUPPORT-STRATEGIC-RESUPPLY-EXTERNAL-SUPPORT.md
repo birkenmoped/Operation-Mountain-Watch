@@ -639,3 +639,19 @@ Der A10-Harness verwendet für Wright/Honaker einen geometrisch aus den vorhande
 Der RealAssetRegistry-/Selection-only-Pfad ist im realen DCS-Lauf bestätigt. MOOSE materialisierte alle vier Fixed-Fire-Support-Assets praktisch auf den ursprünglichen ME-Positionen (maximale beobachtete Abweichung 0.014 m). Wright und Honaker waren gleichzeitig reichweitenfähig; COMMANDER/LEGION wählte das reale Wright-Asset. Der bestehende Functional-ARTY-Owner feuerte 4 Schuss, die Selection-Reservation wurde bei CeaseFire freigegeben, die Batterie blieb ortsfest, und der akzeptierte M1083-/CampaignState-Rearm stellte den Bestand anschließend auf 301 wieder her und führte den Support-Truck in den Warehouse-Stock zurück.
 
 Damit ist der frühere Descriptor-Ansatz für diesen Lifecycle nicht mehr erforderlich.
+
+## A10 accepted boundary / A11 autonomy requirement – 02.10.2026
+
+A10 belegt jetzt praktisch:
+
+~~~text
+multiple eligible real fixed-fire-support providers
+-> no OMW provider preselection
+-> MOOSE COMMANDER/LEGION recruitment
+-> selected real asset
+-> Functional ARTY
+~~~
+
+Wright und Honaker waren fuer dasselbe Ziel gleichzeitig geeignet; MOOSE selektierte Wright.
+
+Die naechste Generalisierung darf daraus keinen nearest/preferred/site-to-provider Selector in OMW ableiten. Fuer A11 gilt: multiple concurrent site incidents -> independent demands -> MOOSE operational selection. Ein busy/reserved asset bleibt fuer inkompatible parallele Demands blockiert; ein weiterer Demand nutzt einen anderen geeigneten Provider oder folgt MOOSE wait/reject semantics. Diese Regel gilt fuer Fixed ARTY/Mortar, CAS und Strategic Resupply carrier recruitment.

@@ -1,17 +1,25 @@
 ---
 document_id: OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-10
-status: DRAFT
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: ACCEPTANCE_TEST
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - ARTY selection-only DCS acceptance preflight
-  - Functional ARTY ownership preservation gate
-  - MOOSE recruitment representation blocker
+  - accepted real-asset ARTY/Mortar materialization and MOOSE selection boundary
+  - Functional ARTY ownership preservation and selection-reservation release
+  - accepted M1083/CampaignState rearm regression evidence
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+acceptance_branch: agent/fire-support-strategic-resupply-base-gate0
+acceptance_commit: 4c8793a9b155f85e7a229117725fca55f58987c3
+acceptance_mission: OMW_Template_v25_GroundWorks_base.miz
+acceptance_mission_sha256: 95F28962F15659399051813F426A1401797EA95F931588349F9EAB1523E28232
+acceptance_bundle_sha256: FA0CD024F050BA19DECAEE9AB1EF71C35B976346A327D118EFCC59DC249C84C9
+dcs_version: 2.9.30.28536 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+validated_in_dcs: true
 supersedes:
 superseded_by:
 ---
@@ -277,7 +285,7 @@ PASS darf erst nach realer DCS-Evidenz fuer mindestens folgende Punkte entstehen
 15. harness only triggers/observes/asserts
 ```
 
-## 9. Status
+## 9. Historischer Status vor A10-Schliessung
 
 ```text
 Production Base 27 local build: VERIFIED_LOCAL_BUILD
@@ -768,3 +776,55 @@ A10 overall                                 = PASS
 Der nach Missionsende geloggte `bhHook.lua`-Fehler (`tcp` nil) liegt außerhalb des A10-Lifecycles und trat erst nach `Dispatcher Stop` auf; er beeinflusst den dokumentierten A10-PASS nicht.
 
 Status: `DCS_PASS / ACCEPTED_TECHNICAL_BASELINE candidate on this exact provenance`.
+
+## 9.8 Lessons learned / current boundary after A10
+
+A10 schliesst die fruehere ARTY-Repräsentationsfrage fuer den getesteten Stand. Die wesentlichen Erfahrungen sind:
+
+~~~text
+1. already-active ME battery -> BRIGADE:AddPlatoon
+   is not a safe adoption path because WAREHOUSE registration owns materialization/despawn semantics.
+
+2. separate selection-descriptor assets
+   were technically possible as a reservation representation
+   but became unnecessary once the owner allowed MOOSE to materialize the real batteries.
+
+3. late-activation real battery template
+   -> PLATOON/BRIGADE/Warehouse asset
+   -> LoadBackAssetInPosition(original emplacement)
+   works in DCS for this fixed-fire-support bootstrap.
+
+4. the MOOSE runtime group name changes to <platoon>_AID-<uid>#001.
+   Strategic/project identity must therefore remain independent of DCS runtime group names.
+
+5. COMMANDER/LEGION can choose a real spawned fixed-fire-support asset from more than one eligible provider
+   without an OMW-side provider selector.
+   A10 proved Wright and Honaker simultaneously eligible and MOOSE selected Wright.
+
+6. selection-only AUFTRAG + CanMission/RecruitAssetsForMission
+   must remain separate from fire execution.
+   Functional ARTY remains the single fire/rearm FSM owner.
+
+7. the fixed battery must never be moved to satisfy range.
+   Range/capability are selection constraints; absence of an eligible provider is a valid no-support outcome.
+
+8. the accepted M1083 lifecycle can remain a separate support-only BRIGADE on the same physical Warehouse anchor,
+   because it owns a different physical asset set and CampaignState remains the sole strategic resource authority.
+
+9. Acceptance harnesses must observe production lifecycles.
+   They must not select providers, route CAS, own ARTY fire control, own M1083 return or create a second resupply ledger.
+~~~
+
+A10 does not prove:
+
+~~~text
+- concurrent handling of multiple external-support demands
+- actual 2B11 mortar fire in the selected-provider path
+- simultaneous ARTY + mortar + CAS demands
+- autonomous queueing/contention across multiple busy providers
+- physical Strategic Resupply via OPSTRANSPORT/STORAGE
+- combined multi-FOB/COP full-response behavior
+- fixed-wing CAS or additional unvalidated CAS owner profiles
+~~~
+
+These are the next Base/generalization boundaries and are deliberately moved to Acceptance 11 rather than being inferred from A10.

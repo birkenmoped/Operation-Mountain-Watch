@@ -18,7 +18,7 @@ moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 
 # Fire Support / Strategic Resupply – Production Base
 
-Status: SOURCE_REVIEWED / TEILPFADE DCS-VALIDIERT
+Status: SOURCE_IMPLEMENTED / QRF-GUARD-CAS-ARTY-TEILPFADE DCS-VALIDIERT / STRATEGIC RESUPPLY UND COMBINED MULTI-DEMAND OFFEN
 
 ## Zweck
 
@@ -358,3 +358,32 @@ no false post-return asset loss
 ```
 
 Nicht durch A9 validiert sind ARTY, ARTY rearm, strategic resupply, fixed-wing CAS oder andere Site-/Provider-Ausfuehrungsprofile.
+
+## A10 closure and next Base boundary – 02.10.2026
+
+Der Fixed-Fire-Support-Reconciliation-Block ist fuer die exakte A10-Provenienz geschlossen:
+
+~~~text
+real MOOSE Fixed ARTY/Mortar assets
+-> exact emplacement materialization
+-> COMMANDER/LEGION real-asset selection
+-> Functional ARTY fire
+-> reservation release
+-> accepted M1083/CampaignState rearm
+= DCS PASS
+~~~
+
+A10 provenance: source commit 4c8793a9b155f85e7a229117725fca55f58987c3; mission SHA-256 95F28962F15659399051813F426A1401797EA95F931588349F9EAB1523E28232; bundle SHA-256 FA0CD024F050BA19DECAEE9AB1EF71C35B976346A327D118EFCC59DC249C84C9; DCS 2.9.30.28536 MT; pinned MOOSE.
+
+Aktuelle offenen Production-Base-Grenzen:
+
+~~~text
+1. obsolete descriptor composition cleanup
+2. selected 2B11 fire path in combined runtime
+3. Strategic Resupply physical OPSTRANSPORT/STORAGE lifecycle + settlement
+4. true concurrent multi-demand orchestration across installations
+5. CAS multi-demand/provider-profile coverage without hard-coded provider
+6. combined multi-FOB/COP Acceptance 11
+~~~
+
+Acceptance 11 muss ARTY, mortar, CAS und Strategic Resupply in demselben Lauf abdecken und darf keine konkrete Batterie, AIRWING/SQUADRON oder Carrier-Instanz vorgeben.

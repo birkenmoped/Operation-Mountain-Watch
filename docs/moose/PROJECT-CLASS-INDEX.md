@@ -851,3 +851,28 @@ ARTY.db range data
 ```
 
 Die RealAssetRegistry ersetzt die nicht DCS-validierte Descriptor-Richtung als aktiven A10-Source-Pfad. `LoadBackAssetInPosition` ist für diesen Initial-Bootstrap ein neuer OMW-Nutzungsscope und bleibt bis zum gezielten DCS-Test `SOURCE_IMPLEMENTED / DCS_PENDING`.
+
+### 02.10.2026 – A10 real fixed-fire-support runtime validation
+
+A10 hebt fuer den exakt dokumentierten Scope folgende FSSR-Verwendungen auf praktisch bestaetigt:
+
+~~~text
+PLATOON/BRIGADE/Warehouse real fixed-fire-support Assetitem
+BRIGADE:LoadBackAssetInPosition exact fixed emplacement bootstrap
+COMMANDER CanMission + RecruitAssetsForMission selection-only recruitment
+LEGION reservation / UnRecruitAssets release
+asset.flightgroup ARMYGROUP -> physical GROUP identity
+Functional ARTY single fire/rearm owner
+~~~
+
+~~~text
+BRIGADE fixed-ARTY bootstrap       = VALIDATED_FOR_DOCUMENTED_SCOPE
+COHORT ARTY capability/range       = VALIDATED_FOR_DOCUMENTED_SCOPE
+COMMANDER fixed-ARTY selection     = VALIDATED_FOR_DOCUMENTED_SCOPE
+LEGION fixed-ARTY reservation      = VALIDATED_FOR_DOCUMENTED_SCOPE
+ARTY real selected-owner handoff   = VALIDATED_FOR_DOCUMENTED_SCOPE
+OPSTRANSPORT Strategic Resupply    = still SOURCE_REVIEWED / DCS_PENDING
+combined concurrent support        = A11 PLANNED
+~~~
+
+Der Descriptor-only-ARTY-Ansatz ist fuer die aktive Production-Richtung superseded und darf nicht als parallel rekrutierbare zweite Batterierepräsentation zurueckkehren.

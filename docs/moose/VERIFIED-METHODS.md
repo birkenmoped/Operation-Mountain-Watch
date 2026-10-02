@@ -982,3 +982,21 @@ Owner decision 01.10.2026 permits MOOSE materialization of the four real site-bo
 | `OPSGROUP:GetGroup()` | `SOURCE_REVIEWED` | Resolves the exact physical group from the selected `asset.flightgroup`. |
 | `ARTY.db["L118_Unit"]` | `SOURCE_REVIEWED` | Selection range 500..17500 m. |
 | `ARTY.db["2B11 mortar"]` | `SOURCE_REVIEWED` | Selection range 500..7000 m. |
+
+## FSSR A10 real-asset runtime validation – 02.10.2026
+
+Exakte Provenienz: source commit 4c8793a9b155f85e7a229117725fca55f58987c3; mission SHA-256 95F28962F15659399051813F426A1401797EA95F931588349F9EAB1523E28232; A10 bundle SHA-256 FA0CD024F050BA19DECAEE9AB1EF71C35B976346A327D118EFCC59DC249C84C9; DCS 2.9.30.28536 MT; MOOSE 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54.
+
+| Methode / Pfad | Status | Praktisch belegter A10-Scope |
+|---|---|---|
+| BRIGADE:AddPlatoon(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | je site-bound Fire-Support-Template ein reales rekrutierbares Asset |
+| BRIGADE:LoadBackAssetInPosition(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | vier Fixed-Fire-Support-Assets am urspruenglichen emplacement; max delta 0.014 m |
+| LEGION NewAsset / AssetSpawned callback boundary | VALIDATED_FOR_DOCUMENTED_SCOPE | Assetitem und physische Gruppe fuer alle vier Sites korreliert |
+| COMMANDER:AddBrigade(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | vier site BRIGADEs beim gemeinsamen BLUE COMMANDER |
+| COMMANDER:CanMission(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | Capability/Range gate fuer A10 ARTY selection |
+| COMMANDER:RecruitAssetsForMission(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | Wright/Honaker gleichzeitig geeignet; MOOSE rekrutierte Wright ohne OMW-Providerwahl |
+| LEGION.UnRecruitAssets(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | selection reservation nach Functional ARTY CeaseFire freigegeben |
+| OPSGROUP:GetGroup() | VALIDATED_FOR_DOCUMENTED_SCOPE | selected asset.flightgroup auf exakte physische Wright-Gruppe aufgeloest |
+| ARTY.db L118_Unit / 2B11 mortar range configuration | VALIDATED_FOR_DOCUMENTED_SCOPE | Wright 4610.4/17500 m und Honaker 4737.7/7000 m gleichzeitig geeignet |
+
+Grenze: keine allgemeine LoadBackAssetInPosition-Validierung; concurrent multi-demand, selected 2B11 fire und Strategic Resupply bleiben offen.

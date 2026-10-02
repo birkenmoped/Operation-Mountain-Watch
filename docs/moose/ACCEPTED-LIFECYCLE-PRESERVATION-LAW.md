@@ -420,3 +420,33 @@ combined full-response orchestration
 ```
 
 Those paths must reuse this accepted CAS lifecycle where applicable and test only their genuinely new boundary.
+
+## 12. A10 validated real fixed-fire-support selection/materialization baseline
+
+Production Base Acceptance 10 erweitert die akzeptierte Functional-ARTY-/M1083-Baseline fuer den exakt dokumentierten RealAssetRegistry-Scope.
+
+~~~text
+source commit: 4c8793a9b155f85e7a229117725fca55f58987c3
+mission SHA-256: 95F28962F15659399051813F426A1401797EA95F931588349F9EAB1523E28232
+A10 bundle SHA-256: FA0CD024F050BA19DECAEE9AB1EF71C35B976346A327D118EFCC59DC249C84C9
+DCS: 2.9.30.28536 MT
+MOOSE: 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+~~~
+
+Neu akzeptierte Invarianten:
+
+~~~text
+real fixed ARTY/Mortar template starts non-active
+-> PLATOON / BRIGADE / Warehouse Assetitem
+-> exact original-position materialization
+-> spawned real asset is COMMANDER/LEGION recruitable
+-> selection-only AUFTRAG is not queued
+-> MOOSE selects/reserves
+-> selected physical group maps to exactly one Functional ARTY owner
+-> Functional ARTY alone owns fire/rearm FSM
+-> CeaseFire releases MOOSE selection reservation
+-> fixed battery never relocates
+-> accepted M1083 rearm lifecycle remains unchanged
+~~~
+
+BRIGADE:LoadBackAssetInPosition is validated only for this narrow fixed-battery startup bootstrap. A10 does not validate concurrent multiple-demand orchestration, selected 2B11 firing, Strategic Resupply or other CAS provider profiles.

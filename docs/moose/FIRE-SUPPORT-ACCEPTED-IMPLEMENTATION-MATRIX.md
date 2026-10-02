@@ -579,3 +579,21 @@ MOOSE:
 Beobachtet: exact-position MOOSE materialization aller vier site-bound Fire-Support-Assets, zwei gleichzeitig geeignete Provider (Wright/Honaker), MOOSE/COMMANDER-Auswahl des realen Wright-Assets, Functional ARTY 300 -> 296, Reservation Release, keine Batteriebewegung, accepted M1083/CampaignState rearm, 301 rounds nach Rearm und M1083 Return-to-Stock.
 
 Status für diesen exakten Stand: `DCS_PASS`.
+
+## A10 inheritance consequence and A11 gate – 02.10.2026
+
+A10 ist fuer seine exakte Provenienz ACCEPTED_TECHNICAL_BASELINE.
+
+| Verhalten | Akzeptierter Produktionspfad | Evidenz | A11-Regel |
+|---|---|---|---|
+| Fixed ARTY/Mortar representation | RealAssetRegistry -> real PLATOON/BRIGADE/Warehouse asset -> exact startup materialization | A10 PASS | nicht durch Descriptor oder live-group adoption ersetzen |
+| Fixed-fire-support selection | COMMANDER CanMission + RecruitAssetsForMission -> real asset reservation | A10 PASS | Harness/Base waehlt keinen Provider |
+| Fire control | selected group -> one Functional ARTY owner -> AssignTargetCoord | A10 + Rearm baseline | kein AUFTRAG FireAtPoint second owner |
+| Selection release | CeaseFire -> LEGION.UnRecruitAssets | A10 PASS | demand-/asset-korreliert erhalten |
+| Fixed emplacement | no movement after materialization/fire/rearm | A10 PASS | keine Move-to-range-Logik |
+| M1083 rearm reuse | accepted FixedFireSupportAmmoRearmService | A10 regression PASS | local rearm nicht als Strategic Resupply fehlinterpretieren |
+| Concurrent multi-demand orchestration | noch nicht akzeptiert | A11 planned | realer Multi-Site-DCS-Lauf erforderlich |
+| Selected 2B11 fire | noch nicht akzeptiert | A11 planned | kein Honaker-Hardcoding |
+| Strategic Resupply | Source/Contracts vorhanden, physischer Full-Lifecycle offen | A11 planned after production closure | CampaignState + OPSTRANSPORT/STORAGE + idempotent settlement |
+
+Der Descriptor-only-Pfad bleibt historische Source-Evidenz, ist aber fuer die aktive Fixed-Fire-Support-Production-Composition superseded.
