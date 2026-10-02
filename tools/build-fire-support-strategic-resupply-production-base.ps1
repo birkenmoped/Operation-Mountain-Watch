@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-29'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-30'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -78,6 +78,8 @@ foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-3',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-3',
+  'RecruitAssetsForTransport','TransportAssign',
   'OMW-FLIGHTPATH-NAME-CONTRACT-1','OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8','OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1','OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-3',
   'CAS_CONTROLLED_RELEASE','CAS_HOME_LANDED','CAS_LEGION_ASSET_RETURNED',
   'PATROLZONE_ENGAGE','AUFTRAG:NewPATROLZONE','SetEngageDetected',
@@ -160,6 +162,8 @@ foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-STORAGE-TRANSPORT-FACTORY-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-SETTLEMENT-3',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-3',
+  'RecruitAssetsForTransport','TransportAssign',
   'OMW-FOB-THREAT-OPSZONE-ADAPTER-6',
   'INCIDENT_LOCAL_SECURITY','INSTALLATION_ATTACK_LOCAL_GUARD','MOOSE_OPSZONE_RED_PRESENCE',
   'AUFTRAG:NewONGUARD','SetReturnToLegion(true)','armyGroup:EngageTarget',
@@ -174,7 +178,9 @@ foreach($marker in @(
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host 'PackageSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1'
-Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-10'
+Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-11'
+Write-Host 'ResupplyTransportRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-3'
+Write-Host 'StrategicResupplyRecruitment: COMMANDER RecruitAssetsForTransport -> selected Assetitem(s) -> TransportAssign; no concrete OMW carrier selection'
 Write-Host 'SiteRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6'
 Write-Host 'SupportProfilesSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-4'
 Write-Host 'BaseSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-4'

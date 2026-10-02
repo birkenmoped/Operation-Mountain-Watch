@@ -372,3 +372,35 @@ Harness = observer/stimulus only.
 Owner builds LUA and inserts it into MIZ.
 PR #149 stays Draft.
 ~~~
+
+
+## 19. Strategic-Resupply-Reconciliation nach Handoff
+
+Beim Folgeabgleich wurde bestaetigt, dass die Stage-3-STORAGE-Arbeit die
+gepinnten MOOSE-Grenzen bereits beruecksichtigt hatte. Der historische Pfad nutzte:
+
+~~~text
+LEGION.RecruitCohortAssets(... AUFTRAG.Type.OPSTRANSPORT ..., physical weight)
+-> OPSTRANSPORT:AddAsset
+-> AIRWING:TransportAssign
+~~~
+
+Die zwischenzeitliche generische Base-Vereinfachung
+`COMMANDER:AddOpsTransport(...)` war fuer STORAGE-only-Cargo nicht
+lifecycle-treu. Sie wird deshalb **nicht** als neue Architektur beibehalten.
+
+Die generalisierte Base verwendet stattdessen den oeffentlichen COMMANDER-Wrapper:
+
+~~~text
+COMMANDER:RecruitAssetsForTransport(...)
+-> MOOSE cohort/provider/asset selection
+-> OPSTRANSPORT:AddAsset(selected Assetitems)
+-> COMMANDER:TransportAssign(selected Legions)
+~~~
+
+Damit bleibt die konkrete Auswahl bei MOOSE, ohne die alte Acceptance-spezifische
+Jalalabad-/CH-47-Vorgabe zu uebernehmen. CampaignState und TransportSettlement bleiben
+unveraendert strategische bzw. Settlement-Autoritaet.
+
+Dieser Block ist Reconciliation eines vorhandenen Projektpfads, keine neue
+Carrier-Policy.

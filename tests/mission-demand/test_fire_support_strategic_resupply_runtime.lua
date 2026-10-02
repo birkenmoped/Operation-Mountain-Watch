@@ -108,8 +108,8 @@ local campaignStore={GetResource=function() end}
 local campaignState={TransactionKind={TRANSFER="TRANSFER"},TransactionStatus={}}
 local resourceRows={{nodeId="GROUND_NODE_JOYCE",resourceId="GROUND_PERSONNEL"}}
 local selectSupportType=function() return "GROUND_RESUPPLY" end
-local groundCommander={AddOpsTransport=function() end}
-local airCommander={AddOpsTransport=function() end}
+local groundCommander={RecruitAssetsForTransport=function() end,TransportAssign=function() end}
+local airCommander={RecruitAssetsForTransport=function() end,TransportAssign=function() end}
 local resolveGroundTransport=function() return {} end
 local resolveAirTransport=function() return {} end
 local transferResolver=function() return {originNodeId="GROUND_NODE_JALALABAD",destinationNodeId="GROUND_NODE_JOYCE"} end

@@ -46,7 +46,7 @@ SiteRegistry + SupportProfiles + IdContract
 -> direct-target QrfRuntime
 -> optional ExternalSupportRuntime (ARTY/CAS via COMMANDER)
 -> optional TransportSettlement
--> optional ResupplyTransportRuntime (OPSTRANSPORT via COMMANDER)
+-> optional ResupplyTransportRuntime (STORAGE OPSTRANSPORT + MOOSE COMMANDER recruitment/assignment)
 -> LifecycleAdapter
 -> FireSupStratResupply_Base
 -> optional PerimeterBridge + PerimeterRuntime
@@ -70,8 +70,8 @@ adapters.CAS  = CommanderBridge -> CAS mission factory  -> COMMANDER:AddMission(
 Wenn `resupply.transport` konfiguriert ist:
 
 ```text
-adapters.GROUND_RESUPPLY = CommanderBridge -> OPSTRANSPORT -> COMMANDER:AddOpsTransport
-adapters.AIR_RESUPPLY    = CommanderBridge -> OPSTRANSPORT -> COMMANDER:AddOpsTransport
+adapters.GROUND_RESUPPLY = StorageTransportFactory -> COMMANDER:RecruitAssetsForTransport -> TransportAssign
+adapters.AIR_RESUPPLY    = StorageTransportFactory -> COMMANDER:RecruitAssetsForTransport -> TransportAssign
 ```
 
 `GUARD`/`QRF` duerfen nicht durch `externalAdapters` ueberschrieben werden. Bei konfiguriertem `externalSupport` duerfen auch `ARTY`/`CAS` nicht parallel aus `externalAdapters` ersetzt werden. Acceptance-Fixtures duerfen `externalAdapters` gezielt benutzen, wenn sie ausdruecklich nur eine deterministische Testprovider-Bindung darstellen und keine Produktionspolicy behaupten.
@@ -259,8 +259,13 @@ Base GROUND_RESUPPLY / AIR_RESUPPLY demand
 -> OPSTRANSPORT:New(...)
 -> OPSTRANSPORT:AddCargoStorage(...)
 -> TransportSettlement reservation
--> COMMANDER:AddOpsTransport(...)
--> MOOSE carrier/provider recruitment and physical execution
+-> explicit physical STORAGE manifest weight
+-> COMMANDER:RecruitAssetsForTransport(transport, weight, totalWeight)
+-> MOOSE COMMANDER/LEGION cohort + asset optimization/reservation
+-> OPSTRANSPORT:AddAsset(MOOSE-selected Assetitem)
+-> COMMANDER:TransportAssign(transport, selectedLegions)
+-> LEGION AddOpsTransport + TransportRequest
+-> MOOSE physical loading/transport/unloading/Delivered lifecycle
 ```
 
 Settlement bleibt getrennt:
@@ -410,3 +415,37 @@ post-in-transit cancel -> no strategic refund without loss/delivery evidence
 
 Status: Source/CI-Vertrag; DCS-Validierung des kombinierten Strategic-Resupply-Pfads
 steht aus.
+
+
+## Reconciliation 02.10.2026 – Stage-3 STORAGE-Recruitment preserved
+
+Der generische Runtime-Pfad wurde gegen die bereits verwendete Stage-3-Implementierung
+und den gepinnten MOOSE-Source reconciliert. Die zwischenzeitliche Vereinfachung
+`COMMANDER:AddOpsTransport(...)` als alleiniger STORAGE-Recruitment-Pfad war nicht
+lifecycle-treu: der gepinnte COMMANDER-Queue-Pfad berechnet Recruitment-Gewicht aus
+`GetCargoOpsGroups(false)`, waehrend der strategische Transport reines STORAGE-Cargo
+verwendet.
+
+Die bestehende Projektloesung wird deshalb in generalisierter Form erhalten:
+
+```text
+historical Stage-3:
+LEGION.RecruitCohortAssets(... OPSTRANSPORT ..., physical weight)
+-> transport:AddAsset(asset)
+-> AIRWING:TransportAssign(...)
+
+generic Production Base:
+COMMANDER:RecruitAssetsForTransport(transport, physical weight, total weight)
+-> internally MOOSE _GetCohorts + LEGION.RecruitCohortAssets
+-> transport:AddAsset(MOOSE-selected assets)
+-> COMMANDER:TransportAssign(...)
+```
+
+Der Unterschied ist nur die Generalisierung: Die Base nennt keinen Jalalabad-AIRWING,
+keine CH-47-SQUADRON und keinen konkreten Carrier. Der COMMANDER aggregiert die
+verfuegbaren Legions/Cohorts und MOOSE optimiert/reserviert die Assets.
+
+Fuer den aktuell uebernommenen Scope wird das komplette physische STORAGE-Manifest
+konservativ als Recruitment-Gewicht verwendet, entsprechend dem bereits getesteten
+Stage-3-One-Carrier-Vertrag. Multi-carrier cargo splitting ist damit nicht neu
+behauptet und bleibt ausserhalb dieser Reconciliation.

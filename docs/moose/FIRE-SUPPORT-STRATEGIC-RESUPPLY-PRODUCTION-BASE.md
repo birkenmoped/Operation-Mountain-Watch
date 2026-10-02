@@ -394,7 +394,7 @@ Acceptance 11 muss ARTY, mortar, CAS und Strategic Resupply in demselben Lauf ab
 Der allgemeine Production-Base-Source-Stand wurde nach dem A10-PASS weiter reconciliert. Fuer neue Builds gilt jetzt:
 
 ```text
-OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-29
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-30
 ```
 
 Die aktive Composition enthaelt **nicht mehr** den superseded
@@ -447,15 +447,24 @@ shortage
 -> MissionDemand
 -> CampaignState reservation
 -> OPSTRANSPORT/STORAGE
--> COMMANDER:AddOpsTransport
--> MOOSE carrier recruitment
+-> COMMANDER:RecruitAssetsForTransport(transport, physicalManifestWeight, physicalManifestWeight)
+-> MOOSE COMMANDER/LEGION selects and reserves eligible carrier asset(s)
+-> OPSTRANSPORT:AddAsset(selected Assetitem)
+-> COMMANDER:TransportAssign
+-> LEGION transport request / physical execution
 -> STORAGE loaded + assigned carriers outside pickup
 -> CampaignState IN_TRANSIT
 -> MOOSE STORAGE delivered/lost
 -> idempotent CampaignState DELIVERED/LOST
 ```
 
-Status: `SOURCE_IMPLEMENTED / CI_PASS / DCS_PENDING`.
+Status: `SOURCE_IMPLEMENTED / CI_PENDING / DCS_REVALIDATION_PENDING`.
+
+Der Recruitment-Handoff ist keine Neuentwicklung des Strategic-Resupply-Lifecycles,
+sondern die Generalisierung des bereits im Stage-3-OPSTRANSPORT-Pfad verwendeten
+MOOSE-Recruitment/TransportAssign-Vertrags. Die fruehere Base-Vereinfachung ueber
+`COMMANDER:AddOpsTransport` allein wurde entfernt, weil sie reines STORAGE-Cargo im
+gepinnten Queue-Pfad nicht korrekt zur Carrier-Rekrutierung fuehrt.
 
 ### Concurrency / Provider-Autonomie
 

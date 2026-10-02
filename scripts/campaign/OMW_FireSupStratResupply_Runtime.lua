@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-10"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-11"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -133,7 +133,7 @@ function Runtime.New(spec)
 
     if resupply.transport ~= nil then
       local transport=needTable(resupply.transport,"resupply.transport")
-      for _,name in ipairs({"resupplyTransportRuntime","storageTransportFactory","transportSettlement","commanderBridge"}) do
+      for _,name in ipairs({"resupplyTransportRuntime","storageTransportFactory","transportSettlement"}) do
         needTable(modules[name],"modules." .. name)
         needFunction(modules[name],"New","modules." .. name)
       end
@@ -143,12 +143,14 @@ function Runtime.New(spec)
       if not groundConfigured and not airConfigured then fail("resupply.transport requires ground or air transport configuration") end
       if groundConfigured then
         needTable(transport.groundCommander,"resupply.transport.groundCommander")
-        needFunction(transport.groundCommander,"AddOpsTransport","resupply.transport.groundCommander")
+        needFunction(transport.groundCommander,"RecruitAssetsForTransport","resupply.transport.groundCommander")
+        needFunction(transport.groundCommander,"TransportAssign","resupply.transport.groundCommander")
         if type(transport.resolveGroundTransport)~="function" then fail("resupply.transport.resolveGroundTransport must be a function") end
       end
       if airConfigured then
         needTable(transport.airCommander,"resupply.transport.airCommander")
-        needFunction(transport.airCommander,"AddOpsTransport","resupply.transport.airCommander")
+        needFunction(transport.airCommander,"RecruitAssetsForTransport","resupply.transport.airCommander")
+        needFunction(transport.airCommander,"TransportAssign","resupply.transport.airCommander")
         if type(transport.resolveAirTransport)~="function" then fail("resupply.transport.resolveAirTransport must be a function") end
       end
       for _,name in ipairs({"resolveTransfer","transactionIdFactory","onTerminal","onPartial"}) do
@@ -281,7 +283,6 @@ function Instance:Prepare()
       logger=self.logger,
     })
     resupplyTransportRuntime=m.resupplyTransportRuntime.New({
-      commanderBridge=m.commanderBridge,
       storageTransportFactory=m.storageTransportFactory,
       settlement=transportSettlement,
       groundCommander=transport.groundCommander,

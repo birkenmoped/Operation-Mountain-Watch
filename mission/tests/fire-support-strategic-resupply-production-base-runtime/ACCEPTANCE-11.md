@@ -261,3 +261,47 @@ A11 status = PLANNED / NOT RELEASED FOR DCS
 ~~~
 
 Der Harness wird erst im naechsten Schritt als observer-only Composition gebaut.
+
+
+## 12. Strategic-Resupply recruitment reconciliation – 02.10.2026
+
+Vor Freigabe des A11-Harness wurde der generische Resupply-Dispatch gegen den bereits
+erprobten Stage-3-STORAGE-Pfad reconciliert.
+
+Nicht mehr verwendet:
+
+~~~text
+STORAGE OPSTRANSPORT
+-> COMMANDER:AddOpsTransport(...)
+-> assume automatic queue recruitment
+~~~
+
+Produktive Source-Richtung:
+
+~~~text
+STORAGE OPSTRANSPORT
++ explicit physical manifest weight
+-> COMMANDER:RecruitAssetsForTransport(...)
+-> MOOSE aggregates eligible COMMANDER cohorts
+-> MOOSE selects/reserves Assetitem(s)
+-> OPSTRANSPORT:AddAsset(selected Assetitem)
+-> COMMANDER:TransportAssign(selected Legions)
+-> normal LEGION/OPSTRANSPORT physical lifecycle
+-> existing TransportSettlement
+~~~
+
+Der A11-Harness darf weiterhin weder Cohort, AIRWING, SQUADRON noch Assetitem
+vorgeben. Die damalige Stage-3-Jalalabad/CH-47-Bindung ist Acceptance-Konfiguration
+und wird **nicht** in die allgemeine Base uebernommen.
+
+Bei fehlendem rekrutierbarem Carrier endet der Dispatch fail-closed mit
+`MOOSE_TRANSPORT_CARRIER_UNAVAILABLE`; es gibt keinen OMW-Retry-Selector und keinen
+Fallback auf einen konkret benannten Carrier.
+
+Status dieser Reconciliation:
+
+~~~text
+source implementation: complete
+contract/CI: pending remote workflow
+DCS combined concurrency: A11 pending
+~~~

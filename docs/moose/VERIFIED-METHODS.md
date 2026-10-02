@@ -1017,7 +1017,10 @@ Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A9
 | `OPSTRANSPORT:New(nil, pickupZone, deployZone)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | creates the generic STORAGE transport assignment; no carrier selected by OMW |
 | `OPSTRANSPORT:AddCargoStorage(source, destination, cargoType, amount, weight)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | physical STORAGE amount is explicit and independent of strategic CampaignState package count |
 | `OPSTRANSPORT:SetRequiredCarriers(min,max)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | only carrier cardinality constraint; concrete recruitment remains MOOSE |
-| `COMMANDER:AddOpsTransport(transport)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | queues the transport for MOOSE operational recruitment |
+| `COMMANDER:RecruitAssetsForTransport(transport, cargoWeight, totalWeight)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | public COMMANDER wrapper over MOOSE cohort/asset recruitment; generic Base passes the explicit physical STORAGE manifest weight and does not name a provider |
+| `OPSTRANSPORT:AddAsset(asset)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | binds only Assetitems already selected/reserved by MOOSE recruitment |
+| `COMMANDER:TransportAssign(transport, legions)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | assigns the transport to the MOOSE-selected Legions; pinned onafterTransportAssign calls Legion:AddOpsTransport + TransportRequest |
+| `LEGION.UnRecruitAssets(assets)` | `SOURCE_REVIEWED / EXISTING_PROJECT_USE` | rollback guard only for malformed/aborted recruitment before assignment; not a provider selector |
 | `OPSTRANSPORT:GetCargoStorages()` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | reads public STORAGE delivery/loss/loading counters for lifecycle evidence |
 | `OPSTRANSPORT:GetCarriers()` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | observes MOOSE-assigned carriers; not used as an OMW selector |
 | `OPGROUP:IsInZone(zone)` / `OPSGROUP:IsInZone(zone)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | assigned carrier departure proof against the configured pickup zone |
@@ -1040,3 +1043,29 @@ The pinned `ARTY.db["2B11 mortar"]` range remains `500..7000 m`. The
 RealAssetRegistry Contract-Test now runs the 2B11 through the same generic
 PLATOON/BRIGADE materialization correlation and `ResolveFunctionalArty` identity path
 used by L118. Status: `SOURCE_TESTED / DCS_SELECTED_FIRE_PENDING`.
+
+
+### FSSR Strategic Resupply recruitment reconciliation – 02.10.2026
+
+Pinned-source correction retained from the earlier Stage-3 implementation:
+
+```text
+COMMANDER:AddOpsTransport(storageOnlyTransport)
+is not sufficient as the generic recruitment handoff
+because CheckTransportQueue derives weight from GetCargoOpsGroups(false).
+
+COMMANDER:RecruitAssetsForTransport(
+  transport,
+  physicalManifestWeight,
+  physicalManifestWeight
+)
+-> _GetCohorts()
+-> LEGION.RecruitCohortAssets(... AUFTRAG.Type.OPSTRANSPORT ...)
+-> MOOSE-selected Assetitems/Legions
+-> OPSTRANSPORT:AddAsset(...)
+-> COMMANDER:TransportAssign(...)
+```
+
+This preserves the previously used MOOSE-native Stage-3 recruitment mechanism while
+removing the acceptance-specific Jalalabad/CH-47 cohort binding. No OMW nearest-provider
+or concrete carrier selector is introduced.
