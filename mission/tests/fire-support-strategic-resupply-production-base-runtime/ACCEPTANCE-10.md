@@ -453,3 +453,59 @@ Noch DCS-offen:
 - no battery movement before/during/after fire
 - same Functional ARTY owner and accepted M1083 rearm lifecycle
 ```
+
+## 9.3 Local build evidence 02.10.2026 – Production Base 28
+
+Vom Projektinhaber lokal auf dem Branch `agent/fire-support-strategic-resupply-base-gate0` ausgeführt:
+
+```text
+GitCommit:
+4acd25cfacc10c530e50b336cbb2472f5eb8c360
+
+BuilderVersion:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-28
+
+ArtyRealAssetRegistrySchema:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-REAL-ASSET-REGISTRY-1
+
+MOOSERelease:
+2.9.18
+
+MOOSECommit:
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+MooseLuaSHA256:
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+
+MizMutation:
+false
+
+BuilderSHA256:
+E6934463EFE4751EE6AC276D9C247187B39DE79305FB82986C7D44CC79EB04A2
+
+BundleSHA256:
+0525D0CA70BA356B3A27FFBCB222EC21346891D5B71252F57551E89FC0612A47
+```
+
+`Get-FileHash` wurde fuer Builder und Bundle separat ausgefuehrt; beide Hashes stimmen mit der Builder-Ausgabe ueberein.
+
+Lokaler `git status --short` zeigte ausschliesslich die bereits vorhandenen untracked Build-/`dist`-Verzeichnisse; keine getrackten lokalen Aenderungen.
+
+Remote CI fuer denselben Source-Commit:
+
+```text
+Documentation validation #2321 = PASS
+MissionDemand validation #1092 = PASS
+```
+
+Bewertung:
+
+```text
+source/build provenance = VERIFIED
+unit/contract tests = PASS
+documentation validation = PASS
+DCS real-asset materialization = NOT YET TESTED
+exact emplacement preservation = NOT YET TESTED IN DCS
+COMMANDER real-asset recruitment = NOT YET TESTED IN DCS
+Functional ARTY + M1083 regression = NOT YET TESTED IN DCS
+```

@@ -614,3 +614,15 @@ stable OMW identity = registry asset.id
 ```
 
 Der Resolver bindet den später durch COMMANDER ausgewählten `asset.flightgroup:GetGroup()` direkt an den Functional-ARTY-Owner und verifiziert die reale Runtime-Gruppenidentität.
+
+### Local build verification 02.10.2026
+
+`OMW_FireSupStratResupply_ArtyRealAssetRegistry.lua` ist in Production Base 28 enthalten. Der vom Projektinhaber lokal erzeugte Build auf Commit `4acd25cfacc10c530e50b336cbb2472f5eb8c360` ergab:
+
+```text
+BuilderSHA256 E6934463EFE4751EE6AC276D9C247187B39DE79305FB82986C7D44CC79EB04A2
+BundleSHA256  0525D0CA70BA356B3A27FFBCB222EC21346891D5B71252F57551E89FC0612A47
+MizMutation   false
+```
+
+Die unabhängigen `Get-FileHash`-Werte stimmen mit der Builder-Ausgabe überein. DCS-Verhalten bleibt ungetestet.

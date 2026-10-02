@@ -544,3 +544,16 @@ L118_Unit    500 .. 17500 m
 Source: `scripts/campaign/OMW_FireSupStratResupply_ArtyRealAssetRegistry.lua`
 
 Status: `SOURCE_IMPLEMENTED / CI_PENDING / DCS_PENDING`.
+
+### Production Base 28 local build evidence – 02.10.2026
+
+```text
+source commit  = 4acd25cfacc10c530e50b336cbb2472f5eb8c360
+builder sha256 = E6934463EFE4751EE6AC276D9C247187B39DE79305FB82986C7D44CC79EB04A2
+bundle sha256  = 0525D0CA70BA356B3A27FFBCB222EC21346891D5B71252F57551E89FC0612A47
+MizMutation    = false
+CI docs        = PASS (#2321)
+CI mission     = PASS (#1092)
+```
+
+Dies ist Build-/Source-Evidenz, keine DCS-Acceptance des neuen RealAssetRegistry-Lifecycles.
