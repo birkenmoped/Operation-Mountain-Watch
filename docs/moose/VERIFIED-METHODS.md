@@ -1002,7 +1002,7 @@ Exakte Provenienz: source commit 4c8793a9b155f85e7a229117725fca55f58987c3; missi
 Grenze: keine allgemeine LoadBackAssetInPosition-Validierung; concurrent multi-demand, selected 2B11 fire und Strategic Resupply bleiben offen.
 
 
-## FSSR Strategic Resupply source reconciliation correction – 02.10.2026
+## FSSR Strategic Resupply source closure – 02.10.2026
 
 Pinned MOOSE:
 
@@ -1012,43 +1012,27 @@ commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Der erneute Source-Abgleich korrigiert die vorherige Annahme, dass ein
-STORAGE-only-`OPSTRANSPORT` nach `COMMANDER:AddOpsTransport(...)` automatisch
-durch den COMMANDER mit Carriern besetzt wird.
-
 | Method / callback | Status | OMW use / limitation |
 |---|---|---|
-| `OPSTRANSPORT:New(nil, pickupZone, deployZone)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | Erstellt den STORAGE-Transport; keine OMW-Carrierwahl. |
-| `OPSTRANSPORT:AddCargoStorage(...)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | Physische STORAGE-Menge bleibt explizit und getrennt von `demand.quantity`. |
-| `OPSTRANSPORT:SetRequiredCarriers(min,max)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | Carrier-Kardinalitaet; beweist keine Queue-Rekrutierung. |
-| `COMMANDER:AddOpsTransport(transport)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED_WITH_LIMITATION` | Queued den Transport. Fuer STORAGE-only-Cargo reicht dies im gepinnten Source nicht zur Carrier-Rekrutierung. |
-| `COMMANDER:CheckTransportQueue()` | `SOURCE_REVIEWED_INTERNAL_LIFECYCLE` | Ermittelt `weightGroup` ausschliesslich aus `transport:GetCargoOpsGroups(false)`. Bei reinem STORAGE-Cargo bleibt `weightGroup==0`; `RecruitAssetsForTransport` wird nicht aufgerufen. |
-| `OPSTRANSPORT:GetCargoOpsGroups(...)` | `SOURCE_REVIEWED` | Gibt nur Cargo vom Typ `OPSGROUP` zurueck; STORAGE-Cargo wird nicht aufgenommen. |
-| `COMMANDER:RecruitAssetsForTransport(Transport, CargoWeight, TotalWeight)` | `SOURCE_REVIEWED / NOT_YET_PROJECT_ADOPTED` | Bei explizit uebergebenem Gewicht delegiert die oeffentliche Methode an `LEGION.RecruitCohortAssets(..., AUFTRAG.Type.OPSTRANSPORT, ...)`; konkrete Auswahl bleibt damit MOOSE. Direkte OMW-Nutzung ist noch nicht owner-approved. |
-| `LEGION:RecruitAssetsForTransport(Transport)` | `SOURCE_REVIEWED_WITH_STORAGE_LIMITATION` | Nutzt ebenfalls `GetCargoOpsGroups(false)` und gibt bei STORAGE-only-Cargo ohne OPSGROUP-Cargo `false` zurueck. |
-| `OPSTRANSPORT:GetCargoStorages()` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | Beobachtet STORAGE-Lade-/Liefer-/Verlustzaehler. |
-| `OPSTRANSPORT:GetCarriers()` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | Beobachtung bereits zugewiesener Carrier; keine OMW-Selektion. |
-| `OPSGROUP:IsInZone(zone)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | Pickup-Abfahrtsnachweis fuer bereits durch MOOSE zugewiesene Carrier. |
-| `OPSTRANSPORT OnAfterStatusUpdate / OnAfterExecuting / OnAfterDelivered / OnAfterCancel` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | Settlement-/Lifecycle-Beobachtung bleibt gueltig, sobald ein physischer Transport tatsaechlich ausgefuehrt wird. |
+| `OPSTRANSPORT:New(nil, pickupZone, deployZone)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | creates the generic STORAGE transport assignment; no carrier selected by OMW |
+| `OPSTRANSPORT:AddCargoStorage(source, destination, cargoType, amount, weight)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | physical STORAGE amount is explicit and independent of strategic CampaignState package count |
+| `OPSTRANSPORT:SetRequiredCarriers(min,max)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | only carrier cardinality constraint; concrete recruitment remains MOOSE |
+| `COMMANDER:AddOpsTransport(transport)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | queues the transport for MOOSE operational recruitment |
+| `OPSTRANSPORT:GetCargoStorages()` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | reads public STORAGE delivery/loss/loading counters for lifecycle evidence |
+| `OPSTRANSPORT:GetCarriers()` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | observes MOOSE-assigned carriers; not used as an OMW selector |
+| `OPGROUP:IsInZone(zone)` / `OPSGROUP:IsInZone(zone)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | assigned carrier departure proof against the configured pickup zone |
+| `OPSTRANSPORT OnAfterStatusUpdate` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | piggybacks on OPSTRANSPORT's own recurring status FSM; OMW creates no transport polling scheduler |
+| `OPSTRANSPORT OnAfterExecuting` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | strategic transaction progresses from RESERVED to LOADING |
+| `OPSTRANSPORT OnAfterDelivered` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | evaluates full delivered/full lost/mixed physical STORAGE outcome |
+| `OPSTRANSPORT OnAfterCancel` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | releases strategic reservation only before confirmed in-transit |
 
-Die OPSTRANSPORT-Klassendokumentation im gepinnten Source zeigt fuer
-STORAGE-Transporte als direkten Ausfuehrungspfad
-`myopsgroup:AddOpsTransport(storagetransport)`. Dieser Pfad setzt einen
-konkreten Carrier voraus und erfuellt daher nicht die A11-Anforderung, dass OMW
-keinen konkreten Carrier vorgibt.
+Source detail from the pinned file: STORAGE loading removes the physical amount from
+`storageFrom` and increments `cargoLoaded`; unloading adds the physical amount to
+`storageTo` and increments `cargoDelivered`; destroyed carrier cargo increments
+`cargoLost`. OPSTRANSPORT itself schedules its next `StatusUpdate` while not delivered.
 
-In den geprueften offiziellen MOOSE-Missionsrepositories wurde kein belastbares
-Beispiel fuer `AddCargoStorage` plus autonome COMMANDER-Carrierrekrutierung
-gefunden. Ein Such-Nichtfund ist kein Beweis der Abwesenheit, aendert aber den
-Source-Befund nicht.
-
-Status:
-
-```text
-Strategic Resupply accounting/settlement pieces = SOURCE_IMPLEMENTED / CI_PASS
-autonomous queued STORAGE carrier recruitment   = SOURCE_BLOCKED
-physical end-to-end Strategic Resupply           = NOT READY FOR A11
-```
+No method in this section is upgraded to `VALIDATED_FOR_DOCUMENTED_SCOPE` until the
+Strategic-Resupply path runs under DCS with exact provenance.
 
 ## FSSR 2B11 generic selected-owner source coverage – 02.10.2026
 
