@@ -626,3 +626,11 @@ MizMutation   false
 ```
 
 Die unabhängigen `Get-FileHash`-Werte stimmen mit der Builder-Ausgabe überein. DCS-Verhalten bleibt ungetestet.
+
+## A10 composition – separate site and M1083 support BRIGADE ownership
+
+Für die A10-Revalidation bleibt der akzeptierte M1083-Materialisierungspfad unverändert. Die reale Fixed-ARTY-Batterie gehört zur site-spezifischen FSSR-BRIGADE und ist damit COMMANDER-rekrutierbar. Der M1083 wird weiterhin über eine separate support-only BRIGADE am gleichen Warehouse-Anker materialisiert.
+
+Dies vermeidet einen MOOSE-Spawnzonen-Konflikt: `SetSpawnZone` gilt für die gesamte BRIGADE/WAREHOUSE-Instanz. Die Site-BRIGADE kann gleichzeitig QRF-/ACCESS-Verträge besitzen; der M1083-Service benötigt dagegen seine validierte `ZON_BLUE_GND_*_RESUPPLY`-Zone. Die beiden BRIGADE-Instanzen besitzen unterschiedliche physische Assetmengen und keine gemeinsame strategische Resource. `GROUND_AMMO_PACKAGE` bleibt ausschließlich im CampaignState.
+
+Der A10-Harness verwendet für Wright/Honaker einen geometrisch aus den vorhandenen Template-Positionen abgeleiteten Überlappungszielpunkt und gleiche Cohort-Performance. Damit wird keine Batterie durch den Harness ausgewählt; COMMANDER/LEGION bleibt die Auswahlautorität.

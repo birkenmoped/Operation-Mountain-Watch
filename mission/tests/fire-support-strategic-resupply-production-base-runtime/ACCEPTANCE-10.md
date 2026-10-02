@@ -547,3 +547,51 @@ exact source->fixture mutation = VERIFIED_OFFLINE
 A10 runtime bundle embedded = NO
 DCS runtime validation = PENDING
 ```
+
+## 9.5 A10 Harness 02.10.2026 – real asset selection + accepted rearm reuse
+
+Der A10-Harness ist nun als observer-/stimulus-only Integrationsharness implementiert:
+
+```text
+mission/tests/fire-support-strategic-resupply-production-base-runtime/src/10-production-real-arty-selection-rearm-acceptance.lua
+tools/build-fire-support-strategic-resupply-production-base-acceptance-10.ps1
+```
+
+Komposition:
+
+```text
+4 site BRIGADEs
+-> RealAssetRegistry materializes Bostick/Wright/Fortress/Honaker at exact template route point
+-> all 4 real spawned Assetitems registered with one COMMANDER
+-> runtime target = midpoint between Wright and Honaker original template positions
+-> both Wright L118 and Honaker 2B11 must be within their pinned MOOSE range
+-> both cohorts use equal performance=50
+-> ArtySelectionRuntime lets MOOSE COMMANDER select/reserve exactly one real spawned asset
+-> selected asset.flightgroup:GetGroup() becomes the physical group for the Functional ARTY owner
+-> no COMMANDER:AddMission(selection mission)
+-> Functional ARTY fires
+-> ArtySelectionRuntime releases reservation after CeaseFire
+-> harness then triggers the accepted FixedFireSupportAmmoRearmService with startArty=false
+-> M1083/CampaignState/ARTY rearm/return-to-stock remains the accepted production lifecycle
+```
+
+Der M1083-Pfad verwendet bewusst weiterhin eine **eigene support-only BRIGADE-Instanz** am selben physischen Warehouse-Anker. Das ist keine zweite Eigentümerschaft desselben Assets: Die Site-BRIGADE besitzt ausschließlich die realen Fixed-ARTY/Mortar-Assets; die Support-BRIGADE besitzt ausschließlich ihr M1083-Support-Asset. `CampaignState` bleibt alleinige strategische Autorität für `GROUND_AMMO_PACKAGE`.
+
+Warum nicht dieselbe BRIGADE für beides: `WAREHOUSE:SetSpawnZone(...)` ist im gepinnten MOOSE eine Eigenschaft des gesamten Warehouse/BRIGADE-Objekts. QRF nutzt die Site-BRIGADE-Spawnzone als ACCESS-Materialisierung, während der akzeptierte M1083-Pfad die RESUPPLY-Zone benötigt. Eine gemeinsame Instanz würde diese Spawnzonen gegeneinander überschreiben und damit zwei bereits getrennte physische Lifecycles koppeln.
+
+Der Harness prüft zusätzlich:
+
+```text
+- alle vier realen Batterien: Unit-Zahl und jede Unit-Position <= 1.0 m zur ursprünglichen Asset-Template-Position
+- selected provider must be WRIGHT or HONAKER for the overlap target
+- ammo decreases after Functional ARTY fire
+- if HONAKER is selected: observed ammo must reach 0 before rearm
+- selected fixed battery stays <= 1.0 m from materialization position after fire
+- same check after rearm/support return
+- selection Assetitem is released
+- CampaignState GROUND_AMMO_PACKAGE available decreases exactly by 1
+- final artillery ammo is restored to at least initial ammo
+- M1083 returns to its accepted Warehouse stock lifecycle
+```
+
+Status: `SOURCE_IMPLEMENTED / CI_PENDING / LOCAL_BUILD_PENDING / DCS_PENDING`.
