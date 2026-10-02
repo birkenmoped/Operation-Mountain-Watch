@@ -158,6 +158,8 @@ foreach($marker in @(
   'PATROLZONE_ENGAGE','AUFTRAG:NewPATROLZONE','SetEngageDetected',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-STORAGE-TRANSPORT-FACTORY-2',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-SETTLEMENT-3',
   'OMW-FOB-THREAT-OPSZONE-ADAPTER-6',
   'INCIDENT_LOCAL_SECURITY','INSTALLATION_ATTACK_LOCAL_GUARD','MOOSE_OPSZONE_RED_PRESENCE',
   'AUFTRAG:NewONGUARD','SetReturnToLegion(true)','armyGroup:EngageTarget',
@@ -186,6 +188,8 @@ Write-Host 'ArtyRealAssetRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ART
 Write-Host 'CasMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3'
 Write-Host 'CasLifecycleRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1'
 Write-Host 'CasReleasePolicySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1'
+Write-Host 'StorageTransportFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-STORAGE-TRANSPORT-FACTORY-2'
+Write-Host 'TransportSettlementSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-SETTLEMENT-3'
 Write-Host 'CasPatrolClosureSchema: OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-3'
 Write-Host 'ExternalArtyMode: MOOSE COMMANDER -> real spawned site-bound PLATOON/BRIGADE asset reservation -> same physical Functional ARTY owner; no AUFTRAG FireAtPoint owner'
 Write-Host 'ArtyRealAssetContract: existing site-bound templates register as one real PLATOON asset each; exact-position MOOSE LoadBack materialization; no relocation; pinned ARTY.db weapon range'

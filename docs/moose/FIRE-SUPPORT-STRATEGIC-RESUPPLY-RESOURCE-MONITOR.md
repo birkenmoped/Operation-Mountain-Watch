@@ -108,6 +108,19 @@ Abgedeckt sind:
 - neue Episode erst nach Bestandsnormalisierung oder expliziter terminaler Freigabe;
 - keine Demand fuer unbekannten Resource Node;
 - Transportart wird injiziert;
+- zwei unterschiedliche `nodeId + resourceId`-Shortage-Episoden koennen gleichzeitig aktiv bleiben;
+- Release einer Demand veraendert keine andere aktive Shortage-Episode;
 - keine automatische Retry-Schleife.
 
 Das ist Contract-/CI-Evidenz und kein DCS-PASS.
+
+
+## Concurrency-Reconciliation – 02.10.2026
+
+Die `active`-Tabelle ist nach `nodeId + resourceId` getrennt. Ein neuer Contract-Test
+erzeugt gleichzeitig einen Joyce- und einen Honaker-AMMO-Shortage. Beide Demands bleiben
+parallel aktiv; `ReleaseDemand` fuer Joyce entfernt nicht den Honaker-Zustand.
+
+Das ist ausschliesslich Demand-/Deduplizierungs-Evidenz. Operative Carrier-Concurrency
+und physische Lieferung werden von MOOSE OPSTRANSPORT/COMMANDER verwaltet und muessen in
+A11 real unter DCS beobachtet werden.

@@ -597,3 +597,19 @@ A10 ist fuer seine exakte Provenienz ACCEPTED_TECHNICAL_BASELINE.
 | Strategic Resupply | Source/Contracts vorhanden, physischer Full-Lifecycle offen | A11 planned after production closure | CampaignState + OPSTRANSPORT/STORAGE + idempotent settlement |
 
 Der Descriptor-only-Pfad bleibt historische Source-Evidenz, ist aber fuer die aktive Fixed-Fire-Support-Production-Composition superseded.
+
+
+## Post-A10 Source-Reconciliation – 02.10.2026
+
+| Bereich | Aktiver Source-Pfad | Stand | Noch erforderliche DCS-Evidenz |
+|---|---|---|---|
+| Descriptor-only Fixed ARTY | nicht mehr im Production-Base-Bundle; Source/Test nur historische Evidenz | SUPERSEDED_ACTIVE_COMPOSITION | keine; darf nicht parallel zur RealAssetRegistry zurueckkehren |
+| Real L118/2B11 representation | RealAssetRegistry -> PLATOON/BRIGADE/Warehouse Assetitem -> exact LoadBack bootstrap | A10 L118-selected PASS; 2B11 materialized/range-capable | MOOSE-selected 2B11 fire in A11 |
+| ARTY multi-demand | demand-scoped SelectionRuntime + MOOSE asset reservations + Functional ARTY | SOURCE_TESTED / CI_PASS | echte gleichzeitige DCS-Provider-Contention |
+| CAS multi-demand | demand-scoped lifecycle/release state; selected provider must have owner profile or fail closed | SOURCE_TESTED / CI_PASS | mindestens zwei ueberlappende CAS-Demands mit realer Auswahl/Recovery |
+| Strategic Resupply mapping | CampaignState quantity getrennt von explizitem physical STORAGE cargoAmount | SOURCE_TESTED / CI_PASS | reales Resource->STORAGE-Mapping im A11-Run |
+| Strategic Resupply in-transit | OPSTRANSPORT StatusUpdate + cargoLoaded + alle assigned carriers ausserhalb pickup | SOURCE_TESTED / CI_PASS | realer MOOSE loading/departure/delivery-or-loss lifecycle |
+| Strategic settlement | reserve -> loading -> in-transit -> delivered/lost; partial bleibt unresolved | SOURCE_TESTED / CI_PASS | exactly-once Settlement gegen realen DCS-Lauf |
+| Combined provider autonomy | keine site->provider/nearest/preferred/fixed-carrier Auswahl im allgemeinen Base-Pfad | SOURCE_REVIEWED | A11 combined multi-site run |
+
+Keine Zeile dieser Source-Reconciliation erweitert die exakten A9-/A10-DCS-Baselines.

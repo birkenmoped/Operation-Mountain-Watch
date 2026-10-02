@@ -387,3 +387,85 @@ Aktuelle offenen Production-Base-Grenzen:
 ~~~
 
 Acceptance 11 muss ARTY, mortar, CAS und Strategic Resupply in demselben Lauf abdecken und darf keine konkrete Batterie, AIRWING/SQUADRON oder Carrier-Instanz vorgeben.
+
+
+## Source-Closure nach A10 – 02.10.2026
+
+Der allgemeine Production-Base-Source-Stand wurde nach dem A10-PASS weiter reconciliert. Fuer neue Builds gilt jetzt:
+
+```text
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-29
+```
+
+Die aktive Composition enthaelt **nicht mehr** den superseded
+`OMW_FireSupStratResupply_ArtySelectionDescriptorRegistry.lua`. Die Datei und ihr
+Contract-Test bleiben ausschliesslich als historische Source-Evidenz im Repository; sie
+werden nicht mehr in das Production-Base-Bundle eingebettet und stellen keine zweite
+rekrutierbare Fixed-Fire-Support-Repräsentation dar.
+
+Der reale Fixed-Fire-Support-Pfad bleibt:
+
+```text
+RealAssetRegistry
+-> real PLATOON / site BRIGADE / Warehouse Assetitem
+-> MOOSE COMMANDER CanMission + RecruitAssetsForMission
+-> selected asset.flightgroup
+-> exact physical GROUP
+-> Functional ARTY
+```
+
+Der gleiche Registry-/Functional-ARTY-Vertrag ist source-seitig nun auch explizit fuer
+`2B11 mortar` abgedeckt. Der gepinnte MOOSE-Range-Vertrag bleibt
+`500..7000 m`. Das ist **keine** DCS-Akzeptanz eines von MOOSE ausgewaehlten
+2B11-Feuerauftrags; dieser Nachweis bleibt A11.
+
+### Strategic Resupply – generischer Source-Vertrag geschlossen
+
+`StorageTransportFactory` und `TransportSettlement` trennen jetzt explizit zwei
+verschiedene Mengen:
+
+```text
+demand.quantity
+= strategische CampaignState-Menge
+
+descriptor.cargoAmount
+= explizit aufgeloeste physische DCS-STORAGE-Menge
+```
+
+Es existiert keine implizite 1:1-Annahme mehr. Der physische Resolver muss
+`cargoAmount` angeben. CampaignState reserviert und verbucht weiterhin ausschliesslich
+`demand.quantity`.
+
+Ohne projektspezifischen In-Transit-Observer verwendet das Settlement den vorhandenen
+MOOSE-`OPSTRANSPORT`-Statuszyklus als Beobachtungspunkt. Der strategische Transfer wird
+erst auf `IN_TRANSIT` gesetzt, wenn physischer STORAGE-Cargo geladen ist und alle aktuell
+zugewiesenen MOOSE-Carrier die Pickup-Zone verlassen haben. Es wird dafuer kein eigener
+Scheduler und kein Carrier-Selector eingefuehrt.
+
+```text
+shortage
+-> MissionDemand
+-> CampaignState reservation
+-> OPSTRANSPORT/STORAGE
+-> COMMANDER:AddOpsTransport
+-> MOOSE carrier recruitment
+-> STORAGE loaded + assigned carriers outside pickup
+-> CampaignState IN_TRANSIT
+-> MOOSE STORAGE delivered/lost
+-> idempotent CampaignState DELIVERED/LOST
+```
+
+Status: `SOURCE_IMPLEMENTED / CI_PASS / DCS_PENDING`.
+
+### Concurrency / Provider-Autonomie
+
+Die Contract-Suite prueft nun explizit unabhaengige gleichzeitige ARTY-Reservations,
+mehrere aktive Resupply-Shortage-Episoden und demand-spezifische CAS-Release-Zustaende.
+CAS-Provider ohne gueltiges Owner-Execution-Profile bleiben weiterhin fail-closed; OMW
+waehlt keinen Ersatzprovider.
+
+Damit ist die allgemeine Source-Composition fuer den naechsten kombinierten
+Multi-Site-Test vorbereitet. A11 bleibt bis zum realen DCS-Lauf
+`PLANNED / NOT RELEASED FOR DCS`; insbesondere sind concurrent CAS recovery,
+MOOSE-selected 2B11 fire und Strategic-Resupply-Carrier-Lifecycle noch nicht praktisch
+validiert.

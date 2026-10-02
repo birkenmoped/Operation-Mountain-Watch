@@ -1000,3 +1000,43 @@ Exakte Provenienz: source commit 4c8793a9b155f85e7a229117725fca55f58987c3; missi
 | ARTY.db L118_Unit / 2B11 mortar range configuration | VALIDATED_FOR_DOCUMENTED_SCOPE | Wright 4610.4/17500 m und Honaker 4737.7/7000 m gleichzeitig geeignet |
 
 Grenze: keine allgemeine LoadBackAssetInPosition-Validierung; concurrent multi-demand, selected 2B11 fire und Strategic Resupply bleiben offen.
+
+
+## FSSR Strategic Resupply source closure – 02.10.2026
+
+Pinned MOOSE:
+
+```text
+release 2.9.18
+commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+| Method / callback | Status | OMW use / limitation |
+|---|---|---|
+| `OPSTRANSPORT:New(nil, pickupZone, deployZone)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | creates the generic STORAGE transport assignment; no carrier selected by OMW |
+| `OPSTRANSPORT:AddCargoStorage(source, destination, cargoType, amount, weight)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | physical STORAGE amount is explicit and independent of strategic CampaignState package count |
+| `OPSTRANSPORT:SetRequiredCarriers(min,max)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | only carrier cardinality constraint; concrete recruitment remains MOOSE |
+| `COMMANDER:AddOpsTransport(transport)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | queues the transport for MOOSE operational recruitment |
+| `OPSTRANSPORT:GetCargoStorages()` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | reads public STORAGE delivery/loss/loading counters for lifecycle evidence |
+| `OPSTRANSPORT:GetCarriers()` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | observes MOOSE-assigned carriers; not used as an OMW selector |
+| `OPGROUP:IsInZone(zone)` / `OPSGROUP:IsInZone(zone)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | assigned carrier departure proof against the configured pickup zone |
+| `OPSTRANSPORT OnAfterStatusUpdate` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | piggybacks on OPSTRANSPORT's own recurring status FSM; OMW creates no transport polling scheduler |
+| `OPSTRANSPORT OnAfterExecuting` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | strategic transaction progresses from RESERVED to LOADING |
+| `OPSTRANSPORT OnAfterDelivered` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | evaluates full delivered/full lost/mixed physical STORAGE outcome |
+| `OPSTRANSPORT OnAfterCancel` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | releases strategic reservation only before confirmed in-transit |
+
+Source detail from the pinned file: STORAGE loading removes the physical amount from
+`storageFrom` and increments `cargoLoaded`; unloading adds the physical amount to
+`storageTo` and increments `cargoDelivered`; destroyed carrier cargo increments
+`cargoLost`. OPSTRANSPORT itself schedules its next `StatusUpdate` while not delivered.
+
+No method in this section is upgraded to `VALIDATED_FOR_DOCUMENTED_SCOPE` until the
+Strategic-Resupply path runs under DCS with exact provenance.
+
+## FSSR 2B11 generic selected-owner source coverage – 02.10.2026
+
+The pinned `ARTY.db["2B11 mortar"]` range remains `500..7000 m`. The
+RealAssetRegistry Contract-Test now runs the 2B11 through the same generic
+PLATOON/BRIGADE materialization correlation and `ResolveFunctionalArty` identity path
+used by L118. Status: `SOURCE_TESTED / DCS_SELECTED_FIRE_PENDING`.

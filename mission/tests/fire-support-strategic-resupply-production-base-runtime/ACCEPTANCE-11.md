@@ -220,3 +220,44 @@ Until then:
 ~~~text
 A11 status = PLANNED / NOT RELEASED FOR DCS
 ~~~
+
+
+## 11. Source-readiness gate – 02.10.2026
+
+Vor Implementierung des observer-only Harness wurden folgende Production-Grenzen
+source-/CI-seitig geschlossen:
+
+~~~text
+descriptor-only ARTY removed from active Production Base composition
+RealAssetRegistry generic L118 + 2B11 owner-resolution contract
+ARTY concurrent-demand reservation isolation
+CAS demand-scoped release-state isolation + unknown-provider fail-closed behavior
+ResupplyMonitor independent node/resource shortage episodes
+StorageTransportFactory explicit strategic-to-physical amount mapping
+TransportSettlement default MOOSE OPSTRANSPORT in-transit observer
+CampaignState full-delivery/full-loss exactly-once settlement contract
+~~~
+
+Der Strategic-Resupply-Descriptor muss `cargoAmount` explizit als physische
+DCS-STORAGE-Menge angeben. A11 darf daraus keine neue strategische Ressourcenautoritaet
+ableiten; `demand.quantity` bleibt die zu reservierende/settlebare CampaignState-Menge.
+
+Der Default-In-Transit-Nachweis ist absichtlich konservativ:
+
+~~~text
+storage cargoLoaded > 0
+AND at least one assigned MOOSE carrier exists
+AND every currently assigned carrier is outside pickupZone
+-> confirm CampaignState IN_TRANSIT
+~~~
+
+Das Harness darf diesen Zustand nur beobachten. Es darf weder Carrier auswaehlen noch
+den Status selbst erzwingen.
+
+Diese Source-Readiness aendert den Release-Status nicht:
+
+~~~text
+A11 status = PLANNED / NOT RELEASED FOR DCS
+~~~
+
+Der Harness wird erst im naechsten Schritt als observer-only Composition gebaut.

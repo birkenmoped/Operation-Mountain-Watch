@@ -876,3 +876,63 @@ combined concurrent support        = A11 PLANNED
 ~~~
 
 Der Descriptor-only-ARTY-Ansatz ist fuer die aktive Production-Richtung superseded und darf nicht als parallel rekrutierbare zweite Batterierepräsentation zurueckkehren.
+
+
+### 02.10.2026 – Strategic Resupply lifecycle source closure
+
+Aktiv verwendete MOOSE-Klassen/-Grenzen fuer den allgemeinen Strategic-Resupply-Pfad:
+
+```text
+OPSTRANSPORT
+  New
+  AddCargoStorage
+  SetRequiredCarriers
+  GetCargoStorages
+  GetCarriers
+  OnAfterExecuting
+  OnAfterStatusUpdate
+  OnAfterDelivered
+  OnAfterCancel
+
+COMMANDER
+  AddOpsTransport
+
+OPSGROUP
+  IsInZone
+```
+
+OMW-Aufteilung:
+
+```text
+CampaignState / ResourceDemandPolicy / ResupplyMonitor
+= strategic demand and ledger
+
+StorageTransportFactory
+= one explicit physical STORAGE descriptor -> OPSTRANSPORT
+
+COMMANDER / LEGION / OPSTRANSPORT
+= operational carrier selection and physical lifecycle
+
+TransportSettlement
+= MOOSE physical evidence -> idempotent CampaignState transaction
+```
+
+`StorageTransportFactory` darf `demand.quantity` nicht als implizites
+DCS-STORAGE-`cargoAmount` interpretieren. Der physische Resolver muss die Abbildung
+explizit liefern.
+
+Die neuen Nutzungen sind `SOURCE_IMPLEMENTED / CI_PASS / DCS_PENDING`; sie ersetzen
+keine bestehende A9-/A10-Lifecycle-Akzeptanz.
+
+### 02.10.2026 – Multi-demand source readiness
+
+```text
+ArtySelectionRuntime entries[demandId]
+CasLifecycleRuntime entries[demandId] / missionEntries[Mission]
+CasReleasePolicy states[demandId]
+ResupplyMonitor active[nodeId + resourceId]
+```
+
+Diese Zustandsgrenzen sind source-/contract-seitig fuer parallele Demands getrennt.
+A11 muss die reale MOOSE-Recruitment-/Contention-Semantik im kombinierten DCS-Lauf
+belegen.

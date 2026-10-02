@@ -356,3 +356,57 @@ tests/mission-demand/test_fire_support_strategic_resupply_transport_settlement.l
 ```
 
 CI prueft die generischen Composition-/Factory-Grenzen. DCS-Evidenz fuer konkrete physische Lifecycles bleibt an die jeweiligen Acceptance-Provenienzen gebunden.
+
+
+## Reconciliation 02.10.2026 – generischer Strategic-Resupply-Lifecycle
+
+Der allgemeine Resupply-Composition-Root verwendet weiterhin nur injizierte physische
+Mappings; er erfindet weder Source-Node noch Carrier noch Route. Neu verbindlich fuer
+einen STORAGE-Transport-Descriptor ist:
+
+```lua
+{
+  pickupZone = <MOOSE ZONE>,
+  deployZone = <MOOSE ZONE>,
+  sourceStorage = <MOOSE STORAGE>,
+  destinationStorage = <MOOSE STORAGE>,
+  cargoType = <DCS storage type>,
+  cargoAmount = <explicit physical amount>,
+  requiredCarriersMin = 1,
+  requiredCarriersMax = 1,
+}
+```
+
+`cargoAmount` ist bewusst **nicht** `demand.quantity`. Die erste Groesse gehoert zur
+physischen DCS-STORAGE-Abbildung, die zweite zum strategischen CampaignState-Ledger.
+
+Der Default-In-Transit-Nachweis verwendet nur bereits laufende MOOSE-Lifecycle-Evidenz:
+
+```text
+OPSTRANSPORT OnAfterExecuting
+-> CampaignState LOADING
+
+OPSTRANSPORT OnAfterStatusUpdate
++ GetCargoStorages().cargoLoaded > 0
++ GetCarriers()
++ every assigned OPSGROUP:IsInZone(pickupZone) == false
+-> CampaignState IN_TRANSIT
+```
+
+`OnAfterStatusUpdate` wird von OPSTRANSPORT selbst periodisch ausgeloest; OMW legt
+dafuer keinen Scheduler an. Ein explizit injizierter `installInTransitObserver` bleibt
+als enger Adapterpunkt moeglich, ist aber fuer den generischen STORAGE-Pfad nicht mehr
+Pflicht.
+
+Terminal bleibt:
+
+```text
+full physical delivery -> DELIVERED
+full physical loss     -> LOST
+mixed delivered/lost   -> PARTIAL surfaced, no silent full settlement
+pre-transit cancel     -> reservation released
+post-in-transit cancel -> no strategic refund without loss/delivery evidence
+```
+
+Status: Source/CI-Vertrag; DCS-Validierung des kombinierten Strategic-Resupply-Pfads
+steht aus.

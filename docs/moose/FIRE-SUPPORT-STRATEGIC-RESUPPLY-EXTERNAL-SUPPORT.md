@@ -655,3 +655,44 @@ multiple eligible real fixed-fire-support providers
 Wright und Honaker waren fuer dasselbe Ziel gleichzeitig geeignet; MOOSE selektierte Wright.
 
 Die naechste Generalisierung darf daraus keinen nearest/preferred/site-to-provider Selector in OMW ableiten. Fuer A11 gilt: multiple concurrent site incidents -> independent demands -> MOOSE operational selection. Ein busy/reserved asset bleibt fuer inkompatible parallele Demands blockiert; ein weiterer Demand nutzt einen anderen geeigneten Provider oder folgt MOOSE wait/reject semantics. Diese Regel gilt fuer Fixed ARTY/Mortar, CAS und Strategic Resupply carrier recruitment.
+
+
+## Multi-Demand-Source-Reconciliation – 02.10.2026
+
+Der External-Support-State ist demand-spezifisch aufgebaut:
+
+```text
+ARTY selection runtime:
+entries[demandId]
+entriesByTargetName[targetName]
+
+CAS lifecycle runtime:
+entries[demandId]
+missionEntries[Mission]
+release-policy states[demandId]
+```
+
+Die Contract-Suite prueft jetzt zwei gleichzeitig aktive ARTY-Demands mit getrennten
+MOOSE-Reservations und voneinander unabhaengiger CeaseFire-/Release-Abwicklung. Fuer CAS
+wird die Release-Policy mit ueberlappenden Demand-IDs und getrennten No-Contact-Timern
+geprueft.
+
+Der RealAssetRegistry-Test deckt denselben generischen Real-Asset-/Functional-ARTY-Pfad
+nun sowohl fuer L118 als auch fuer Honaker `2B11 mortar` ab. Das veraendert die
+A10-Evidenz nicht: A10 materialisierte den 2B11 und belegte seine Reichweitenfaehigkeit,
+waehlte fuer den Feuerauftrag aber Wright. Ein **MOOSE-selected 2B11 fire** bleibt daher
+DCS_PENDING bis A11.
+
+CAS bleibt fail-closed:
+
+```text
+MOOSE-selected provider
+-> matching owner execution profile exists
+   -> continue accepted lifecycle
+-> no matching profile
+   -> assignment rejected / no OMW alternate-provider selector
+```
+
+Es werden fuer A11 keine zusaetzlichen AIRWING-/SQUADRON-/Provider-Profile erfunden.
+Ein weiterer Provider darf erst mit seinem realen owner-authored Execution-Profile in
+die produktive Auswahl gelangen.
