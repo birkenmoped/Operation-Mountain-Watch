@@ -8,7 +8,7 @@ local Settlement = {}
 local Instance = {}
 Instance.__index = Instance
 
-Settlement.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-SETTLEMENT-2"
+Settlement.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-SETTLEMENT-3"
 local TAG = "[OMW][FireSupStratResupply.TransportSettlement]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -26,6 +26,30 @@ local function chain(object,name,callback)
     if previous then previous(self,...) end
     return callback(self,...)
   end
+end
+
+local function installDefaultInTransitObserver(transport,pickupZone,callback)
+  needFunction(transport,"GetCargoStorages","transport")
+  needFunction(transport,"GetCarriers","transport")
+  chain(transport,"OnAfterStatusUpdate",function(selfTransport)
+    local storages=selfTransport:GetCargoStorages()
+    if type(storages)~="table" or #storages~=1 then return end
+    local storage=storages[1]
+    if type(storage)~="table" or type(storage.cargoLoaded)~="number" or storage.cargoLoaded<=0 then return end
+
+    local carriers=selfTransport:GetCarriers()
+    if type(carriers)~="table" then return end
+    local carrierCount=0
+    for _,carrier in pairs(carriers) do
+      if type(carrier)~="table" or type(carrier.IsInZone)~="function" then return end
+      carrierCount=carrierCount+1
+      if carrier:IsInZone(pickupZone)==true then return end
+    end
+
+    -- Conservative proof: physical STORAGE is loaded and every currently assigned
+    -- MOOSE carrier has left the pickup zone. No custom scheduler or carrier selector.
+    if carrierCount>0 then callback("MOOSE_STORAGE_LOADED_ALL_CARRIERS_LEFT_PICKUP") end
+  end)
 end
 
 function Settlement.New(spec)
@@ -91,7 +115,11 @@ function Instance:Attach(transport,demand,context,descriptor)
   if type(demand.demandId)~="string" or demand.demandId=="" then fail("demandId is required") end
   if type(demand.resourceId)~="string" or demand.resourceId=="" then fail("resourceId is required") end
   if not finitePositive(demand.quantity) then fail("quantity must be positive finite") end
-  if type(descriptor.installInTransitObserver)~="function" then return nil,false,"IN_TRANSIT_OBSERVER_REQUIRED" end
+  if descriptor.installInTransitObserver~=nil and type(descriptor.installInTransitObserver)~="function" then
+    fail("descriptor.installInTransitObserver must be a function when provided")
+  end
+  needTable(descriptor.pickupZone,"descriptor.pickupZone")
+  if not finitePositive(descriptor.cargoAmount) then return nil,false,"PHYSICAL_CARGO_AMOUNT_REQUIRED" end
   needFunction(transport,"GetCargoStorages","transport")
 
   local transfer,transferReason=self:_transferSpec(demand,context,descriptor)
@@ -157,7 +185,18 @@ function Instance:Attach(transport,demand,context,descriptor)
     return updated,changed,nil
   end
 
-  descriptor.installInTransitObserver(transport,function(evidence) return binding:ConfirmInTransit(evidence) end,demand,context)
+  if descriptor.installInTransitObserver then
+    descriptor.installInTransitObserver(
+      transport,
+      function(evidence) return binding:ConfirmInTransit(evidence) end,
+      demand,
+      context)
+  else
+    installDefaultInTransitObserver(
+      transport,
+      descriptor.pickupZone,
+      function(evidence) return binding:ConfirmInTransit(evidence) end)
+  end
 
   chain(transport,"OnAfterExecuting",function()
     local current=adapter.store:GetTransaction(transactionId)
@@ -165,7 +204,7 @@ function Instance:Attach(transport,demand,context,descriptor)
     if current.status==S.RESERVED then adapter.store:MarkLoading(transactionId) end
   end)
   chain(transport,"OnAfterDelivered",function(selfTransport)
-    local outcome,outcomeReason,detail=adapter:_storageOutcome(selfTransport,demand.quantity)
+    local outcome,outcomeReason,detail=adapter:_storageOutcome(selfTransport,descriptor.cargoAmount)
     if not outcome then adapter:_log("delivery outcome unresolved demandId="..tostring(demand.demandId).." reason="..tostring(outcomeReason));return end
     if outcome=="DELIVERED" or outcome=="LOST" then
       binding:_terminal(outcome,detail)

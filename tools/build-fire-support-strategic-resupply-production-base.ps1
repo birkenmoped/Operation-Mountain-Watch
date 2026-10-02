@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-28'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-29'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -22,7 +22,6 @@ $moduleSpecs=@(
   @{Name='CommanderBridge';Path='scripts\campaign\OMW_FireSupStratResupply_CommanderBridge.lua'},
   @{Name='ArtyMissionFactory';Path='scripts\campaign\OMW_FireSupStratResupply_ArtyMissionFactory.lua'},
   @{Name='ArtySelectionRuntime';Path='scripts\campaign\OMW_FireSupStratResupply_ArtySelectionRuntime.lua'},
-  @{Name='ArtySelectionDescriptorRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_ArtySelectionDescriptorRegistry.lua'},
   @{Name='ArtyRealAssetRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_ArtyRealAssetRegistry.lua'},
   @{Name='CasMissionFactory';Path='scripts\campaign\OMW_FireSupStratResupply_CasMissionFactory.lua'},
   @{Name='CasLifecycleRuntime';Path='scripts\campaign\OMW_FireSupStratResupply_CasLifecycleRuntime.lua'},
@@ -74,7 +73,6 @@ foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-MISSION-FACTORY-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-1',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-DESCRIPTOR-REGISTRY-1',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-REAL-ASSET-REGISTRY-1',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1',
@@ -125,7 +123,7 @@ local Modules={
  base=Base,lifecycleAdapter=LifecycleAdapter,guardRuntime=GuardRuntime,qrfRuntime=QrfRuntime,
  legionBridge=LegionBridge,guardMissionFactory=GuardMissionFactory,qrfMissionFactory=QrfMissionFactory,
  roadSpawnAdapter=RoadSpawnAdapter,guardMaterializationAdapter=GuardMaterializationAdapter,
- guardRouteAdapter=GuardRouteAdapter,commanderBridge=CommanderBridge,artyMissionFactory=ArtyMissionFactory,artySelectionRuntime=ArtySelectionRuntime,artySelectionDescriptorRegistry=ArtySelectionDescriptorRegistry,artyRealAssetRegistry=ArtyRealAssetRegistry,
+ guardRouteAdapter=GuardRouteAdapter,commanderBridge=CommanderBridge,artyMissionFactory=ArtyMissionFactory,artySelectionRuntime=ArtySelectionRuntime,artyRealAssetRegistry=ArtyRealAssetRegistry,
  casMissionFactory=CasMissionFactory,casLifecycleRuntime=CasLifecycleRuntime,casReleasePolicy=CasReleasePolicy,
  flightPathNameContract=FlightPathNameContract,helicopterCorridor=HelicopterCorridor,casTacticalCorridor=CasTacticalCorridor,casPatrolClosure=CasPatrolClosure,
  externalSupportRuntime=ExternalSupportRuntime,
@@ -184,7 +182,6 @@ Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13
 Write-Host 'QrfMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8'
 Write-Host 'ArtyMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-MISSION-FACTORY-2'
 Write-Host 'ArtySelectionRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-1'
-Write-Host 'ArtySelectionDescriptorRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-DESCRIPTOR-REGISTRY-1'
 Write-Host 'ArtyRealAssetRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-REAL-ASSET-REGISTRY-1'
 Write-Host 'CasMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3'
 Write-Host 'CasLifecycleRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1'
@@ -192,7 +189,7 @@ Write-Host 'CasReleasePolicySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELE
 Write-Host 'CasPatrolClosureSchema: OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-3'
 Write-Host 'ExternalArtyMode: MOOSE COMMANDER -> real spawned site-bound PLATOON/BRIGADE asset reservation -> same physical Functional ARTY owner; no AUFTRAG FireAtPoint owner'
 Write-Host 'ArtyRealAssetContract: existing site-bound templates register as one real PLATOON asset each; exact-position MOOSE LoadBack materialization; no relocation; pinned ARTY.db weapon range'
-Write-Host 'ArtyDescriptorContract: superseded before DCS validation; retained in bundle only for source compatibility until A10 cleanup'
+Write-Host 'ArtyDescriptorContract: superseded descriptor-only registry excluded from active production bundle after A10 real-asset acceptance'
 Write-Host 'ExternalCasModes: CAS | PATROLZONE_ENGAGE; provider selection remains MOOSE COMMANDER-owned'
 Write-Host 'CasLifecycle: shared production route/release/recovery owner; Acceptance harness must observe only'
 Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5'

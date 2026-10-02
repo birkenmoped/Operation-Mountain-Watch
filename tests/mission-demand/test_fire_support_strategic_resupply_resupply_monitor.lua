@@ -90,4 +90,42 @@ eq(unknownResult.demand,nil,"unknown node no demand")
 no(unknownResult.created,"unknown node not created")
 eq(unknownResult.reason,"SITE_NOT_REGISTERED_FOR_RESOURCE_NODE","unknown node reason")
 
+-- Distinct node/resource shortage episodes remain independently active.
+do
+  local availability={GROUND_NODE_JOYCE=2,GROUND_NODE_HONAKER=1}
+  local concurrentStore={}
+  function concurrentStore:GetResource(nodeId,resourceId)
+    local available=availability[nodeId]
+    return {nodeId=nodeId,resourceId=resourceId,available=available,quantity=available,canonicalUnit="count",reserved=0}
+  end
+  local concurrentSites={Sites={
+    FOB_JOYCE={siteId="FOB_JOYCE",campaignNodeId="GROUND_NODE_JOYCE"},
+    COP_HONAKER={siteId="COP_HONAKER",campaignNodeId="GROUND_NODE_HONAKER"},
+  }}
+  local concurrentRows={
+    {nodeId="GROUND_NODE_JOYCE",resourceId="GROUND_AMMO_PACKAGE",resourceClass="AMMO",target=6,reorder=3,critical=1,supplyParent="GROUND_NODE_JALALABAD"},
+    {nodeId="GROUND_NODE_HONAKER",resourceId="GROUND_AMMO_PACKAGE",resourceClass="AMMO",target=5,reorder=2,critical=1,supplyParent="GROUND_NODE_JOYCE"},
+  }
+  local concurrentRequests={}
+  local concurrentBase={}
+  function concurrentBase:RequestResupply(siteId,supportType,spec)
+    local demand={demandId="C|"..siteId.."|"..spec.requestKey,siteId=siteId,supportType=supportType,resourceId=spec.resourceId,quantity=spec.quantity}
+    concurrentRequests[#concurrentRequests+1]=demand
+    return demand,true,nil
+  end
+  local concurrentMonitor=Monitor.New({
+    base=concurrentBase,siteRegistry=concurrentSites,policy=policy,store=concurrentStore,rows=concurrentRows,
+    selectSupportType=function() return "GROUND_RESUPPLY" end,
+  })
+  local results=concurrentMonitor:EvaluateAll()
+  yes(results[1].created,"Joyce concurrent shortage created")
+  yes(results[2].created,"Honaker concurrent shortage created")
+  eq(#concurrentRequests,2,"two independent resupply demands")
+  yes(concurrentMonitor:GetActive("GROUND_NODE_JOYCE","GROUND_AMMO_PACKAGE")~=nil,"Joyce active demand retained")
+  yes(concurrentMonitor:GetActive("GROUND_NODE_HONAKER","GROUND_AMMO_PACKAGE")~=nil,"Honaker active demand retained")
+  concurrentMonitor:ReleaseDemand(results[1].demand.demandId,"DELIVERED")
+  eq(concurrentMonitor:GetActive("GROUND_NODE_JOYCE","GROUND_AMMO_PACKAGE"),nil,"Joyce release is demand-local")
+  yes(concurrentMonitor:GetActive("GROUND_NODE_HONAKER","GROUND_AMMO_PACKAGE")~=nil,"Honaker demand survives Joyce release")
+end
+
 print("PASS test_fire_support_strategic_resupply_resupply_monitor")

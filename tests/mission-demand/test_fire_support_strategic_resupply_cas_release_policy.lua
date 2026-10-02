@@ -55,4 +55,17 @@ local s2=p2:Observe("D2",{now=40,sensorReady=true,supportedElementClear=true,eli
 eq(s2.noContactSince,40,"contact resets stable timer")
 eq(s2.release,false,"reset prevents release")
 
+-- Demand-scoped state must remain independent under overlapping CAS requests.
+local concurrent=Policy.New({stableNoContactSec=30})
+concurrent:Observe("CAS_A",{now=0,sensorReady=true,supportedElementClear=true,eligibleCount=0})
+concurrent:Observe("CAS_B",{now=0,sensorReady=true,supportedElementClear=true,eligibleCount=1})
+local ca=concurrent:Observe("CAS_A",{now=31,sensorReady=true,supportedElementClear=true,eligibleCount=0})
+local cb=concurrent:Observe("CAS_B",{now=31,sensorReady=true,supportedElementClear=true,eligibleCount=1})
+eq(ca.release,true,"CAS A releases independently")
+eq(cb.release,false,"CAS B contact state is independent")
+concurrent:Observe("CAS_B",{now=32,sensorReady=true,supportedElementClear=true,eligibleCount=0})
+cb=concurrent:Observe("CAS_B",{now=62,sensorReady=true,supportedElementClear=true,eligibleCount=0})
+eq(cb.release,true,"CAS B later releases on its own timer")
+eq(concurrent:GetState("CAS_A").releaseReason,"SUPPORTED_ELEMENT_RELEASE_NO_CONTACT","CAS A state preserved")
+
 print("PASS fire support CAS release policy")

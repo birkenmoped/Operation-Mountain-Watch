@@ -145,4 +145,61 @@ no(assignOk,"target assignment error propagated")
 no(asset.isReserved,"target assignment error releases selection")
 eq(releases,5,"target assignment error release")
 
+-- Concurrent demands keep independent MOOSE reservations and Functional ARTY target state.
+do
+  local factory2={}
+  function factory2:Create(demand)
+    return {_omwFssrArtyTarget={coordinate={id=demand.demandId},shots=2,radiusM=25},demandId=demand.demandId},true,nil
+  end
+  local legionA={alias="LEGION_A"}
+  local legionB={alias="LEGION_B"}
+  local assetA={spawngroupname="ASSET_A",isReserved=false}
+  local assetB={spawngroupname="ASSET_B",isReserved=false}
+  local commander2={}
+  function commander2:CanMission() return true end
+  function commander2:RecruitAssetsForMission(mission)
+    local selectedAsset=mission.demandId=="CONCURRENT_A" and assetA or assetB
+    local selectedLegion=mission.demandId=="CONCURRENT_A" and legionA or legionB
+    selectedAsset.isReserved=true
+    return true,{selectedAsset},{[selectedLegion.alias]=selectedLegion}
+  end
+  local released2=0
+  local function release2(assets)
+    assets[1].isReserved=false
+    released2=released2+1
+  end
+  local function newArty()
+    local a={}
+    function a:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
+    function a:RemoveTarget() end
+    return a
+  end
+  local artyA=newArty()
+  local artyB=newArty()
+  local concurrent=Runtime.New({
+    commander=commander2,
+    artyMissionFactory=factory2,
+    resolveFunctionalArty=function(selectedAsset)
+      return {arty=selectedAsset==assetA and artyA or artyB}
+    end,
+    releaseAssets=release2,
+  })
+  local handleA,createdA=concurrent:Dispatch({demandId="CONCURRENT_A",supportType="ARTY"},{})
+  local handleB,createdB=concurrent:Dispatch({demandId="CONCURRENT_B",supportType="ARTY"},{})
+  yes(createdA and handleA~=nil,"concurrent ARTY A dispatched")
+  yes(createdB and handleB~=nil,"concurrent ARTY B dispatched")
+  yes(assetA.isReserved,"concurrent ARTY A reserved")
+  yes(assetB.isReserved,"concurrent ARTY B reserved")
+  local stateB=concurrent:GetState("CONCURRENT_B")
+  artyB:OnAfterOpenFire(nil,nil,nil,nil,{name=stateB.targetName})
+  artyB:OnAfterCeaseFire(nil,nil,nil,nil,{name=stateB.targetName})
+  no(assetB.isReserved,"concurrent ARTY B released independently")
+  yes(assetA.isReserved,"concurrent ARTY A remains reserved")
+  local stateA=concurrent:GetState("CONCURRENT_A")
+  artyA:OnAfterOpenFire(nil,nil,nil,nil,{name=stateA.targetName})
+  artyA:OnAfterCeaseFire(nil,nil,nil,nil,{name=stateA.targetName})
+  no(assetA.isReserved,"concurrent ARTY A released independently")
+  eq(released2,2,"two independent selection releases")
+end
+
 print("PASS test_fire_support_strategic_resupply_arty_selection_runtime")

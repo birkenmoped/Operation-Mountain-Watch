@@ -8,7 +8,7 @@ local Factory = {}
 local Instance = {}
 Instance.__index = Instance
 
-Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-STORAGE-TRANSPORT-FACTORY-1"
+Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-STORAGE-TRANSPORT-FACTORY-2"
 local TAG = "[OMW][FireSupStratResupply.StorageTransportFactory]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -43,9 +43,12 @@ function Instance:Create(demand, context)
     needTable(descriptor[name], "descriptor." .. name)
   end
   if descriptor.cargoType == nil then fail("descriptor.cargoType is required") end
-  local amount = descriptor.cargoAmount or demand.quantity
-  if not finitePositive(amount) then fail("descriptor.cargoAmount must be positive finite") end
-  if amount ~= demand.quantity then fail("descriptor.cargoAmount must equal demand.quantity") end
+  -- CampaignState quantity is strategic. OPSTRANSPORT cargoAmount is an explicitly
+  -- resolved physical DCS STORAGE representation and may use a different unit.
+  local amount = descriptor.cargoAmount
+  if not finitePositive(amount) then
+    fail("descriptor.cargoAmount must explicitly define positive finite physical STORAGE units")
+  end
   local cargoWeightKg = descriptor.cargoWeightKg
   if cargoWeightKg ~= nil and not finitePositive(cargoWeightKg) then fail("descriptor.cargoWeightKg must be positive finite when provided") end
   local carriersMin = descriptor.requiredCarriersMin or 1

@@ -22,8 +22,8 @@ function groundCommander:AddOpsTransport(t) self.transports[#self.transports+1]=
 local airCommander={transports={}}
 function airCommander:AddOpsTransport(t) self.transports[#self.transports+1]=t return self end
 local pickup,deploy,source,dest={},{},{},{}
-local function descriptor(tag)
-  return {pickupZone=pickup,deployZone=deploy,sourceStorage=source,destinationStorage=dest,cargoType=tag,cargoWeightKg=10,installInTransitObserver=function() end}
+local function descriptor(tag,amount)
+  return {pickupZone=pickup,deployZone=deploy,sourceStorage=source,destinationStorage=dest,cargoType=tag,cargoAmount=amount,cargoWeightKg=10,installInTransitObserver=function() end}
 end
 local attached={}
 local settlement={}
@@ -38,9 +38,9 @@ local runtime=Runtime.New({
   storageTransportFactory=StorageFactory,
   settlement=settlement,
   groundCommander=groundCommander,
-  resolveGroundTransport=function(demand) return descriptor("GROUND") end,
+  resolveGroundTransport=function(demand) return descriptor("GROUND",demand.quantity*10) end,
   airCommander=airCommander,
-  resolveAirTransport=function(demand) return descriptor("AIR") end,
+  resolveAirTransport=function(demand) return descriptor("AIR",demand.quantity*10) end,
 })
 local adapters=runtime:GetAdapters()
 yes(adapters.GROUND_RESUPPLY~=nil,"ground adapter")
@@ -55,6 +55,7 @@ eq(groundReason,nil,"ground reason")
 eq(#groundCommander.transports,1,"ground commander gets one transport")
 eq(#airCommander.transports,0,"air commander untouched")
 eq(groundCommander.transports[1].storage.cargoType,"GROUND","ground descriptor used")
+eq(groundCommander.transports[1].storage.amount,40,"ground physical amount mapping")
 eq(#attached,1,"settlement attached before first queue")
 eq(attached[1].transport,ground.runtime,"settlement transport")
 eq(attached[1].context,groundContext,"settlement context")
@@ -80,7 +81,7 @@ local onlyGround=Runtime.New({
   commanderBridge=CommanderBridge,
   storageTransportFactory=StorageFactory,
   groundCommander=groundCommander,
-  resolveGroundTransport=function() return descriptor("GROUND_ONLY") end,
+  resolveGroundTransport=function(demand) return descriptor("GROUND_ONLY",demand.quantity) end,
 })
 yes(onlyGround:GetAdapter("GROUND_RESUPPLY")~=nil,"ground-only adapter exists")
 eq(onlyGround:GetAdapter("AIR_RESUPPLY"),nil,"air adapter optional")

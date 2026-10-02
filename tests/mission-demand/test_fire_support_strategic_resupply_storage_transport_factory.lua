@@ -44,10 +44,10 @@ eq(transport.priority,18,"priority")
 eq(transport.importance,nil,"importance remains nil")
 eq(transport.urgent,false,"transport not urgent by factory")
 
-local airFactory=Factory.New({resolveTransport=function() return {pickupZone=pickup,deployZone=deploy,sourceStorage=source,destinationStorage=destination,cargoType="FUEL"} end})
+local airFactory=Factory.New({resolveTransport=function() return {pickupZone=pickup,deployZone=deploy,sourceStorage=source,destinationStorage=destination,cargoType="FUEL",cargoAmount=300} end})
 local air,airMade=airFactory:Create({demandId="R|JOYCE|FUEL|1",siteId="FOB_JOYCE",supportType="AIR_RESUPPLY",resourceId="GROUND_FUEL_PACKAGE",quantity=3},{})
 yes(airMade,"air storage transport uses same MOOSE factory")
-eq(air.storage.amount,3,"demand quantity default")
+eq(air.storage.amount,300,"physical cargo amount is explicitly resolved independent of strategic quantity")
 eq(air.carriersMin,1,"default one carrier")
 eq(air.carriersMax,1,"default max one carrier")
 
@@ -58,10 +58,15 @@ no(noneMade,"missing descriptor not created")
 eq(noneReason,"PHYSICAL_STORAGE_MAPPING_UNAVAILABLE","missing descriptor reason")
 eq(#created,2,"missing descriptor never invokes MOOSE")
 
-local mismatchFactory=Factory.New({resolveTransport=function() return {pickupZone=pickup,deployZone=deploy,sourceStorage=source,destinationStorage=destination,cargoType="AMMO",cargoAmount=6} end})
-local ok,err=pcall(function() mismatchFactory:Create(demand,{}) end)
-no(ok,"quantity mismatch rejected")
-yes(type(err)=="string" and string.find(err,"cargoAmount must equal demand.quantity",1,true)~=nil,"quantity mismatch error")
+local mappedFactory=Factory.New({resolveTransport=function() return {pickupZone=pickup,deployZone=deploy,sourceStorage=source,destinationStorage=destination,cargoType="AMMO",cargoAmount=6} end})
+local mapped,mappedMade=mappedFactory:Create(demand,{})
+yes(mappedMade,"strategic-to-physical amount mapping accepted")
+eq(mapped.storage.amount,6,"physical amount need not equal strategic package count")
+
+local missingAmountFactory=Factory.New({resolveTransport=function() return {pickupZone=pickup,deployZone=deploy,sourceStorage=source,destinationStorage=destination,cargoType="AMMO"} end})
+local ok,err=pcall(function() missingAmountFactory:Create(demand,{}) end)
+no(ok,"implicit physical amount rejected")
+yes(type(err)=="string" and string.find(err,"explicitly define",1,true)~=nil,"missing physical amount error")
 
 OPSTRANSPORT=previous
 print("PASS test_fire_support_strategic_resupply_storage_transport_factory")
