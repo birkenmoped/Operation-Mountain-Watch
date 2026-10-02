@@ -509,3 +509,41 @@ exact emplacement preservation = NOT YET TESTED IN DCS
 COMMANDER real-asset recruitment = NOT YET TESTED IN DCS
 Functional ARTY + M1083 regression = NOT YET TESTED IN DCS
 ```
+
+## 9.4 A10 Mission-Editor fixture prepared 02.10.2026
+
+Aus dem owner-provided Preflight-Artefakt
+
+```text
+OMW_Template_v25_GroundWorks_base(1).miz
+SHA-256 8C989DC531D1CCE30EF183F59874A6809B5C11D11932D893CD55ADAC3191D247
+```
+
+wurde eine A10-Geometrie-Fixture erzeugt:
+
+```text
+OMW_Template_v25_GroundWorks_base_A10_ARTY_LateActivation.miz
+SHA-256 5C94578EE282E4DB740299D7A2EDCACD1B388090FDBB3BBBC9D7DB184DDAAFCB
+```
+
+Die Mission-Datei wurde byte-seitig nur im entpackten `mission`-Inhalt geändert. Der vollständige Text-Diff enthält genau vier Ergänzungen:
+
+```text
+TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2        -> ["lateActivation"] = true
+TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2         -> ["lateActivation"] = true
+TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1       -> ["lateActivation"] = true
+TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2      -> ["lateActivation"] = true
+```
+
+Keine Koordinate, Unit-Position, Unit-Anzahl, Unit-Type, Heading, Route oder sonstige Mission-Editor-Eigenschaft dieser Gruppen wurde geändert.
+
+Diese Datei ist **noch keine ausführbare A10-Acceptance-Mission**. Sie enthält weiterhin die bisherige eingebettete `OMW_FireSupStratResupply_Production_Base_Acceptance_9.lua`-Ressource und dient zunächst nur als reproduzierbare ME-Fixture für den neuen RealAssetRegistry-Lifecycle. Der A10-Harness-/Bundle-Handoff muss vor dem realen DCS-Lauf separat geschlossen werden.
+
+Status:
+
+```text
+A10 ME late-activation fixture = PREPARED
+exact source->fixture mutation = VERIFIED_OFFLINE
+A10 runtime bundle embedded = NO
+DCS runtime validation = PENDING
+```
