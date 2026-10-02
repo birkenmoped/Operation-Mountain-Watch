@@ -222,42 +222,62 @@ A11 status = PLANNED / NOT RELEASED FOR DCS
 ~~~
 
 
-## 11. Source-readiness gate – 02.10.2026
+## 11. Source-readiness gate correction – 02.10.2026
 
-Vor Implementierung des observer-only Harness wurden folgende Production-Grenzen
-source-/CI-seitig geschlossen:
+Die nach A10 geschlossenen Source-Grenzen fuer ARTY-/2B11-Identity,
+demand-scoped CAS state, ResupplyMonitor-Deduplication und
+CampaignState-Settlement bleiben bestehen.
 
-~~~text
-descriptor-only ARTY removed from active Production Base composition
-RealAssetRegistry generic L118 + 2B11 owner-resolution contract
-ARTY concurrent-demand reservation isolation
-CAS demand-scoped release-state isolation + unknown-provider fail-closed behavior
-ResupplyMonitor independent node/resource shortage episodes
-StorageTransportFactory explicit strategic-to-physical amount mapping
-TransportSettlement default MOOSE OPSTRANSPORT in-transit observer
-CampaignState full-delivery/full-loss exactly-once settlement contract
-~~~
+Der erneute Abgleich gegen die tatsaechlich gepinnte `Moose.lua` hat jedoch
+einen A11-Blocker im Strategic-Resupply-Carrierpfad ergeben:
 
-Der Strategic-Resupply-Descriptor muss `cargoAmount` explizit als physische
-DCS-STORAGE-Menge angeben. A11 darf daraus keine neue strategische Ressourcenautoritaet
-ableiten; `demand.quantity` bleibt die zu reservierende/settlebare CampaignState-Menge.
+```text
+StorageTransportFactory
+-> OPSTRANSPORT:New(nil, ...)
+-> AddCargoStorage(...)
+-> COMMANDER:AddOpsTransport(...)
+-> COMMANDER:CheckTransportQueue()
+-> GetCargoOpsGroups(false)
+-> STORAGE cargo is excluded
+-> weightGroup == 0
+-> no automatic RecruitAssetsForTransport call
+```
 
-Der Default-In-Transit-Nachweis ist absichtlich konservativ:
+Damit ist autonome Carrier-Rekrutierung fuer einen STORAGE-only-Transport ueber
+die COMMANDER-Queue im gepinnten MOOSE-Stand **nicht** nachgewiesen.
 
-~~~text
-storage cargoLoaded > 0
-AND at least one assigned MOOSE carrier exists
-AND every currently assigned carrier is outside pickupZone
--> confirm CampaignState IN_TRANSIT
-~~~
+Der Source bietet zwar:
 
-Das Harness darf diesen Zustand nur beobachten. Es darf weder Carrier auswaehlen noch
-den Status selbst erzwingen.
+```text
+COMMANDER:RecruitAssetsForTransport(
+  Transport,
+  CargoWeight,
+  TotalWeight
+)
+-> LEGION.RecruitCohortAssets(... AUFTRAG.Type.OPSTRANSPORT ...)
+```
 
-Diese Source-Readiness aendert den Release-Status nicht:
+Dieser oeffentliche MOOSE-Pfad wuerde die konkrete Carrier-Auswahl bei MOOSE
+belassen, benoetigt aber eine explizite physische Gewichtsableitung und eine
+kleine OMW-Koordinationsgrenze. Diese Architektur ist noch nicht durch den
+Projektinhaber freigegeben und wird vom Acceptance-Harness nicht vorweggenommen.
 
-~~~text
-A11 status = PLANNED / NOT RELEASED FOR DCS
-~~~
+Der direkt in der OPSTRANSPORT-Dokumentation gezeigte
+`OPSGROUP:AddOpsTransport(storagetransport)`-Pfad ist fuer A11 keine
+Abkuerzung, weil OMW damit bereits einen konkreten Carrier festlegen wuerde.
 
-Der Harness wird erst im naechsten Schritt als observer-only Composition gebaut.
+Aktueller Gate-Status:
+
+```text
+ARTY / mortar source readiness        = CLOSED FOR A11 OBSERVATION
+CAS demand-scoped source readiness    = CLOSED, selected providers still fail-closed without owner profile
+Strategic settlement components       = CLOSED SOURCE/CI
+Strategic carrier recruitment         = BLOCKED ON OWNER ARCHITECTURE DECISION
+A11 observer-only harness             = NOT YET RELEASED FOR IMPLEMENTATION
+A11 DCS status                        = PLANNED / NOT RELEASED FOR DCS
+```
+
+Vor dem A11-Harness muss zuerst der Strategic-Resupply-Carriervertrag
+owner-approved und danach source-/contract-seitig implementiert werden. Das
+Harness darf weder einen Carrier auswaehlen noch eine Retry-/Fallback-Queue um
+MOOSE bauen.

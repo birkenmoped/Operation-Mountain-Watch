@@ -419,10 +419,10 @@ Der gleiche Registry-/Functional-ARTY-Vertrag ist source-seitig nun auch explizi
 `500..7000 m`. Das ist **keine** DCS-Akzeptanz eines von MOOSE ausgewaehlten
 2B11-Feuerauftrags; dieser Nachweis bleibt A11.
 
-### Strategic Resupply – generischer Source-Vertrag geschlossen
+### Strategic Resupply – gepinnte Source-Reconciliation korrigiert
 
-`StorageTransportFactory` und `TransportSettlement` trennen jetzt explizit zwei
-verschiedene Mengen:
+Die Trennung zwischen strategischer CampaignState-Menge und physischer
+DCS-STORAGE-Menge bleibt gueltig:
 
 ```text
 demand.quantity
@@ -432,30 +432,63 @@ descriptor.cargoAmount
 = explizit aufgeloeste physische DCS-STORAGE-Menge
 ```
 
-Es existiert keine implizite 1:1-Annahme mehr. Der physische Resolver muss
-`cargoAmount` angeben. CampaignState reserviert und verbucht weiterhin ausschliesslich
-`demand.quantity`.
+Ebenso bleiben `StorageTransportFactory` und `TransportSettlement` als
+Source-/Contract-Bausteine bestehen. Der erneute Abgleich gegen die tatsaechlich
+gepinnte `Moose.lua` hat jedoch eine zuvor uebersehene Grenze im
+COMMANDER-Transportqueue-Pfad ergeben.
 
-Ohne projektspezifischen In-Transit-Observer verwendet das Settlement den vorhandenen
-MOOSE-`OPSTRANSPORT`-Statuszyklus als Beobachtungspunkt. Der strategische Transfer wird
-erst auf `IN_TRANSIT` gesetzt, wenn physischer STORAGE-Cargo geladen ist und alle aktuell
-zugewiesenen MOOSE-Carrier die Pickup-Zone verlassen haben. Es wird dafuer kein eigener
-Scheduler und kein Carrier-Selector eingefuehrt.
+Fuer einen reinen STORAGE-`OPSTRANSPORT` gilt im gepinnten Source:
 
 ```text
-shortage
--> MissionDemand
--> CampaignState reservation
--> OPSTRANSPORT/STORAGE
--> COMMANDER:AddOpsTransport
--> MOOSE carrier recruitment
--> STORAGE loaded + assigned carriers outside pickup
--> CampaignState IN_TRANSIT
--> MOOSE STORAGE delivered/lost
--> idempotent CampaignState DELIVERED/LOST
+COMMANDER:AddOpsTransport(...)
+-> COMMANDER:CheckTransportQueue()
+-> transport:GetCargoOpsGroups(false)
+-> STORAGE cargo is not returned by GetCargoOpsGroups()
+-> weightGroup remains 0
+-> RecruitAssetsForTransport(...) is not called
 ```
 
-Status: `SOURCE_IMPLEMENTED / CI_PASS / DCS_PENDING`.
+Damit ist die bisher dokumentierte Kette
+
+```text
+COMMANDER:AddOpsTransport
+-> autonomous carrier recruitment for STORAGE-only OPSTRANSPORT
+```
+
+fuer MOOSE 2.9.18 / Commit
+`73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` **nicht source-belegt** und wird
+hiermit korrigiert.
+
+Der gepinnte Source enthaelt zwar die oeffentliche Methode
+
+```text
+COMMANDER:RecruitAssetsForTransport(Transport, CargoWeight, TotalWeight)
+```
+
+die bei explizit uebergebenem physischem Gewicht an
+`LEGION.RecruitCohortAssets(..., AUFTRAG.Type.OPSTRANSPORT, ...)` delegiert und
+damit die konkrete MOOSE-Asset-/Provider-Auswahl beibehalten kann. Eine
+projektspezifische Verdrahtung dieses Pfads ist aber noch **nicht**
+owner-approved und noch **nicht** implementiert.
+
+Die offizielle MOOSE-Missionssuche ergab fuer `AddCargoStorage` /
+`AddOpsTransport` keinen belastbaren offiziellen Demo-Nachweis fuer autonome
+COMMANDER-Rekrutierung eines STORAGE-only-Transports. Das ist kein
+Unmoeglichkeitsbeweis, beseitigt den Source-Blocker aber nicht.
+
+Aktueller Status:
+
+```text
+StorageTransportFactory amount separation = SOURCE_IMPLEMENTED / CI_PASS
+TransportSettlement lifecycle observation = SOURCE_IMPLEMENTED / CI_PASS
+COMMANDER queued STORAGE carrier recruitment = NOT SUPPORTED BY PINNED SOURCE PATH
+Strategic Resupply physical lifecycle = BLOCKED_ON_CARRIER_RECRUITMENT_ARCHITECTURE
+A11 Strategic Resupply readiness = NOT CLOSED
+```
+
+Bis zur ausdruecklichen Owner-Entscheidung wird kein konkreter Carrier durch OMW
+ausgewaehlt und kein alternativer Recruitment-/Retry-Pfad stillschweigend
+eingefuehrt.
 
 ### Concurrency / Provider-Autonomie
 

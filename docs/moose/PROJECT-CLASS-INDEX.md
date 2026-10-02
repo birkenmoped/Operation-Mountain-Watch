@@ -878,9 +878,10 @@ combined concurrent support        = A11 PLANNED
 Der Descriptor-only-ARTY-Ansatz ist fuer die aktive Production-Richtung superseded und darf nicht als parallel rekrutierbare zweite Batterierepräsentation zurueckkehren.
 
 
-### 02.10.2026 – Strategic Resupply lifecycle source closure
+### 02.10.2026 – Strategic Resupply source-reconciliation correction
 
-Aktiv verwendete MOOSE-Klassen/-Grenzen fuer den allgemeinen Strategic-Resupply-Pfad:
+Der gepinnte Source bestaetigt weiterhin die STORAGE-/OPSTRANSPORT- und
+Settlement-Bausteine, korrigiert aber die zuvor angenommene Carrier-Rekrutierung:
 
 ```text
 OPSTRANSPORT
@@ -889,40 +890,61 @@ OPSTRANSPORT
   SetRequiredCarriers
   GetCargoStorages
   GetCarriers
-  OnAfterExecuting
-  OnAfterStatusUpdate
-  OnAfterDelivered
-  OnAfterCancel
 
 COMMANDER
   AddOpsTransport
+  RecruitAssetsForTransport(Transport, CargoWeight, TotalWeight)
 
 OPSGROUP
   IsInZone
 ```
 
-OMW-Aufteilung:
+Wesentliche Grenze im exakten MOOSE-Stand:
+
+```text
+COMMANDER:CheckTransportQueue()
+-> GetCargoOpsGroups(false)
+-> STORAGE is excluded
+-> weightGroup == 0 for STORAGE-only transport
+-> no queued RecruitAssetsForTransport call
+```
+
+Damit ist
 
 ```text
 CampaignState / ResourceDemandPolicy / ResupplyMonitor
 = strategic demand and ledger
 
 StorageTransportFactory
-= one explicit physical STORAGE descriptor -> OPSTRANSPORT
-
-COMMANDER / LEGION / OPSTRANSPORT
-= operational carrier selection and physical lifecycle
+= explicit physical STORAGE descriptor -> OPSTRANSPORT
 
 TransportSettlement
-= MOOSE physical evidence -> idempotent CampaignState transaction
+= physical MOOSE evidence -> idempotent CampaignState transaction
 ```
 
-`StorageTransportFactory` darf `demand.quantity` nicht als implizites
-DCS-STORAGE-`cargoAmount` interpretieren. Der physische Resolver muss die Abbildung
-explizit liefern.
+weiter source-/contract-seitig gueltig.
 
-Die neuen Nutzungen sind `SOURCE_IMPLEMENTED / CI_PASS / DCS_PENDING`; sie ersetzen
-keine bestehende A9-/A10-Lifecycle-Akzeptanz.
+Nicht geschlossen ist dagegen:
+
+```text
+STORAGE-only OPSTRANSPORT
+-> COMMANDER queue
+-> autonomous carrier recruitment
+```
+
+`COMMANDER:RecruitAssetsForTransport(Transport, CargoWeight, TotalWeight)`
+kann bei explizitem physischem Gewicht MOOSE-eigene
+`LEGION.RecruitCohortAssets`-Auswahl verwenden. Eine solche OMW-Adaptergrenze
+ist noch nicht owner-approved oder implementiert und darf nicht stillschweigend
+als A11-Produktionspfad eingefuehrt werden.
+
+Status:
+
+```text
+OPSTRANSPORT/STORAGE settlement components = SOURCE_IMPLEMENTED / CI_PASS
+COMMANDER STORAGE queue recruitment         = SOURCE_BLOCKED
+Strategic Resupply combined runtime         = BLOCKED_ON_OWNER_ARCHITECTURE_DECISION
+```
 
 ### 02.10.2026 – Multi-demand source readiness
 
