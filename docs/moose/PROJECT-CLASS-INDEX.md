@@ -834,3 +834,20 @@ late-activation existing template
 ```
 
 Pinned `ARTY.db` provides the selection envelopes `L118_Unit = 500..17500 m` and `2B11 mortar = 500..7000 m`; no external weapon-range guess is required.
+
+### 02.10.2026 – Fixed ARTY RealAssetRegistry
+
+Neue Projektverwendung:
+
+```text
+GROUP:GetTemplateRoutePoints
+PLATOON:New / AddMissionCapability / SetMissionRange / AddWeaponRange
+BRIGADE:AddPlatoon
+BRIGADE:LoadBackAssetInPosition
+LEGION NewAsset / AssetSpawned callbacks
+COHORT spawned-asset recruitment
+OPSGROUP:GetGroup
+ARTY.db range data
+```
+
+Die RealAssetRegistry ersetzt die nicht DCS-validierte Descriptor-Richtung als aktiven A10-Source-Pfad. `LoadBackAssetInPosition` ist für diesen Initial-Bootstrap ein neuer OMW-Nutzungsscope und bleibt bis zum gezielten DCS-Test `SOURCE_IMPLEMENTED / DCS_PENDING`.

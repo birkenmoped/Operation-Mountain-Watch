@@ -596,3 +596,21 @@ L118_Unit   500 m .. 17500 m
 Diese pinned-MOOSE-Daten sind fuer `COHORT:AddWeaponRange(...)` zu verwenden (`UTILS.MetersToNM`).
 
 Status: `SOURCE_REVIEWED / IMPLEMENTATION_PENDING / DCS_PENDING`.
+
+## Source implementation 02.10.2026 – RealAssetRegistry
+
+`OMW_FireSupStratResupply_ArtyRealAssetRegistry.lua` implementiert die owner-approved Real-Asset-Richtung.
+
+Der normale `WAREHOUSE:AddRequest(... ASSETLIST ...)`-Pfad materialisiert Ground-Assets aus der globalen BRIGADE-Spawnzone. Dieselbe Spawnzone wird in OMW für mobile QRF-Assets auf die standortbezogene ACCESS-Zone gesetzt. Ein exakter ARTY-Startup über temporäres globales `SetSpawnZone` könnte deshalb andere Requests beeinflussen.
+
+Der Registry verwendet stattdessen den öffentlichen MOOSE-Pfad `BRIGADE:LoadBackAssetInPosition(...)` einmalig direkt nach `NewAsset`. Damit bleibt die exakte Template-Geometrie erhalten, ohne die Site-Spawnzone umzuschalten. Die Methode ist im Framework als Load-back/Persistenzfunktion dokumentiert; OMW nutzt sie hier gezielt als kleinsten MOOSE-eigenen Exact-Position-Adapter. Dieser neue Nutzungsscope ist `DCS_PENDING`.
+
+Die generated MOOSE Asset-ID wird akzeptiert:
+
+```text
+template identity = TPL_BLUE_GND_*_FS_*
+runtime group identity = <platoon>_AID-<asset uid>
+stable OMW identity = registry asset.id
+```
+
+Der Resolver bindet den später durch COMMANDER ausgewählten `asset.flightgroup:GetGroup()` direkt an den Functional-ARTY-Owner und verifiziert die reale Runtime-Gruppenidentität.

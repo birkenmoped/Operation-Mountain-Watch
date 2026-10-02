@@ -969,3 +969,16 @@ No public pinned-MOOSE method was verified that adopts an arbitrary already-acti
 | `BRIGADE:LoadBackAssetInPosition(...)` | `SOURCE_REVIEWED` | Exact coordinate materialization exists, but remains a persistence/load-back API and is not the preferred normal initial-bootstrap path. |
 
 Owner decision 01.10.2026 permits MOOSE materialization of the four real site-bound ARTY/Mortar assets. Descriptor-only representation is therefore superseded before DCS validation.
+
+## FSSR ARTY real-asset bootstrap source implementation – 02.10.2026
+
+| Method / path | Status | OMW use |
+|---|---|---|
+| `GROUP:GetTemplateRoutePoints()` | `SOURCE_REVIEWED` | Reads the original first ME route point used as exact startup materialization coordinate. |
+| `BRIGADE:AddPlatoon(...)` | `SOURCE_REVIEWED` | Registers exactly one real fixed-fire-support asset from the existing late-activation template. |
+| `BRIGADE:LoadBackAssetInPosition(...)` | `SOURCE_IMPLEMENTED / DCS_PENDING` | One-time exact-coordinate startup materialization of the registered asset; selected because the normal self-request path has no per-request spawn coordinate. |
+| `LEGION OnAfterNewAsset` user callback | `SOURCE_IMPLEMENTED / DCS_PENDING` | Starts exact materialization after the real Assetitem has been assigned to its cohort and has its MOOSE AID alias. |
+| `LEGION OnAfterAssetSpawned` user callback | `SOURCE_IMPLEMENTED / DCS_PENDING` | Correlates real Assetitem and physical runtime group after MOOSE AssetSpawned lifecycle. |
+| `OPSGROUP:GetGroup()` | `SOURCE_REVIEWED` | Resolves the exact physical group from the selected `asset.flightgroup`. |
+| `ARTY.db["L118_Unit"]` | `SOURCE_REVIEWED` | Selection range 500..17500 m. |
+| `ARTY.db["2B11 mortar"]` | `SOURCE_REVIEWED` | Selection range 500..7000 m. |

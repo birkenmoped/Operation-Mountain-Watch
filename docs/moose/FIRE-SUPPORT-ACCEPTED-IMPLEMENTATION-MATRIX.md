@@ -498,3 +498,49 @@ Option-A source/contract/unit/CI/local-build provenance = CLOSED
 DCS runtime acceptance = PENDING
 remaining pre-DCS inputs = descriptor ME fixtures + explicit artillery range configuration
 ```
+
+## ARTY Real-Asset Direction – Owner decision 01.10.2026 / source implementation 02.10.2026
+
+Die am 25.09.2026 freigegebene Descriptor-Option ist **vor DCS-Validierung superseded**. Der Projektinhaber erlaubt nun, dass MOOSE die vier realen site-bound ARTY-/Mörsergruppen selbst materialisiert, sofern ihre heutigen Mission-Editor-Stellungen und internen Formationen exakt erhalten bleiben und die Batterien nach der Materialisierung nicht verlegt werden.
+
+Implementierter Source-Pfad:
+
+```text
+existing late-activation site-bound ME template
+-> PLATOON:New(..., 1, site platoon)
+-> existing site BRIGADE:AddPlatoon(...)
+-> real WAREHOUSE.Assetitem
+-> BRIGADE:LoadBackAssetInPosition(asset.spawngroupname, original template route point)
+-> LEGION AssetSpawned
+-> real ARMYGROUP / asset.flightgroup
+-> COMMANDER CanMission + RecruitAssetsForMission
+-> selection-only reservation of the real spawned asset
+-> exact asset.flightgroup:GetGroup()
+-> existing Functional ARTY owner
+-> ARTY:AssignTargetCoord(...)
+```
+
+`LoadBackAssetInPosition(...)` wird hier bewusst als kleinster öffentlicher MOOSE-Adapter für die einmalige exakte Initialmaterialisierung verwendet. Der reguläre Warehouse-Self-Request besitzt im gepinnten MOOSE 2.9.18 keinen per-request Spawnpunkt und teilt sich die BRIGADE-Spawnzone mit mobilen QRF-Assets. Ein temporäres globales Umschalten der Site-Spawnzone wäre deshalb ein größeres Interferenzrisiko.
+
+Harte Invarianten:
+
+```text
+no descriptor asset
+no duplicate physical battery
+no COMMANDER:AddMission(selection AUFTRAG)
+no ARTY move-into-range
+no PATROL/ONGUARD/RELOCATE/RTZ for fixed battery
+Functional ARTY remains sole fire/rearm owner
+CampaignState remains strategic resource authority
+```
+
+Pinned-MOOSE-Range:
+
+```text
+L118_Unit    500 .. 17500 m
+2B11 mortar  500 .. 7000 m
+```
+
+Source: `scripts/campaign/OMW_FireSupStratResupply_ArtyRealAssetRegistry.lua`
+
+Status: `SOURCE_IMPLEMENTED / CI_PENDING / DCS_PENDING`.

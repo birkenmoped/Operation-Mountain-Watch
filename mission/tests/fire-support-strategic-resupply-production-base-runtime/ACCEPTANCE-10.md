@@ -286,12 +286,12 @@ production builder SHA-256: 8CA05C37D9D51B5AF44A052B91B620D91CB77B997632E0073FC1
 production bundle SHA-256: 5FEDBA2486CC048D2805615945D0A016EA7939B4920796BCEAF870DAC7FBE4F4
 independent direct Get-FileHash readback: MATCH for builder and bundle
 ARTY selection-only source: SOURCE_IMPLEMENTED
-ARTY Option-A descriptor source: SOURCE_IMPLEMENTED
+ARTY Option-A descriptor source: SUPERSEDED_BEFORE_DCS
 unit/CI: PASS at ee431db16c2fb3f3bf4fa2c33a0da4ff0363ded6
 A10 mission preflight: COMPLETE
-A10 Option-A descriptor source: IMPLEMENTED / DCS_PENDING
-A10 runtime harness: NOT RELEASED until real-asset bootstrap/materialization source + ME late-activation fixture are ready
-A10 DCS status: BLOCKED_ON_REAL_ASSET_BOOTSTRAP_AND_ME_FIXTURE
+A10 RealAssetRegistry source: SOURCE_IMPLEMENTED / DCS_PENDING
+A10 runtime harness: NOT RELEASED until ME late-activation fixture + real DCS bootstrap observation are ready
+A10 DCS status: BLOCKED_ON_ME_FIXTURE_AND_DCS_BOOTSTRAP
 Strategic Resupply: NOT STARTED; waits for ARTY closure
 ```
 
@@ -434,4 +434,22 @@ Die A10-Blocker reduzieren sich damit auf:
 3. DCS proof of exact spawn positions/formation
 4. DCS proof that COMMANDER selects the real spawned asset and Functional ARTY fires without movement
 5. rearm/regression proof against accepted M1083 lifecycle
+```
+
+## 9.2 Source implementation 02.10.2026 – RealAssetRegistry
+
+Implementiert: `scripts/campaign/OMW_FireSupStratResupply_ArtyRealAssetRegistry.lua` (`OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-REAL-ASSET-REGISTRY-1`).
+
+Der Registry registriert die späteren site-bound Fire-Support-Fixtures als jeweils genau ein reales PLATOON-/WAREHOUSE-Asset. Nach dem MOOSE-`NewAsset`-Lifecycle wird `BRIGADE:LoadBackAssetInPosition(asset.spawngroupname, originalTemplateRoutePoint)` verwendet. Dieser Pfad vermeidet ein temporäres globales Umschalten der Site-BRIGADE-Spawnzone, die gleichzeitig vom QRF-Vertrag als ACCESS-Spawnzone verwendet wird.
+
+Der Registry akzeptiert den MOOSE-generierten Runtime-Namen `<platoon>_AID-<uid>` und bindet bei späterer COMMANDER-Selektion den exakten `asset.flightgroup:GetGroup()` an den bestehenden Functional-ARTY-Owner.
+
+Noch DCS-offen:
+
+```text
+- four existing ME groups -> Late Activation without changing positions/headings
+- exact materialization position/formation
+- real COMMANDER recruitment across multiple fixed batteries
+- no battery movement before/during/after fire
+- same Functional ARTY owner and accepted M1083 rearm lifecycle
 ```
