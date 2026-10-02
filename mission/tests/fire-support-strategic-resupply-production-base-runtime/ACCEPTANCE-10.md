@@ -595,3 +595,60 @@ Der Harness prüft zusätzlich:
 ```
 
 Status: `SOURCE_IMPLEMENTED / CI_PENDING / LOCAL_BUILD_PENDING / DCS_PENDING`.
+
+## 9.6 Owner-local A10 build evidence 02.10.2026
+
+Der Projektinhaber hat den A10-Builder lokal auf dem exakten Branch-Stand ausgeführt und die erzeugten Hashes unabhängig mit `Get-FileHash -Algorithm SHA256` bestätigt.
+
+```text
+GitCommit:
+4c8793a9b155f85e7a229117725fca55f58987c3
+
+Production BuilderVersion:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-28
+
+ProductionBuilderSHA256:
+E6934463EFE4751EE6AC276D9C247187B39DE79305FB82986C7D44CC79EB04A2
+
+ProductionBundleSHA256:
+B3ACED1E5F39B67AF6E89D9F4914B4D59585B0802AC9FE357F6DECFEAB96AE5F
+
+RealAssetRegistrySourceSHA256:
+9BCA9741C447FE43D6B8E14977A9F21396913435CDFFFB6D80D27B32783FA615
+
+ArtySelectionRuntimeSourceSHA256:
+EE3DC1A5EE799D9608E9779018399A4D6FFC06087B0C3EA1954F1013B80DB86E
+
+FixedFireSupportAmmoRearmServiceSHA256:
+2829BDD72840FEB14D744072AD7BAD2B81901E43807D5E75BB1DB654AEFFE067
+
+Acceptance BuilderVersion:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-10-1
+
+AcceptanceSourceSHA256:
+BEB2995336FEE020752F8F61BBD681A4A2EA6A0227130B7F48D56501557F150E
+
+AcceptanceBuilderSHA256:
+B2458817B6522CD93CCE8917DCB5E470AC850F7464294BEA4775E457426EC443
+
+AcceptanceBundleSHA256:
+FA0CD024F050BA19DECAEE9AB1EF71C35B976346A327D118EFCC59DC249C84C9
+
+MizMutation:
+false
+```
+
+Die separaten Owner-`Get-FileHash`-Readbacks für Acceptance-Builder und Acceptance-Bundle stimmen exakt mit der Builder-Ausgabe überein.
+
+Lokaler `git status --short` zeigte ausschließlich die bekannten untracked Build-/dist-Verzeichnisse und keine getrackten lokalen Änderungen.
+
+Damit gilt:
+
+```text
+A10 source/build/hash provenance = VERIFIED_LOCAL_BUILD
+A10 Lua bundle = READY_FOR_OWNER_ME_INSERTION
+MIZ modification = OWNER-MANUAL
+DCS acceptance = PENDING
+```
+
+Workflow-Grenze: ChatGPT liefert ausschließlich den reproduzierbaren LUA-Build und die zugehörige Provenienz. Der Projektinhaber bringt das erzeugte A10-LUA selbst in die gewünschte MIZ ein; ChatGPT mutiert die MIZ in diesem Workflow nicht.
