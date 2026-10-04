@@ -26,13 +26,18 @@ function LEGION.UnRecruitAssets(assets)
 end
 
 local function commander(tag)
-  local c={tag=tag,recruitCalls={},assignCalls={},nextAsset=1,available=true}
+  local legion={alias=tag.."-LEGION",previousSpawnCount=0}
+  function legion:OnAfterAssetSpawned() self.previousSpawnCount=self.previousSpawnCount+1 end
+  local c={tag=tag,recruitCalls={},assignCalls={},nextAsset=1,available=true,assetCount=1,legion=legion}
   function c:RecruitAssetsForTransport(transport,cargoWeight,totalWeight)
     self.recruitCalls[#self.recruitCalls+1]={transport=transport,cargoWeight=cargoWeight,totalWeight=totalWeight}
     if not self.available then return false,{},{} end
-    local asset={name=self.tag.."-ASSET-"..tostring(self.nextAsset)}
-    self.nextAsset=self.nextAsset+1
-    return true,{asset},{[self.tag]=self}
+    local assets={}
+    for _=1,self.assetCount do
+      assets[#assets+1]={name=self.tag.."-ASSET-"..tostring(self.nextAsset),spawngroupname=self.tag.."-ASSET-"..tostring(self.nextAsset)}
+      self.nextAsset=self.nextAsset+1
+    end
+    return true,assets,{[self.tag]=self.legion}
   end
   function c:TransportAssign(transport,legions)
     self.assignCalls[#self.assignCalls+1]={transport=transport,legions=legions}
@@ -40,15 +45,31 @@ local function commander(tag)
   return c
 end
 
+local routeBinds={}
+local corridorAdapter={}
+function corridorAdapter.Bind(flightGroup,transport,resolved,altitude,options)
+  local binding={flightGroup=flightGroup,transport=transport,resolved=resolved,altitude=altitude,options=options}
+  routeBinds[#routeBinds+1]=binding
+  return binding,true,nil
+end
+
 local groundCommander=commander("GROUND")
 local airCommander=commander("AIR")
 local pickup,deploy,source,dest={},{},{},{}
-local function descriptor(tag,amount,itemWeight)
-  return {
+local routedCorridor={outbound={{}},returnRoute={{}}}
+local function descriptor(tag,amount,itemWeight,route)
+  local d={
     pickupZone=pickup,deployZone=deploy,sourceStorage=source,destinationStorage=dest,
     cargoType=tag,cargoAmount=amount,cargoWeightKg=itemWeight,
     installInTransitObserver=function() end,
   }
+  if route then
+    d.routeRequired=true
+    d.resolvedCorridor=routedCorridor
+    d.corridorAltitudeFtAgl=500
+    d.corridorOptions={speedKts=125,leadTurnDistanceM=250}
+  end
+  return d
 end
 
 local attached={}
@@ -61,11 +82,12 @@ end
 
 local runtime=Runtime.New({
   storageTransportFactory=StorageFactory,
+  transportCorridorAdapter=corridorAdapter,
   settlement=settlement,
   groundCommander=groundCommander,
-  resolveGroundTransport=function(demand) return descriptor("GROUND",demand.quantity*2,25) end,
+  resolveGroundTransport=function(demand) return descriptor("GROUND",demand.quantity*2,25,false) end,
   airCommander=airCommander,
-  resolveAirTransport=function(demand) return descriptor("AIR",demand.quantity*10,nil) end,
+  resolveAirTransport=function(demand) return descriptor("AIR",demand.quantity*10,nil,true) end,
 })
 local adapters=runtime:GetAdapters()
 yes(adapters.GROUND_RESUPPLY~=nil,"ground adapter")
@@ -86,6 +108,7 @@ eq(groundCommander.recruitCalls[1].totalWeight,200,"ground total recruitment wei
 eq(#groundCommander.assignCalls,1,"ground TransportAssign once")
 eq(#ground.runtime.assets,1,"MOOSE-selected asset added to transport")
 eq(ground.runtime.assets[1].name,"GROUND-ASSET-1","ground selected asset preserved")
+eq(ground.routeState,nil,"ground descriptor has no route owner")
 eq(#airCommander.recruitCalls,0,"air commander untouched")
 eq(#attached,1,"settlement attached before recruitment")
 eq(attached[1].transport,ground.runtime,"settlement transport")
@@ -102,6 +125,29 @@ eq(airCommander.recruitCalls[1].cargoWeight,20,"omitted storage item weight foll
 eq(airCommander.recruitCalls[1].totalWeight,20,"air total weight")
 eq(#airCommander.assignCalls,1,"air TransportAssign once")
 eq(#attached,2,"air settlement attached")
+yes(air.routeState~=nil,"routed air transport exposes route state")
+no(air.routeState.bound,"route waits for selected carrier spawn")
+eq(#routeBinds,0,"no route bind before MOOSE selected asset has FLIGHTGROUP")
+
+local airAsset=air.assets[1]
+local airFlight={name="MOOSE_SELECTED_FLIGHT"}
+airAsset.flightgroup=airFlight
+airCommander.legion:OnAfterAssetSpawned("FROM","AssetSpawned","TO",{},airAsset,{})
+eq(airCommander.legion.previousSpawnCount,1,"existing legion AssetSpawned observer preserved")
+eq(#routeBinds,1,"exact selected carrier route bound after AssetSpawned")
+eq(routeBinds[1].flightGroup,airFlight,"route binds selected MOOSE asset FLIGHTGROUP")
+eq(routeBinds[1].transport,air.runtime,"route binds same OPSTRANSPORT")
+eq(routeBinds[1].resolved,routedCorridor,"route uses caller-resolved owner corridor")
+eq(routeBinds[1].altitude,500,"route altitude forwarded")
+eq(routeBinds[1].options.speedKts,125,"owner speed forwarded")
+eq(routeBinds[1].options.leadTurnDistanceM,250,"owner lead turn forwarded")
+yes(air.routeState.bound,"route state bound")
+no(air.routeState.failed,"route state not failed")
+
+routeBinds[1].options.onOutboundInstalled(routeBinds[1])
+yes(air.routeState.outboundInstalled,"outbound lifecycle evidence observed")
+routeBinds[1].options.onReturnInstalled(routeBinds[1])
+yes(air.routeState.returnInstalled,"return lifecycle evidence observed")
 
 local duplicate,duplicateCreated,duplicateReason=adapters.GROUND_RESUPPLY:Dispatch({
   demandId="R|G",siteId="FOB_JOYCE",supportType="GROUND_RESUPPLY",
@@ -153,10 +199,48 @@ eq(concurrent1.assets[1].name,"GROUND-ASSET-2","first concurrent MOOSE asset")
 eq(concurrent2.assets[1].name,"GROUND-ASSET-3","second concurrent MOOSE asset")
 eq(#groundCommander.assignCalls,3,"three successful ground assignments total")
 
+local missingRouteCommander=commander("MISSING_ROUTE")
+local missingRouteRuntime=Runtime.New({
+  storageTransportFactory=StorageFactory,
+  transportCorridorAdapter=corridorAdapter,
+  airCommander=missingRouteCommander,
+  resolveAirTransport=function(demand)
+    local d=descriptor("AIR_MISSING_ROUTE",demand.quantity,1,false)
+    d.routeRequired=true
+    return d
+  end,
+})
+local missing,missingCreated,missingReason=missingRouteRuntime:GetAdapter("AIR_RESUPPLY"):Dispatch({
+  demandId="R|ROUTE-MISSING",siteId="FOB_WRIGHT",supportType="AIR_RESUPPLY",
+  resourceId="GROUND_AMMO_PACKAGE",quantity=1,
+},{})
+eq(missing,nil,"required route missing no handle")
+no(missingCreated,"required route missing not dispatched")
+eq(missingReason,"TRANSPORT_CORRIDOR_REQUIRED","required route fail closed")
+eq(#missingRouteCommander.recruitCalls,0,"required route fails before recruitment")
+
+local multiCommander=commander("MULTI")
+multiCommander.assetCount=2
+local multiRuntime=Runtime.New({
+  storageTransportFactory=StorageFactory,
+  transportCorridorAdapter=corridorAdapter,
+  airCommander=multiCommander,
+  resolveAirTransport=function(demand) return descriptor("AIR_MULTI",demand.quantity,1,true) end,
+})
+local multi,multiCreated,multiReason=multiRuntime:GetAdapter("AIR_RESUPPLY"):Dispatch({
+  demandId="R|MULTI",siteId="FOB_WRIGHT",supportType="AIR_RESUPPLY",
+  resourceId="GROUND_AMMO_PACKAGE",quantity=1,
+},{})
+eq(multi,nil,"unaccepted routed multi-carrier no handle")
+no(multiCreated,"unaccepted routed multi-carrier not assigned")
+eq(multiReason,"TRANSPORT_CORRIDOR_SINGLE_CARRIER_REQUIRED","routed multi-carrier scope fails closed")
+eq(#multiCommander.assignCalls,0,"routed multi-carrier never TransportAssigns")
+yes(#LEGION.unrecruited>=1,"routed multi-carrier selection released")
+
 local onlyGround=Runtime.New({
   storageTransportFactory=StorageFactory,
   groundCommander=groundCommander,
-  resolveGroundTransport=function(demand) return descriptor("GROUND_ONLY",demand.quantity,1) end,
+  resolveGroundTransport=function(demand) return descriptor("GROUND_ONLY",demand.quantity,1,false) end,
 })
 yes(onlyGround:GetAdapter("GROUND_RESUPPLY")~=nil,"ground-only adapter exists")
 eq(onlyGround:GetAdapter("AIR_RESUPPLY"),nil,"air adapter optional")

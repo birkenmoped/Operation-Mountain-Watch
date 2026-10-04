@@ -1069,3 +1069,24 @@ COMMANDER:RecruitAssetsForTransport(
 This preserves the previously used MOOSE-native Stage-3 recruitment mechanism while
 removing the acceptance-specific Jalalabad/CH-47 cohort binding. No OMW nearest-provider
 or concrete carrier selector is introduced.
+
+
+## FSSR Strategic Resupply route preservation – 04.10.2026
+
+Fuer die Base-31-Reconciliation werden keine neuen MOOSE-APIs erfunden. Wiederverwendet
+wird die bereits vorhandene Stage-3-Produktionskomponente
+`OMW_OpsTransportCorridorAdapter.lua`.
+
+Source-/Projektgrenzen:
+
+| Method / callback | Status | FSSR use / limitation |
+|---|---|---|
+| `LEGION OnAfterAssetSpawned` | `SOURCE_REVIEWED / EXISTING_PROJECT_USE` | korreliert das bereits von MOOSE selektierte Assetitem mit dessen physischem `asset.flightgroup`; keine Assetselektion |
+| `FLIGHTGROUP OnAfterTransport` | `SOURCE_REVIEWED / HISTORICAL_STAGE3_USE` | gemeinsamer OPSTRANSPORT-Corridoradapter installiert den owner-authored Outbound-Weg |
+| `FLIGHTGROUP OnAfterDelivered` | `SOURCE_REVIEWED / HISTORICAL_STAGE3_USE` | derselbe Adapter installiert nach Delivery den owner-authored Rueckweg |
+| `FLIGHTGROUP:AddWaypoint(...)` / `UpdateRoute()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | vorhandene OMW FlightPath-/Stage-3-Routenverwendung; Base-31 generalisiert nur die Bindung an das von MOOSE gewaehlte Asset |
+| `OPSTRANSPORT:IsCarrier(...)` | `SOURCE_REVIEWED` | der gemeinsame Adapter bindet nur den zu diesem OPSTRANSPORT gehoerenden Carrier |
+
+Die neue allgemeine Base-Bindung ist `SOURCE_IMPLEMENTED / CI_PENDING /
+DCS_REVALIDATION_PENDING`. Historische Stage-3-Evidenz wird nicht pauschal auf A11
+hochgestuft.

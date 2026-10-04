@@ -404,3 +404,42 @@ unveraendert strategische bzw. Settlement-Autoritaet.
 
 Dieser Block ist Reconciliation eines vorhandenen Projektpfads, keine neue
 Carrier-Policy.
+
+
+## 20. Strategic-Resupply route-preservation reconciliation – 04.10.2026
+
+Nach der Carrier-Recruitment-Korrektur wurde vor A11 auch der historische physische
+Air-Resupply-Routenvertrag abgeglichen. Stage 3 verwendete bereits die gemeinsame
+Produktionskomponente:
+
+~~~text
+OMW_OpsTransportCorridorAdapter
+-> selected FLIGHTGROUP OnAfterTransport
+-> owner-authored FlightPath outbound
+-> OPSTRANSPORT delivery
+-> selected FLIGHTGROUP OnAfterDelivered
+-> owner-authored FlightPath reverse
+~~~
+
+Die allgemeine Base muss diesen Pfad direkt wiederverwenden. Ein A11-Harness darf ihn
+nicht kopieren oder neu besitzen.
+
+Neue allgemeine Bindung:
+
+~~~text
+COMMANDER:RecruitAssetsForTransport
+-> MOOSE-selected Assetitem / Legion
+-> selected Legion OnAfterAssetSpawned
+-> exact asset.flightgroup
+-> existing OMW_OpsTransportCorridorAdapter:Bind
+~~~
+
+Keine AIRWING-/SQUADRON-/Carrier-Vorauswahl wird eingefuehrt. Bei einem als erforderlich
+markierten, aber fehlenden/ungueltigen Korridor wird fail-closed abgebrochen; direkte
+Route ist kein Fallback.
+
+Der geerbte geroutete Scope bleibt vorerst single-carrier. Multi-carrier routing/cargo
+splitting ist keine stillschweigende Erweiterung.
+
+Nach dieser Reconciliation ist der naechste Schritt weiterhin der observer-only
+A11-Composition-Harness.

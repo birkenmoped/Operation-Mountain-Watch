@@ -87,6 +87,7 @@ function modules.resupplyMonitor.New(spec)
 end
 modules.commanderBridge={New=function() end}
 modules.storageTransportFactory={New=function() end}
+modules.opsTransportCorridorAdapter={Bind=function() end}
 modules.transportSettlement={}
 function modules.transportSettlement.New(spec)
   calls.transportSettlementSpec=spec
@@ -176,6 +177,7 @@ eq(calls.resupplyTransportSpec.groundCommander,groundCommander,"ground commander
 eq(calls.resupplyTransportSpec.airCommander,airCommander,"air commander forwarded")
 eq(calls.resupplyTransportSpec.resolveGroundTransport,resolveGroundTransport,"ground resolver forwarded")
 eq(calls.resupplyTransportSpec.resolveAirTransport,resolveAirTransport,"air resolver forwarded")
+eq(calls.resupplyTransportSpec.transportCorridorAdapter,modules.opsTransportCorridorAdapter,"shared OPSTRANSPORT corridor adapter forwarded")
 eq(calls.resupplyTransportSpec.settlement.Attach~=nil,true,"settlement attached to transport runtime")
 eq(calls.transportSettlementSpec.store,campaignStore,"settlement uses CampaignState store")
 eq(calls.transportSettlementSpec.campaignState,campaignState,"settlement campaign module")

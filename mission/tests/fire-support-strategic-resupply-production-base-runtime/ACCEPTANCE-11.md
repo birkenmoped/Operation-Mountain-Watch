@@ -305,3 +305,34 @@ source implementation: complete
 contract/CI: pending remote workflow
 DCS combined concurrency: A11 pending
 ~~~
+
+
+## 13. Strategic-Resupply route lifecycle inheritance gate – 04.10.2026
+
+Vor dem A11-Harness gilt fuer gerouteten Rotary-Wing-Strategic-Resupply folgende
+verbindliche Lifecycle-Inheritance:
+
+| Feld | A11-Vertrag |
+|---|---|
+| inherited_contract | Stage-3 MOOSE OPSTRANSPORT/STORAGE mit owner-authored FlightPath outbound + reverse recovery route |
+| accepted_source_paths | `scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua`, `scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua`, allgemeiner `ResupplyTransportRuntime` |
+| evidence | fruehere Stage-3-Evidenz nur fuer deren exakte Jalalabad/Wright/CH-47-Provenienz; keine pauschale A11-Validierung |
+| invariants | MOOSE waehlt Carrier; OMW bindet nur das Profil des gewaehlten Assets; outbound owner route; reverse owner route after Delivered; kein Direct-Line-Fallback; CampaignState bleibt strategische Autoritaet |
+| reuse_mode | DIRECT_REUSE + MINIMAL_ADAPTER |
+| harness_role | Trigger / Observation / Assertion only |
+| changed_boundary | allgemeine Bindung des bestehenden CorridorAdapters an das von COMMANDER/LEGION ausgewaehlte Carrier-Asset |
+| owner_approval | keine neue Architekturentscheidung; Reconciliation des bereits verwendeten Stage-3-Vertrags |
+| revalidation_scope | A11 muss den allgemeinen MOOSE-selected Carrier + Route + STORAGE + Settlement-Lifecycle real unter DCS belegen |
+
+A11 darf deshalb den Transportweg **nicht** selbst ueber FLIGHTGROUP-Waypoints bauen.
+Die missionsspezifische A11-Composition darf lediglich den vorhandenen owner-authored
+PATHLINE-Korridor aufloesen und als Descriptor an die Production Base uebergeben.
+
+Fuer den geerbten gerouteten Scope gilt weiterhin ein Carrier. Mehrere Carrier fuer
+denselben gerouteten OPSTRANSPORT sind nicht Teil dieser Acceptance.
+
+Der Harness bleibt bis zur vollstaendigen Composition und statischen/CI-Pruefung:
+
+~~~text
+A11 status = PLANNED / NOT RELEASED FOR DCS
+~~~

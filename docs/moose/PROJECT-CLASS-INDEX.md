@@ -944,3 +944,25 @@ ResupplyMonitor active[nodeId + resourceId]
 Diese Zustandsgrenzen sind source-/contract-seitig fuer parallele Demands getrennt.
 A11 muss die reale MOOSE-Recruitment-/Contention-Semantik im kombinierten DCS-Lauf
 belegen.
+
+
+### 04.10.2026 – FSSR OPSTRANSPORT route-preservation addendum
+
+~~~text
+OPSTRANSPORT
+  carrier selection: COMMANDER/LEGION
+  route lifecycle: existing OMW_OpsTransportCorridorAdapter
+  outbound trigger: selected FLIGHTGROUP OnAfterTransport
+  return trigger: selected FLIGHTGROUP OnAfterDelivered
+
+LEGION
+  OnAfterAssetSpawned correlates only the already selected Assetitem to asset.flightgroup
+
+FLIGHTGROUP
+  AddWaypoint / UpdateRoute remain the public MOOSE route surface used by the
+  existing corridor adapter
+~~~
+
+Der allgemeine Base-31-Scope ist source-implemented und DCS-pending. Der geerbte
+geroutete STORAGE-Vertrag bleibt auf einen Carrier begrenzt; daraus folgt keine
+allgemeine Multi-Carrier-Freigabe.

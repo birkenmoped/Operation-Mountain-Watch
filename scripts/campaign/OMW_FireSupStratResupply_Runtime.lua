@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-11"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-12"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -137,6 +137,8 @@ function Runtime.New(spec)
         needTable(modules[name],"modules." .. name)
         needFunction(modules[name],"New","modules." .. name)
       end
+      needTable(modules.opsTransportCorridorAdapter,"modules.opsTransportCorridorAdapter")
+      needFunction(modules.opsTransportCorridorAdapter,"Bind","modules.opsTransportCorridorAdapter")
       needTable(transport.campaignState,"resupply.transport.campaignState")
       local groundConfigured=transport.groundCommander~=nil or transport.resolveGroundTransport~=nil
       local airConfigured=transport.airCommander~=nil or transport.resolveAirTransport~=nil
@@ -284,6 +286,7 @@ function Instance:Prepare()
     })
     resupplyTransportRuntime=m.resupplyTransportRuntime.New({
       storageTransportFactory=m.storageTransportFactory,
+      transportCorridorAdapter=m.opsTransportCorridorAdapter,
       settlement=transportSettlement,
       groundCommander=transport.groundCommander,
       resolveGroundTransport=transport.resolveGroundTransport,

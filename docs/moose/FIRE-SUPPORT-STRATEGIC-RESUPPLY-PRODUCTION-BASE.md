@@ -394,7 +394,7 @@ Acceptance 11 muss ARTY, mortar, CAS und Strategic Resupply in demselben Lauf ab
 Der allgemeine Production-Base-Source-Stand wurde nach dem A10-PASS weiter reconciliert. Fuer neue Builds gilt jetzt:
 
 ```text
-OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-30
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-31
 ```
 
 Die aktive Composition enthaelt **nicht mehr** den superseded
@@ -478,3 +478,30 @@ Multi-Site-Test vorbereitet. A11 bleibt bis zum realen DCS-Lauf
 `PLANNED / NOT RELEASED FOR DCS`; insbesondere sind concurrent CAS recovery,
 MOOSE-selected 2B11 fire und Strategic-Resupply-Carrier-Lifecycle noch nicht praktisch
 validiert.
+
+
+## Base-31 – Strategic-Resupply route preservation
+
+Vor A11 wurde eine weitere Lifecycle-Preservation-Grenze geschlossen. Stage 3 hatte
+nicht nur STORAGE-Recruitment, sondern auch den owner-authored Rotary-Transportweg
+bereits ueber die gemeinsame Produktionskomponente
+`OMW_OpsTransportCorridorAdapter.lua` ausgefuehrt.
+
+Base-31 bettet diesen bestehenden Adapter nun wieder in die allgemeine Composition ein:
+
+~~~text
+MOOSE carrier recruitment
+-> exact selected Assetitem
+-> selected Legion AssetSpawned
+-> asset.flightgroup
+-> existing OpsTransportCorridorAdapter
+-> OnAfterTransport outbound owner route
+-> OnAfterDelivered reverse owner route
+~~~
+
+Das ist keine neue Routing-Architektur und kein Acceptance-eigener Lifecycle.
+Provider-/Carrier-Auswahl bleibt MOOSE. Ohne expliziten, aufgeloesten owner-authored
+Korridor gibt es bei `routeRequired=true` keinen Direct-Line-Fallback.
+
+Der allgemeine geroutete Strategic-Resupply-Scope bleibt bis zum realen A11-Lauf
+`DCS_REVALIDATION_PENDING`.

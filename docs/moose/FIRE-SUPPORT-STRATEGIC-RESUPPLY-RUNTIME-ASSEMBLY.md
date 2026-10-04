@@ -449,3 +449,52 @@ Fuer den aktuell uebernommenen Scope wird das komplette physische STORAGE-Manife
 konservativ als Recruitment-Gewicht verwendet, entsprechend dem bereits getesteten
 Stage-3-One-Carrier-Vertrag. Multi-carrier cargo splitting ist damit nicht neu
 behauptet und bleibt ausserhalb dieser Reconciliation.
+
+
+## Strategic Resupply route lifecycle reconciliation – 04.10.2026
+
+Die Carrier-Rekrutierung allein schliesst den geerbten Air-Resupply-Lifecycle nicht.
+Der bereits in Stage 3 verwendete produktive Adapter
+
+`scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua`
+
+bleibt deshalb der einzige OMW-Routenadapter fuer den aktuellen rotary-wing
+`OPSTRANSPORT/STORAGE`-Scope.
+
+Der generische Vertrag lautet jetzt:
+
+~~~text
+caller-resolved owner PATHLINE corridor
+-> StorageTransportFactory descriptor
+-> COMMANDER:RecruitAssetsForTransport(...)
+-> MOOSE-selected Assetitem + Legion
+-> selected Legion OnAfterAssetSpawned
+-> exact selected asset.flightgroup
+-> shared OMW_OpsTransportCorridorAdapter:Bind(...)
+-> FLIGHTGROUP OnAfterTransport
+-> owner-authored outbound waypoints
+-> OPSTRANSPORT physical loading / transport / unloading
+-> FLIGHTGROUP OnAfterDelivered
+-> owner-authored reverse route
+-> normal MOOSE recovery
+~~~
+
+Die Base waehlt dabei weiterhin weder AIRWING, SQUADRON noch Carrier. Der Resolver darf
+nur den physischen STORAGE-Vertrag und die owner-authored Routengeometrie liefern.
+
+`routeRequired=true` ist fail-closed:
+
+~~~text
+missing resolved corridor
+or missing shared corridor adapter
+or failed corridor bind
+-> no direct-line fallback
+-> transport Cancel through the normal OPSTRANSPORT lifecycle
+~~~
+
+Der uebernommene Stage-3-Routenvertrag ist aktuell bewusst auf **einen Carrier**
+begrenzt. Ein gerouteter Transport mit mehreren durch MOOSE selektierten Carriern wird
+mit `TRANSPORT_CORRIDOR_SINGLE_CARRIER_REQUIRED` abgewiesen. Damit wird keine
+unvalidierte Multi-Carrier-Routen-/Cargo-Splitting-Semantik eingefuehrt.
+
+Status: `SOURCE_IMPLEMENTED / CI_PENDING / DCS_REVALIDATION_PENDING`.
