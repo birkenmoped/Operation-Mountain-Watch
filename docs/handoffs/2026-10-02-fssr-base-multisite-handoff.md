@@ -443,3 +443,45 @@ splitting ist keine stillschweigende Erweiterung.
 
 Nach dieser Reconciliation ist der naechste Schritt weiterhin der observer-only
 A11-Composition-Harness.
+
+
+## 21. A11 composition source – 04.10.2026
+
+Nach erfolgreicher lokaler Base-32-Verifikation:
+
+~~~text
+commit:
+f4765721f0930424029e16161b9d3ef435652d1a
+
+Production builder SHA-256:
+1E9868F0439D51232AEEB22B029A91C699A88110753D1BC1C70959F0CDC24173
+
+Production Base bundle SHA-256:
+B59791CA021C39A3A97A0C07BB0C165659F0F460DDAF38404C4B60AA89631719
+
+Documentation validation #2336:
+PASS
+
+MissionDemand validation #1107:
+PASS
+~~~
+
+wurde der observer-only A11-Composition-Harness erstellt.
+
+Der Test nutzt Joyce, Wright und Honaker als gleichzeitig angegriffene Installationen
+und wartet vor externer Eskalation auf reale QRF-`EngageTarget`-Evidenz aller drei
+Sites. Erst dann werden zwei ARTY- und zwei CAS-Demands im selben Tick erzeugt und die
+threshold-driven Strategic-Resupply-Evaluation gestartet.
+
+Der Strategic-Resupply-Testzustand wird reproduzierbar im **autoritativen**
+CampaignState durch eine abgeschlossene Consumption-Transaktion auf Wright-AMMO bis
+`reorder - 1` erzeugt. Danach muss der normale ResourceDemandPolicy/ResupplyMonitor-
+Pfad den Demand erstellen. Der Harness setzt keinen Resupply-Demand direkt und besitzt
+keine Settlement-Logik.
+
+Der AIR_RESUPPLY-Descriptor liefert nur physischen STORAGE-Vertrag und den
+owner-authored MOOSE-FlightPath-Corridor. Carrier-Rekrutierung, Assetwahl,
+OPSTRANSPORT-Ausfuehrung, Corridor-Bindung und Settlement bleiben Production/MOOSE.
+
+A11 ist damit source-seitig gebaut, aber noch nicht lokal gehasht, in eine Owner-MIZ
+integriert oder in DCS validiert.

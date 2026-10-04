@@ -352,3 +352,120 @@ AIR_RESUPPLY / rotary-wing carrier
 Der Acceptance-Harness darf weder den Korridor abschalten noch eine direkte Route
 zulassen. Er darf den vorhandenen Corridor lediglich aufloesen und an die Production
 Base uebergeben.
+
+
+## 15. A11 observer-only composition implemented – 04.10.2026
+
+Der erste kombinierte A11-Source-Harness ist jetzt implementiert:
+
+~~~text
+mission/tests/fire-support-strategic-resupply-production-base-runtime/src/
+  11-production-multisite-full-response-acceptance.lua
+
+builder:
+tools/build-fire-support-strategic-resupply-production-base-acceptance-11.ps1
+~~~
+
+Aktueller Builder-Vertrag:
+
+~~~text
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-11-1
+~~~
+
+Der Harness verwendet die bereits dokumentierten RED-Fixtures:
+
+~~~text
+BadGuys_A3_JOYCE
+BadGuys_A3_WRIGHT
+BadGuys_A3_HONAKER
+~~~
+
+Ablauf:
+
+~~~text
+Production Base / fixed real ARTY assets prepare
+-> exact fixed-position materialization assertions
+-> Joyce + Wright + Honaker fixtures overlap
+-> authoritative installation incidents
+-> Guard + QRF production response
+-> wait until all three QRFs physically EngageTarget
+-> ARTY Wright + ARTY Honaker requests in same tick
+-> CAS Joyce + CAS Honaker requests in same tick
+-> threshold-driven Wright AMMO AIR_RESUPPLY
+-> observe all production lifecycles to terminal evidence
+~~~
+
+### Strategic-Resupply shortage precondition
+
+A11 benoetigt einen reproduzierbaren realen ResourceDemandPolicy-Threshold ohne eine
+zweite Ressourcenhoheit. Der Harness erzeugt deshalb den Test-Ausgangszustand
+ausschliesslich ueber die vorhandene autoritative CampaignState-API:
+
+~~~text
+GROUND_NODE_WRIGHT / GROUND_AMMO_PACKAGE
+-> CampaignState ReserveResource(kind=CONSUMPTION)
+-> Consume
+-> CompleteConsumption
+-> available = reorder - 1
+-> ResourceDemandPolicy evaluates the real authoritative snapshot
+-> normal ResupplyMonitor creates the AIR_RESUPPLY demand
+~~~
+
+Dies ist Acceptance-Stimulus gegen den einzigen CampaignState-Store, kein separates
+Ledger und keine Resupply-Settlement-Abkuerzung. Die eigentliche Wiederauffuellung muss
+weiterhin ausschliesslich durch den produktiven Strategic-Resupply-Lifecycle erfolgen.
+
+### Provider-/Lifecycle-Grenzen
+
+Der A11-Source enthaelt keine direkten Aufrufe fuer:
+
+~~~text
+COMMANDER:AddMission
+AIRWING:AddMission
+AssignSquadrons
+LEGION.RecruitCohortAssets
+RecruitAssetsForTransport
+TransportAssign
+OPSTRANSPORT:AddAsset
+ARTY AssignTargetCoord / RemoveTarget
+CAS MissionIngress / MissionEgress
+FLIGHTGROUP AddWaypoint
+OpsTransportCorridorAdapter:Bind
+native DCS task ownership
+~~~
+
+Der Harness darf nur fachliche Demand-Inputs, Fixture-Stimulus und Beobachtungs-Hooks
+liefern.
+
+### Combined PASS
+
+Der Source verlangt im selben Lauf:
+
+~~~text
+3 overlapping real installation incidents
+3 Guard/QRF response chains with real QRF EngageTarget
+2 overlapping ARTY demands
+MOOSE-selected real L118 execution
+MOOSE-selected real Honaker 2B11 execution
+fixed battery no-movement assertions
+2 independent production CAS lifecycles through exact asset return
+1 threshold-driven Strategic Resupply
+mandatory helicopter outbound corridor
+mandatory reverse corridor
+physical home landing + LegionAssetReturned
+MOOSE STORAGE full delivery
+CampaignState source debit + Wright target restoration
+no ARTY/CAS asset double-booking
+~~~
+
+Status:
+
+~~~text
+A11 source: IMPLEMENTED
+A11 builder: IMPLEMENTED
+remote CI: PENDING
+owner local A11 build/hash: PENDING
+MIZ integration: PENDING
+DCS validation: PENDING
+VALIDATED: NO
+~~~
