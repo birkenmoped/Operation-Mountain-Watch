@@ -14,7 +14,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-4"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-5"
 local TAG = "[OMW][FireSupStratResupply.ResupplyTransportRuntime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -141,8 +141,8 @@ function Runtime.New(spec)
     routeHooks[legion]=true
   end
 
-  local function prepareRoute(descriptor,transport,demand,assets,legions)
-    if descriptor.routeRequired==true and descriptor.resolvedCorridor==nil then
+  local function prepareRoute(descriptor,transport,demand,assets,legions,routeMandatory)
+    if routeMandatory and descriptor.resolvedCorridor==nil then
       return nil,"TRANSPORT_CORRIDOR_REQUIRED"
     end
     if descriptor.resolvedCorridor==nil then return nil,nil end
@@ -206,7 +206,8 @@ function Runtime.New(spec)
       needFunction(transport,"Cancel","transport")
       needTable(descriptor,"storage transport descriptor")
 
-      if descriptor.routeRequired==true and descriptor.resolvedCorridor==nil then
+      local routeMandatory=(supportType=="AIR_RESUPPLY") or descriptor.routeRequired==true
+      if routeMandatory and descriptor.resolvedCorridor==nil then
         transport:Cancel()
         return nil,false,"TRANSPORT_CORRIDOR_REQUIRED"
       end
@@ -240,7 +241,7 @@ function Runtime.New(spec)
         return nil,false,"MOOSE_TRANSPORT_CARRIER_UNAVAILABLE"
       end
 
-      local routeState,routeReason=prepareRoute(descriptor,transport,demand,assets,legions)
+      local routeState,routeReason=prepareRoute(descriptor,transport,demand,assets,legions,routeMandatory)
       if routeReason~=nil then
         if type(LEGION)=="table" and type(LEGION.UnRecruitAssets)=="function" then LEGION.UnRecruitAssets(assets) end
         transport:Cancel()

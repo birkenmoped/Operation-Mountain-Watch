@@ -336,3 +336,19 @@ Der Harness bleibt bis zur vollstaendigen Composition und statischen/CI-Pruefung
 ~~~text
 A11 status = PLANNED / NOT RELEASED FOR DCS
 ~~~
+
+
+## 14. Mandatory Helicopter Corridor – Owner clarification 04.10.2026
+
+Fuer A11 ist der Helicopter-Korridor keine optionale Konfiguration.
+
+~~~text
+AIR_RESUPPLY / rotary-wing carrier
+-> owner-authored corridor mandatory
+-> missing corridor = FAIL CLOSED
+-> no direct-line fallback
+~~~
+
+Der Acceptance-Harness darf weder den Korridor abschalten noch eine direkte Route
+zulassen. Er darf den vorhandenen Corridor lediglich aufloesen und an die Production
+Base uebergeben.

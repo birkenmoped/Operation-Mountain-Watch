@@ -205,9 +205,7 @@ local missingRouteRuntime=Runtime.New({
   transportCorridorAdapter=corridorAdapter,
   airCommander=missingRouteCommander,
   resolveAirTransport=function(demand)
-    local d=descriptor("AIR_MISSING_ROUTE",demand.quantity,1,false)
-    d.routeRequired=true
-    return d
+    return descriptor("AIR_MISSING_ROUTE",demand.quantity,1,false)
   end,
 })
 local missing,missingCreated,missingReason=missingRouteRuntime:GetAdapter("AIR_RESUPPLY"):Dispatch({
@@ -216,7 +214,7 @@ local missing,missingCreated,missingReason=missingRouteRuntime:GetAdapter("AIR_R
 },{})
 eq(missing,nil,"required route missing no handle")
 no(missingCreated,"required route missing not dispatched")
-eq(missingReason,"TRANSPORT_CORRIDOR_REQUIRED","required route fail closed")
+eq(missingReason,"TRANSPORT_CORRIDOR_REQUIRED","AIR_RESUPPLY corridor is mandatory and fails closed")
 eq(#missingRouteCommander.recruitCalls,0,"required route fails before recruitment")
 
 local multiCommander=commander("MULTI")

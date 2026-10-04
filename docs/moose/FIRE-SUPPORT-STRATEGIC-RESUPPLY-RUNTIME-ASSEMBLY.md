@@ -498,3 +498,38 @@ mit `TRANSPORT_CORRIDOR_SINGLE_CARRIER_REQUIRED` abgewiesen. Damit wird keine
 unvalidierte Multi-Carrier-Routen-/Cargo-Splitting-Semantik eingefuehrt.
 
 Status: `SOURCE_IMPLEMENTED / CI_PENDING / DCS_REVALIDATION_PENDING`.
+
+
+### Mandatory Helicopter Corridor correction – 04.10.2026
+
+Owner clarification: fuer den aktuellen rotary-wing Strategic-Resupply-Scope ist die
+Benutzung des owner-authored Helicopter-Korridors **mandatory** und kein optionales
+Descriptor-Feature.
+
+Deshalb gilt fuer `AIR_RESUPPLY` jetzt unabhaengig von `routeRequired`:
+
+~~~text
+AIR_RESUPPLY
++ no resolvedCorridor
+-> TRANSPORT_CORRIDOR_REQUIRED
+-> no recruitment / no dispatch
+~~~
+
+`routeRequired` bleibt nur fuer andere Transportmodi als explizite Zusatzanforderung
+verwendbar. Fuer Helicopter-/AIR_RESUPPLY kann der Resolver die Korridornutzung nicht
+abschalten.
+
+Damit ist der Produktionsvertrag:
+
+~~~text
+AIR_RESUPPLY helicopter transport
+-> mandatory owner-authored corridor
+-> MOOSE-selected carrier
+-> shared OMW_OpsTransportCorridorAdapter
+-> outbound corridor
+-> delivery
+-> reverse corridor
+-> recovery
+~~~
+
+Kein Direct-Line-Fallback.
