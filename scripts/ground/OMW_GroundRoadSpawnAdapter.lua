@@ -9,6 +9,11 @@
 --
 -- This module is pinned to the reviewed MOOSE WAREHOUSE private spawn contract
 -- used by commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54.
+--
+-- Owner clarification, 2026-10-05:
+-- ACCESS constrains the validated road/materialization anchor. It is not a
+-- bounding zone for every member of a road-aligned formation. Individual
+-- vehicles may extend beyond ACCESS after the anchor has been validated.
 
 local Adapter = {}
 
@@ -223,11 +228,6 @@ local function buildPositions(asset, roadSpec, config)
         .. " unit=" .. tostring(index)
         .. " distanceM=" .. tostring(snapDistance))
     end
-    if accessZone:IsVec2InZone(roadCoordinate:GetVec2()) ~= true then
-      fail("road spawn position outside access zone entityId=" .. tostring(roadSpec.entityId)
-        .. " unit=" .. tostring(index))
-    end
-
     positions[index] = {
       x = roadCoordinate.x,
       y = roadCoordinate.z,
@@ -352,7 +352,7 @@ function Adapter.Install(brigade, config)
     template.lateActivation = lateactivated
 
     normalized.log(string.format(
-      "%s ROAD_ALIGNED_WAREHOUSE_SPAWN entityId=%s units=%d formationLengthM=%.1f maxSnapM=%.1f vehicleSpacingM=%s",
+      "%s ROAD_ALIGNED_WAREHOUSE_SPAWN entityId=%s units=%d formationLengthM=%.1f maxSnapM=%.1f vehicleSpacingM=%s accessContainment=ANCHOR_ONLY",
       TAG,
       tostring(roadSpec.entityId or "UNKNOWN"),
       #positions,

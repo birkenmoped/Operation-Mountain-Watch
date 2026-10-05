@@ -469,3 +469,44 @@ MIZ integration: PENDING
 DCS validation: PENDING
 VALIDATED: NO
 ~~~
+
+
+## 16. Erster A11-DCS-Lauf und ACCESS-Containment-Korrektur – 04./05.10.2026
+
+Der erste reale A11-Lauf vom 04.10.2026 ist **kein PASS**. Die Honaker-QRF wurde
+korrekt als Demand erzeugt und an die lokale BRIGADE uebergeben, scheiterte aber
+bei der physischen Materialisierung im gemeinsamen `OMW_GroundRoadSpawnAdapter`:
+
+~~~text
+[OMW][Ground.RoadSpawnAdapter]
+road spawn position outside access zone
+entityId=BLUE_GROUND_COP_HONAKER_MIRACLE|QRF
+unit=1
+~~~
+
+Joyce und Wright materialisierten ihre QRF im selben Lauf und erreichten
+`QRF_OBSERVED` / `QRF_DIRECT_TARGET_ENGAGE`. Honaker erreichte diese Marker
+nicht. Weil A11 externe ARTY-/CAS-/Strategic-Resupply-Stimuli erst nach allen drei
+physischen QRF-Engagements freigibt, wurden diese A11-Teile in diesem Lauf nicht
+erreicht.
+
+Owner-Entscheidung vom 05.10.2026:
+
+~~~text
+Es war nie die Entscheidung, dass alle Fahrzeuge/Gruppenmitglieder in die
+Spawn-/ACCESS-Zone passen muessen.
+~~~
+
+Daraus folgt fuer den aktiven QRF-Materialisierungsvertrag:
+
+~~~text
+ACCESS validates the road/materialization anchor
+-> formation members may extend beyond ACCESS
+-> no per-unit ACCESS containment guardrail
+-> road snap / road availability / spacing / heading safeguards remain active
+-> MOOSE lifecycle ownership remains unchanged
+~~~
+
+Die Korrektur ist eine ausdruecklich genehmigte Aenderung der zuvor zu strengen
+Adapter-Guardrail, keine neue QRF-/Routing-Architektur. A11 bleibt
+`validated_in_dcs: false` und benoetigt nach neuem Build einen erneuten DCS-Lauf.

@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-32'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-33'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -96,7 +96,7 @@ foreach($marker in @(
   'sourceIncidentCoordinator','GetParticipants(true)','group:GetUnits()',
   'QRF_NO_LIVING_INCIDENT_TARGETS_IN_TACTICAL_ZONE','mission:Cancel()',
   'brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)','physicalTargetGroup',
-  'ROAD_ALIGNED_WAREHOUSE_SPAWN','vehicleSpacingM','forwardCoordinate = targetCoordinate',
+  'ROAD_ALIGNED_WAREHOUSE_SPAWN','vehicleSpacingM','forwardCoordinate = targetCoordinate','accessContainment=ANCHOR_ONLY',
   'QRF_TACTICAL_RADIUS_NM = 5','accessZoneName','2438.4',
   'INSTALLATION_ATTACK_INITIAL_QRF','OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT')){
   if(-not $combined.Contains($marker)){throw "Required contract marker missing: $marker"}
@@ -112,13 +112,14 @@ foreach($forbidden in @('AUFTRAG:NewGROUNDATTACK','AUFTRAG:NewPATROLZONE','Enabl
 foreach($forbidden in @('PATROL_TEST','roadForwardCoordinates','QRF_VALIDATED_ROAD_FORWARD_COORDINATE_UNAVAILABLE','ROAD_DIRECTION_SAMPLE_DISTANCES_M','resolveOutboundRoadCoordinate')){
   if($sources.QrfRuntime.Contains($forbidden)){throw "QRF runtime forbidden materialization dependency: $forbidden"}
 }
+if($roadSource.Contains('road spawn position outside access zone')){throw 'RoadSpawnAdapter must not require every formation member to remain inside ACCESS.'}
 if($combined -match '(?i)\bMIST\b|mist\.'){throw 'MIST use is forbidden in this production bundle.'}
 
 New-Item -ItemType Directory -Path $distDir -Force|Out-Null
 $commit=(& git -C $repoRoot rev-parse HEAD).Trim()
 if([string]::IsNullOrWhiteSpace($commit)){throw 'Unable to resolve Git HEAD.'}
 function Embed([string]$Name,[string]$Source){"local $Name = (function()`n$Source`nend)()`n`n"}
-$bundle="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Guard: no physical Guard before alarm; MOOSE OPSZONE scanned RED presence opens incident -> local ONGUARD Guard + mobile QRF; no permanent Guard patrol router.`n-- Mobile Ground QRF: road-aligned ACCESS materialization -> runtime-enforced MOOSE On Road transit in EngageTarget -> MOOSE final off-road target approach when required -> direct concrete UNIT pursuit -> Disengage/reacquire -> target exhaustion -> ReturnToLegion.`n-- External CAS: COMMANDER provider selection supports both standard MOOSE CAS and source-verified PATROLZONE + SetEngageDetected geometry selected by the caller.`n`n"
+$bundle="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Guard: no physical Guard before alarm; MOOSE OPSZONE scanned RED presence opens incident -> local ONGUARD Guard + mobile QRF; no permanent Guard patrol router.`n-- Mobile Ground QRF: road-aligned ACCESS-anchor materialization (formation may extend beyond ACCESS) -> runtime-enforced MOOSE On Road transit in EngageTarget -> MOOSE final off-road target approach when required -> direct concrete UNIT pursuit -> Disengage/reacquire -> target exhaustion -> ReturnToLegion.`n-- External CAS: COMMANDER provider selection supports both standard MOOSE CAS and source-verified PATROLZONE + SetEngageDetected geometry selected by the caller.`n`n"
 foreach($spec in $moduleSpecs){$bundle+=Embed $spec.Name $sources[$spec.Name]}
 $bundle+=Embed 'RoadSpawnAdapter' $roadSource
 $bundle+=@"
@@ -171,7 +172,7 @@ foreach($marker in @(
   'DEFAULT_ENGAGE_FORMATION = "On Road"','QRF_ENGAGE_FORMATION = "On Road"',
   'sourceIncidentCoordinator','GetParticipants(true)','cancelWhenIncidentClosed=false',
   'brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)','physicalTargetGroup',
-  'ROAD_ALIGNED_WAREHOUSE_SPAWN','vehicleSpacingM','forwardCoordinate = targetCoordinate',
+  'ROAD_ALIGNED_WAREHOUSE_SPAWN','vehicleSpacingM','forwardCoordinate = targetCoordinate','accessContainment=ANCHOR_ONLY',
   'OMW.FireSupStratResupply=Package')){
   if(-not $bundle.Contains($marker)){throw "Bundle marker missing: $marker"}
 }
@@ -216,8 +217,8 @@ Write-Host 'QrfResponsePhase: MOOSE AUFTRAG ONGUARD is recruitment/materializati
 Write-Host 'QrfTargetCycle: same physical ARMYGROUP -> nearest living known incident UNIT -> MOOSE EngageTarget dynamic pursuit -> Disengage/reacquire'
 Write-Host 'QrfMovementContract: motorized QRF runtime explicitly passes MOOSE On Road to EngageTarget; Vee is forbidden for march/transit'
 Write-Host 'QrfTargetAuthority: GroundInstallationAttackIncident GetParticipants(true), flattened to living UNITs and filtered to site-local 5 NM tactical zone'
-Write-Host 'QrfVehicleMaterialization: approved GroundRoadSpawnAdapter; exact site ACCESS is sole materialization/home boundary; fixed 18 m spacing'
-Write-Host 'QrfRoadDirection: initial physical incident target coordinate is direction input only; actual spawn positions remain constrained to ACCESS'
+Write-Host 'QrfVehicleMaterialization: approved GroundRoadSpawnAdapter; exact site ACCESS road anchor is materialization/home boundary; fixed 18 m spacing; formation members may extend outside ACCESS'
+Write-Host 'QrfRoadDirection: initial physical incident target coordinate is direction input only; ACCESS validates the road/materialization anchor, not every formation member'
 Write-Host 'QrfReturnLifecycle: no living authorized incident target -> mission Cancel -> MOOSE ReturnToLegion/RTZ -> Returned -> LEGION/Warehouse AddAsset'
 Write-Host 'QrfReleaseAuthority: tactical completion is zero living incident targets in the tactical zone; perimeter/incident-close alone is not return authority'
 Write-Host 'QrfIncidentClosePolicy: local incident/perimeter clear alone does not auto-cancel dispatched QRF'

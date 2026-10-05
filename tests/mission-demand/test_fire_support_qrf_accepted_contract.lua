@@ -17,6 +17,7 @@ end
 local factory = read("scripts/campaign/OMW_FireSupStratResupply_QrfMissionFactory.lua")
 local runtime = read("scripts/campaign/OMW_FireSupStratResupply_QrfRuntime.lua")
 local incidentBridge = read("scripts/campaign/OMW_FireSupStratResupply_InstallationIncidentBridge.lua")
+local roadSpawnAdapter = read("scripts/ground/OMW_GroundRoadSpawnAdapter.lua")
 local acceptance = read("mission/tests/fire-support-strategic-resupply-production-base-runtime/src/03-production-base-six-site-physical-alarm-qrf-acceptance.lua")
 
 -- Honaker-reconciled QRF recruitment/materialization anchor remains MOOSE ONGUARD.
@@ -64,12 +65,17 @@ excludes(runtime, "EnableHuntingPatrol", "QRF runtime rejected hunting design")
 excludes(runtime, "SCHEDULER", "QRF runtime custom target scheduler")
 excludes(runtime, "timer.scheduleFunction", "QRF runtime custom target scheduler")
 
--- ACCESS materialization and road-direction contract remain unchanged.
+-- ACCESS materialization and road-direction contract. Owner clarification
+-- 2026-10-05: ACCESS validates the road/materialization anchor, not every
+-- member of the road-aligned formation.
 contains(runtime, "roadSpawnAdapter.Install", "QRF runtime")
 contains(runtime, "brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)", "QRF runtime")
 contains(runtime, "accessZone = accessZone", "QRF runtime ACCESS boundary")
 contains(runtime, "forwardCoordinate = targetCoordinate", "QRF runtime direction input")
 contains(runtime, "QRF_TACTICAL_RADIUS_NM = 5", "QRF runtime tactical area")
+contains(roadSpawnAdapter, "access road outside zone", "RoadSpawnAdapter anchor containment")
+contains(roadSpawnAdapter, "accessContainment=ANCHOR_ONLY", "RoadSpawnAdapter containment diagnostic")
+excludes(roadSpawnAdapter, "road spawn position outside access zone", "RoadSpawnAdapter per-unit containment")
 excludes(runtime, "roadForwardCoordinates", "QRF runtime")
 excludes(runtime, "QRF_VALIDATED_ROAD_FORWARD_COORDINATE_UNAVAILABLE", "QRF runtime")
 excludes(runtime, "PATROL_TEST", "QRF runtime")

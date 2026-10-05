@@ -485,3 +485,37 @@ OPSTRANSPORT-Ausfuehrung, Corridor-Bindung und Settlement bleiben Production/MOO
 
 A11 ist damit source-seitig gebaut, aber noch nicht lokal gehasht, in eine Owner-MIZ
 integriert oder in DCS validiert.
+
+
+## 22. Honaker A11 QRF ACCESS-Containment – Owner-Korrektur 05.10.2026
+
+Der erste reale A11-Lauf zeigte einen reproduzierbaren Honaker-QRF-Abbruch im
+gemeinsamen `OMW_GroundRoadSpawnAdapter`:
+
+~~~text
+road spawn position outside access zone
+entityId=BLUE_GROUND_COP_HONAKER_MIRACLE|QRF
+unit=1
+~~~
+
+Die Demand-/BRIGADE-Kette selbst war intakt; Joyce und Wright materialisierten und
+engagierten. Der Blocker war die historische Adapter-Guardrail, die jede einzelne
+berechnete Fahrzeugposition mit `accessZone:IsVec2InZone(...)` pruefte.
+
+Der Projektinhaber hat am 05.10.2026 klargestellt, dass dies nie der gewollte
+Vertrag war. Verbindliche aktuelle Semantik:
+
+~~~text
+ACCESS = validierter Road-/Materialisierungsanker
+ACCESS != Bounding-Zone fuer komplette Formation
+
+anchor inside ACCESS
++ road/snap/spacing/heading safeguards
+-> formation may extend outside ACCESS
+~~~
+
+Die per-Unit-Containment-Pruefung wird entfernt und durch Unit-/Contract-Gates
+gegen Wiedereinfuehrung abgesichert. Der MOOSE BRIGADE/WAREHOUSE/PLATOON/
+ARMYGROUP/AUFTRAG-Lifecycle bleibt unveraendert. Der geaenderte physische
+Materialisierungsrand benoetigt einen neuen lokalen Build-/Hash-Nachweis und
+anschliessend A11-DCS-Revalidation.

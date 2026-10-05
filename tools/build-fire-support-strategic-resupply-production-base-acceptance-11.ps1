@@ -10,7 +10,7 @@ $groundInitialStock=Join-Path $repoRoot 'scripts\logistics\OMW_GroundInitialStoc
 $resourceDemandPolicy=Join-Path $repoRoot 'scripts\campaign\OMW_ResourceDemandPolicy.lua'
 $src=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\src\11-production-multisite-full-response-acceptance.lua'
 $out=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\dist\OMW_FireSupStratResupply_Production_Base_Acceptance_11.lua'
-$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-11-1'
+$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-11-2'
 
 foreach($f in @($prodBuilder,$groundInitialStock,$resourceDemandPolicy,$src)){
   if(-not(Test-Path -LiteralPath $f -PathType Leaf)){throw "Required file not found: $f"}
@@ -26,7 +26,8 @@ $t=Get-Content -LiteralPath $src -Raw -Encoding UTF8
 $all=$p+$g+$r+$t
 
 foreach($marker in @(
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-32',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-33',
+  'accessContainment=ANCHOR_ONLY',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-12',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-5',
   'OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2',
@@ -117,6 +118,7 @@ Write-Host "AcceptanceSourceSHA256: $((Get-FileHash -LiteralPath $src -Algorithm
 Write-Host "AcceptanceBuilderSHA256: $((Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "AcceptanceBundleSHA256: $((Get-FileHash -LiteralPath $out -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host 'AttackFixtures: BadGuys_A3_JOYCE + BadGuys_A3_WRIGHT + BadGuys_A3_HONAKER'
+Write-Host 'QrfAccessContainment: ACCESS validates the materialization road anchor; road-aligned formation members may extend outside ACCESS'
 Write-Host 'ExternalSupport: ARTY x2 + CAS x2 requested only after all three QRFs have physically engaged'
 Write-Host 'FixedFireSupport: Bostick/Wright/Fortress L118 + Honaker 2B11 real MOOSE assets, equal performance=50'
 Write-Host 'StrategicResupply: authoritative Wright AMMO shortage -> ResourceDemandPolicy -> AIR_RESUPPLY -> MOOSE carrier selection'

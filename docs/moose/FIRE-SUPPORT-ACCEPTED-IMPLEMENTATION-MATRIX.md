@@ -55,7 +55,7 @@ NO ACCEPTANCE SHORTCUT
 | QRF Retarget | Pinned MOOSE `Disengage` lifecycle | Ziel tot -> MOOSE `Disengage` -> ereignisgetriebene Neuauswahl des naechsten lebenden Incident-Ziels. Kein OMW-Target-Scheduler. |
 | QRF Return | Owner decision 2026-09-13 | Wenn kein lebendes autorisiertes Incident-Ziel in der Tactical-Zone verbleibt, wird die QRF-Mission beendet und `SetReturnToLegion(true)` / RTZ / Returned verwendet. Perimeter-Clear oder Incident-Close allein reichen nicht. |
 | ACCESS | `ARMY-GROUND-RECONSTITUTION-ACCESS-CONTRACT.md` | `ZON_BLUE_GND_XXX_ACCESS` ist Materialisierungs-/Departure-/Return-/Handoff-Grenze. |
-| Road-aligned materialization | `OMW_GroundRoadSpawnAdapter.lua` | Nur Spawngeometrie wird angepasst; MOOSE besitzt BRIGADE/WAREHOUSE/PLATOON/ARMYGROUP/AUFTRAG. |
+| Road-aligned materialization | `OMW_GroundRoadSpawnAdapter.lua` | Nur Spawngeometrie wird angepasst; MOOSE besitzt BRIGADE/WAREHOUSE/PLATOON/ARMYGROUP/AUFTRAG. ACCESS validiert den Road-/Materialisierungsanker; einzelne Fahrzeuge der ausgerichteten Formation duerfen ausserhalb ACCESS liegen. |
 | Resources | CampaignState / Ground Foundation | CampaignState bleibt strategische Autorität. |
 
 ## ARTY-Reuse-Gate – Reconciliation 22.09.2026
@@ -265,7 +265,35 @@ taktisches Ziel als Spawnzone
 zusaetzliche Mission-Editor-Spawnzone
 ```
 
-Die initiale physische Incident-Zielkoordinate darf im Composition Root als Road-Forward-Richtungsinformation an den vorhandenen RoadSpawnAdapter weitergereicht werden. Die tatsaechliche Materialisierung muss vollstaendig innerhalb ACCESS bleiben. Nach der Materialisierung wird die physische QRF nicht zu diesem Positions-Snapshot geschickt, sondern per MOOSE an das konkrete lebende Target gebunden.
+Die initiale physische Incident-Zielkoordinate darf im Composition Root als Road-Forward-Richtungsinformation an den vorhandenen RoadSpawnAdapter weitergereicht werden. Der validierte Road-/Materialisierungsanker muss innerhalb ACCESS liegen. Die ACCESS-Zone ist **keine Bounding-Zone fuer die komplette Fahrzeugformation**. Einzelne Fahrzeuge duerfen nach der road-aligned Aufstellung ausserhalb ACCESS liegen. Eine per-Unit-`IsVec2InZone`-Containment-Regel ist nicht Teil des Owner-Vertrags. Nach der Materialisierung wird die physische QRF nicht zu diesem Positions-Snapshot geschickt, sondern per MOOSE an das konkrete lebende Target gebunden.
+
+## Owner-Klarstellung ACCESS-Containment – 05.10.2026
+
+Der Projektinhaber hat am 05.10.2026 ausdruecklich klargestellt:
+
+~~~text
+ACCESS / Spawnzone
+= validierter Materialisierungs-/Road-Anker
+!= Bounding-Zone fuer alle Fahrzeuge oder Gruppenmitglieder
+~~~
+
+Die zuvor im `OMW_GroundRoadSpawnAdapter.lua` enthaltene per-Unit-Pruefung
+`accessZone:IsVec2InZone(roadCoordinate:GetVec2())` war eine unbeabsichtigte
+zusaetzliche Guardrail-Verschaerfung und **keine Owner-Entscheidung**.
+
+Aktiver Vertrag:
+
+~~~text
+ACCESS road anchor resolves and lies inside ACCESS
+-> road path and snap validation remain fail-closed
+-> road-aligned formation is built with accepted spacing/heading rules
+-> individual formation members may extend outside ACCESS
+-> MOOSE BRIGADE/WAREHOUSE/PLATOON/ARMYGROUP/AUFTRAG lifecycle remains unchanged
+~~~
+
+Die historische Ground Acceptance 3-2 bleibt Evidenz fuer ihren exakt getesteten
+4-Fahrzeug-Stand. Die geaenderte Containment-Grenze muss im aktuellen A11/QRF-
+Stand erneut in DCS validiert werden.
 
 ## Acceptance-Code-Gesetz
 
@@ -315,6 +343,7 @@ missing authoritative incident GetParticipants(true) target source
 missing tactical-zone target filtering
 missing target-exhaustion mission completion
 missing ACCESS GroundRoadSpawnAdapter integration
+reintroduced per-unit/all-members ACCESS containment
 PATROL_TEST dependency
 movement-distance-driven release
 return on perimeter clear alone
