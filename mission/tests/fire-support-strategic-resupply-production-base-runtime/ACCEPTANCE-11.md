@@ -17,7 +17,8 @@ supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
+validation_status: DCS_PASS_MISSION_HASH_PENDING
 ---
 
 # Production Base Acceptance 11 – Multi-FOB/COP Autonomous Full Response
@@ -510,3 +511,91 @@ ACCESS validates the road/materialization anchor
 Die Korrektur ist eine ausdruecklich genehmigte Aenderung der zuvor zu strengen
 Adapter-Guardrail, keine neue QRF-/Routing-Architektur. A11 bleibt
 `validated_in_dcs: false` und benoetigt nach neuem Build einen erneuten DCS-Lauf.
+
+## 17. A11 DCS-PASS 06.10.2026 – Provenienzabschluss noch offen
+
+Der reale Wiederholungslauf nach der Owner-Korrektur des ACCESS-Containments hat den
+kombinierten A11-Lifecycle in DCS vollständig durchlaufen und den expliziten
+Acceptance-PASS erreicht.
+
+Getesteter Source-/Build-Stand:
+
+~~~text
+branch:
+agent/fire-support-strategic-resupply-base-gate0
+
+tested source commit:
+1193a3b9b1ad67ddfa2e43b16d408f34851b62e2
+
+Production Builder:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-33
+SHA-256:
+04FF1D73202D1863709C0ED01FDBAA95F10B4B0A299BC87E2CE29651B2E9B17C
+
+Production Base bundle SHA-256:
+EC1CC8BD359AB97E4A03D0DCA2F70FD854903F3AF23E21178CE40681A3C736F1
+
+Acceptance Builder:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-11-2
+SHA-256:
+D81A721D41291C20DB620A7890A780DDC4110211FCD1ABA91C672D316CB01E0F
+
+Acceptance bundle SHA-256:
+680D727C991A4F98A4CFA291CFA8C1BBA9AED54889DC31CC35D1F37A05A3E539
+
+mission:
+OMW_Template_v25_GroundWorks_base.miz
+
+mission SHA-256:
+PENDING OWNER HASH
+
+DCS:
+2.9.30.28738 MT
+
+MOOSE:
+2.9.18
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+Moose.lua SHA-256:
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+~~~
+
+Reale Laufzeitevidenz:
+
+~~~text
+Joyce / Wright / Honaker Guard observed
+-> all three QRF road spawns succeed
+-> Honaker ROAD_ALIGNED_WAREHOUSE_SPAWN accessContainment=ANCHOR_ONLY
+-> all three QRF observed
+-> all three QRF direct-target engagement starts
+
+-> concurrent ARTY x2 + CAS x2 + threshold-driven AIR_RESUPPLY
+
+WRIGHT: MOOSE-selected real L118 -> Functional ARTY fire
+HONAKER: MOOSE-selected real 2B11 -> Functional ARTY fire
+-> physical 120 mm shot/hit/kill evidence in debrief
+
+CAS Joyce -> owner corridor -> home landing -> Legion return -> complete
+CAS Honaker -> owner corridor -> home landing -> Legion return -> complete
+
+Strategic Resupply:
+threshold demand -> MOOSE-selected CH-47 -> outbound corridor
+-> MOOSE STORAGE in-transit -> delivered -> settlement changed=true
+-> return corridor -> home landing -> Legion asset return
+
+-> [PRODUCTION BASE A11][PASS]
+~~~
+
+Der Projektinhaber beobachtete im Lauf den Anflug des Strategic-Resupply-Carriers und
+den Abflug beider CAS-Flights über die vorgesehenen Korridore positiv. Die nicht
+durchgehend visuell beobachteten Waffeneinsätze sind durch DCS- und Debrief-Evidenz
+belegt.
+
+Der nach Dispatcher Stop auftretende lokale Saved-Games-Hookfehler bhHook.lua
+(tcp == nil) liegt außerhalb des FSSR-Lifecycles und trat erst nach dem A11-PASS auf.
+
+Governance-Grenze: Der Lauf ist als realer DCS-PASS dokumentiert und
+validated_in_dcs: true. Eine Hochstufung auf ACCEPTED_TECHNICAL_BASELINE erfolgt
+erst, wenn der exakte SHA-256 der tatsächlich getesteten Owner-MIZ nachgereicht und
+in der Acceptance-Provenienz eingetragen wurde.
+
