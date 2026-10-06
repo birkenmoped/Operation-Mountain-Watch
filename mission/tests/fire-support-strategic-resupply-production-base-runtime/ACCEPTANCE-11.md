@@ -8,7 +8,7 @@ authoritative_for:
   - autonomous MOOSE provider selection under concurrent support demand
   - required ARTY, mortar, CAS and Strategic Resupply coverage
 not_authoritative_for:
-  - runtime acceptance before the real DCS test
+  - formal ACCEPTED_TECHNICAL_BASELINE before exact tested mission SHA-256 is recorded
   - provider identities or deterministic support assignments
   - new MOOSE/native-DCS exceptions
 scenario_period: 2010-08-01/2011-12-31
@@ -509,8 +509,9 @@ ACCESS validates the road/materialization anchor
 ~~~
 
 Die Korrektur ist eine ausdruecklich genehmigte Aenderung der zuvor zu strengen
-Adapter-Guardrail, keine neue QRF-/Routing-Architektur. A11 bleibt
-`validated_in_dcs: false` und benoetigt nach neuem Build einen erneuten DCS-Lauf.
+Adapter-Guardrail, keine neue QRF-/Routing-Architektur. Zu diesem Zeitpunkt blieb A11
+`validated_in_dcs: false` und benoetigte einen erneuten DCS-Lauf. Dieser historische
+Zwischenstand ist durch den DCS-PASS in Abschnitt 17 fortgeschrieben.
 
 ## 17. A11 DCS-PASS 06.10.2026 – Provenienzabschluss noch offen
 
