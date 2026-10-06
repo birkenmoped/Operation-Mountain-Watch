@@ -519,3 +519,59 @@ gegen Wiedereinfuehrung abgesichert. Der MOOSE BRIGADE/WAREHOUSE/PLATOON/
 ARMYGROUP/AUFTRAG-Lifecycle bleibt unveraendert. Der geaenderte physische
 Materialisierungsrand benoetigt einen neuen lokalen Build-/Hash-Nachweis und
 anschliessend A11-DCS-Revalidation.
+
+## 23. A11 DCS-PASS 06.10.2026 – Runtime geschlossen, Missionshash noch offen
+
+Der Wiederholungslauf auf Source-Commit
+1193a3b9b1ad67ddfa2e43b16d408f34851b62e2 mit Production Base-33 und
+Acceptance-11-2 bestand den kombinierten A11-Lifecycle unter DCS 2.9.30.28738 MT.
+
+Belegt sind:
+
+~~~text
+all three Guard paths observed
+all three QRF materializations successful
+Honaker ACCESS anchor-only correction successful
+all three QRF direct-target engagements
+MOOSE-selected Wright L118 fire
+MOOSE-selected Honaker 2B11 fire
+physical mortar hit/kill evidence
+two independent CAS owner-corridor lifecycles
+both CAS assets home-landed and returned to Legion
+threshold-driven Strategic Resupply
+MOOSE-selected CH-47
+outbound corridor
+STORAGE in-transit
+DELIVERED settlement changed=true
+return corridor
+home landing
+Legion asset return
+[PRODUCTION BASE A11][PASS]
+~~~
+
+Getestete Hashes:
+
+~~~text
+Production Builder:
+04FF1D73202D1863709C0ED01FDBAA95F10B4B0A299BC87E2CE29651B2E9B17C
+
+Production Base bundle:
+EC1CC8BD359AB97E4A03D0DCA2F70FD854903F3AF23E21178CE40681A3C736F1
+
+Acceptance Builder:
+D81A721D41291C20DB620A7890A780DDC4110211FCD1ABA91C672D316CB01E0F
+
+Acceptance bundle:
+680D727C991A4F98A4CFA291CFA8C1BBA9AED54889DC31CC35D1F37A05A3E539
+
+MOOSE:
+2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua:
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+~~~
+
+Die einzige noch fehlende Acceptance-Provenienz ist der SHA-256 der tatsächlich
+getesteten OMW_Template_v25_GroundWorks_base.miz. Bis dieser reale Owner-Hash
+vorliegt, bleibt die formale Hochstufung auf ACCEPTED_TECHNICAL_BASELINE
+governance-konform gesperrt. Der DCS-Lauf selbst ist als PASS dokumentiert.
+
