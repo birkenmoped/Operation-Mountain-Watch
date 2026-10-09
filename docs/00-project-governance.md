@@ -220,6 +220,56 @@ enemy leaves installation alarm zone
 
 Die konkrete Geometrie beziehungsweise Reichweite der Alarmzone darf je Installation und taktischem Kontext variieren. Die Semantik bleibt jedoch identisch: **Alarmierung und Triggerung, nicht Begrenzung des anschließenden Kampfes.**
 
+
+## 5.3 Verbindliche Lifecycle-Preservation- und Anti-Regression-Regel
+
+Bereits akzeptierte oder durch eine aktuelle verbindliche Fachentscheidung festgelegte Laufzeit-Lifecycles duerfen bei Generalisierung, Base-Bildung, Reconciliation oder Acceptance-Arbeit nicht stillschweigend neu implementiert, verkuerzt oder durch Acceptance-eigene Steuerung ersetzt werden.
+
+Verbindliches Prinzip:
+
+```text
+accepted / binding lifecycle
+-> inherit
+-> reuse directly where possible
+-> otherwise extract/adapt minimally
+-> preserve state-transition and authority invariants
+-> revalidate only the actually changed boundary
+
+NOT:
+
+accepted lifecycle
+-> copy selected ideas into a new harness
+-> rebuild its state machine
+-> declare the new harness equivalent
+```
+
+Vor jeder Aenderung an einem Subsystem mit bestehender Acceptance- oder Lifecycle-Evidenz muss eine Lifecycle-Inheritance-Pruefung dokumentiert werden. Sie muss mindestens nennen:
+
+```text
+1. inherited lifecycle / binding law
+2. accepted source path(s)
+3. exact acceptance/evidence provenance where available
+4. invariants that must not change
+5. reused production module(s)
+6. any adapter/extraction required
+7. changed invariant, if any
+8. owner approval for any intentional invariant change
+9. required regression acceptance
+```
+
+Acceptance- und Diagnosecode darf einen bereits produktiv oder akzeptiert vorhandenen Lifecycle nur **ausloesen, beobachten und verifizieren**. Er darf insbesondere keine zweite Autoritaet fuer Routing, Targeting, Missionsabschluss, Release, RTB, Landing, Return-to-Legion, Asset-Recredit oder strategische Settlement-Zustaende aufbauen.
+
+Acceptance-Watchdogs sind diagnostisch. Sie duerfen einen produktiven Lifecycle nicht stoppen oder dessen Beobachtung abschalten, ausser der betreffende Timeout ist selbst Teil des verbindlichen Produktionsvertrags.
+
+Wenn ein neuer Base-/Generalisierungsstand einen bereits akzeptierten Lifecycle beruehrt, gilt:
+
+- unveraenderte geerbte Invarianten behalten ihre bisherige Evidenz nur, wenn der gleiche produktive Ausfuehrungspfad weiterverwendet wird;
+- kopierte oder neu implementierte Logik erbt **keine** Acceptance-Evidenz;
+- jede Aenderung einer geerbten Invariante entzieht diesem Teilbereich die bisherige Acceptance-Wirkung, bis der geaenderte Pfad neu getestet wurde;
+- ein Harness-PASS darf niemals eine fehlende produktive Lifecycle-Implementierung ersetzen.
+
+Die konkrete Arbeits- und Dokumentationsregel steht in `docs/moose/ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md`.
+
 ## 6. Historischer Recherche- und Missionszeitraum
 
 Verbindlicher Recherche- und Kampagnenzeitraum:

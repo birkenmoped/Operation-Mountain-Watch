@@ -9,6 +9,11 @@
 --
 -- This module is pinned to the reviewed MOOSE WAREHOUSE private spawn contract
 -- used by commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54.
+--
+-- Owner clarification, 2026-10-05:
+-- ACCESS constrains the validated road/materialization anchor. It is not a
+-- bounding zone for every member of a road-aligned formation. Individual
+-- vehicles may extend beyond ACCESS after the anchor has been validated.
 
 local Adapter = {}
 
@@ -136,6 +141,14 @@ local function templateOffsets(units, minimumSpacingM)
   return offsets, cumulative
 end
 
+local function fixedOffsets(count, spacingM)
+  local offsets = {}
+  for index = 1, count do
+    offsets[index] = (index - 1) * spacingM
+  end
+  return offsets, math.max(0, (count - 1) * spacingM)
+end
+
 local function buildPositions(asset, roadSpec, config)
   local accessZone = roadSpec.accessZone
   local forwardCoordinate = roadSpec.forwardCoordinate
@@ -179,10 +192,16 @@ local function buildPositions(asset, roadSpec, config)
     fail("outbound road path empty entityId=" .. tostring(roadSpec.entityId))
   end
 
-  local offsets, formationLength = templateOffsets(
-    asset.template.units,
-    config.minimumTemplateSpacingM
-  )
+  local offsets, formationLength
+  if config.vehicleSpacingM ~= nil then
+    offsets, formationLength = fixedOffsets(#asset.template.units, config.vehicleSpacingM)
+  else
+    offsets, formationLength = templateOffsets(
+      asset.template.units,
+      config.minimumTemplateSpacingM
+    )
+  end
+
   local leadDistance = config.rearClearanceM + formationLength
   if leadDistance >= totalDistance then
     fail("outbound road path too short entityId=" .. tostring(roadSpec.entityId)
@@ -209,11 +228,6 @@ local function buildPositions(asset, roadSpec, config)
         .. " unit=" .. tostring(index)
         .. " distanceM=" .. tostring(snapDistance))
     end
-    if accessZone:IsVec2InZone(roadCoordinate:GetVec2()) ~= true then
-      fail("road spawn position outside access zone entityId=" .. tostring(roadSpec.entityId)
-        .. " unit=" .. tostring(index))
-    end
-
     positions[index] = {
       x = roadCoordinate.x,
       y = roadCoordinate.z,
@@ -232,6 +246,7 @@ local function buildPositions(asset, roadSpec, config)
     formationLengthM = formationLength,
     maximumSnapM = maximumSnap,
     roadLengthM = roadLength or totalDistance,
+    vehicleSpacingM = config.vehicleSpacingM,
   }
 end
 
@@ -241,6 +256,11 @@ local function normalizeConfig(config)
   end
   if type(config.resolveRoadSpawn) ~= "function" then
     fail("config.resolveRoadSpawn function is required")
+  end
+
+  local vehicleSpacingM = nil
+  if config.vehicleSpacingM ~= nil then
+    vehicleSpacingM = requireFinitePositive(config.vehicleSpacingM, "vehicleSpacingM")
   end
 
   return {
@@ -262,6 +282,7 @@ local function normalizeConfig(config)
       config.minimumTemplateSpacingM or DEFAULT_MIN_TEMPLATE_SPACING_M,
       "minimumTemplateSpacingM"
     ),
+    vehicleSpacingM = vehicleSpacingM,
   }
 end
 
@@ -331,12 +352,13 @@ function Adapter.Install(brigade, config)
     template.lateActivation = lateactivated
 
     normalized.log(string.format(
-      "%s ROAD_ALIGNED_WAREHOUSE_SPAWN entityId=%s units=%d formationLengthM=%.1f maxSnapM=%.1f",
+      "%s ROAD_ALIGNED_WAREHOUSE_SPAWN entityId=%s units=%d formationLengthM=%.1f maxSnapM=%.1f vehicleSpacingM=%s accessContainment=ANCHOR_ONLY",
       TAG,
       tostring(roadSpec.entityId or "UNKNOWN"),
       #positions,
       diagnostics.formationLengthM,
-      diagnostics.maximumSnapM
+      diagnostics.maximumSnapM,
+      tostring(diagnostics.vehicleSpacingM or "TEMPLATE")
     ))
 
     return _DATABASE:Spawn(template)

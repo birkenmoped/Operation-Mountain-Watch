@@ -13,11 +13,21 @@ local zone = {}
 function zone:IsCoordinateInZone(coord) return coord and coord.inside == true end
 
 local function makeTarget(name, coalitionValue, inside)
-  local target = { name=name, coalition=coalitionValue, inside=inside }
+  local coordinate = { inside=inside, name=name.."-COORD" }
+  local target = { name=name, coalition=coalitionValue, inside=inside, coordinate=coordinate }
   function target:GetName() return self.name end
   function target:GetCoalition() return self.coalition end
   function target:IsInZone(_) return self.inside == true end
+  function target:GetCoordinate() return self.coordinate end
   return target
+end
+
+local function makeInitiator(name, coordinateName)
+  local coordinate = { name=coordinateName }
+  local initiator = { name=name, coordinate=coordinate }
+  function initiator:GetName() return self.name end
+  function initiator:GetCoordinate() return self.coordinate end
+  return initiator
 end
 
 local handler = { handled={}, unhandled={} }
@@ -52,24 +62,33 @@ assertEqual(evidence[#evidence].evidenceType, AlarmAdapter.EvidenceType.PROXIMIT
 local blueInside = makeTarget("BLUE-GUARD", 2, true)
 local redInside = makeTarget("RED-OTHER", 1, true)
 local blueOutside = makeTarget("BLUE-OUTSIDE", 2, false)
+local redInitiator = makeInitiator("RED-RIFLE", "RED-RIFLE-COORD")
 
 local direct, directReason = adapter:ProcessShootingStart({
-  IniCoalition=1, TgtCoalition=2, IniUnitName="RED-RIFLE", TgtUnitName="BLUE-GUARD", TgtUnit=blueInside,
+  IniCoalition=1, TgtCoalition=2, IniUnitName="RED-RIFLE", IniGroupName="RED-GROUP",
+  IniUnit=redInitiator, TgtUnitName="BLUE-GUARD", TgtUnit=blueInside,
 })
 assertEqual(directReason, "EVIDENCE_EMITTED", "direct shooting reason")
 assertEqual(direct.evidenceType, AlarmAdapter.EvidenceType.DIRECT_FIRE_ATTACK, "direct shooting evidence")
+assertEqual(direct.position, redInitiator.coordinate, "direct shooting hostile coordinate")
+assertEqual(direct.reportedTarget, blueInside.coordinate, "direct shooting target coordinate")
+assertEqual(direct.initiatorUnit, redInitiator, "direct shooting initiator wrapper")
 
 local ignoredDirect, ignoredDirectReason = adapter:ProcessShootingStart({
-  IniCoalition=1, TgtCoalition=2, IniUnitName="RED-RIFLE", TgtUnitName="BLUE-OUTSIDE", TgtUnit=blueOutside,
+  IniCoalition=1, TgtCoalition=2, IniUnitName="RED-RIFLE", IniUnit=redInitiator,
+  TgtUnitName="BLUE-OUTSIDE", TgtUnit=blueOutside,
 })
 assertEqual(ignoredDirect, nil, "outside direct ignored")
 assertEqual(ignoredDirectReason, "TARGET_OUTSIDE_ALARM_ZONE", "outside direct reason")
 
 local hit, hitReason = adapter:ProcessHit({
-  IniCoalition=1, TgtCoalition=2, IniUnitName="RED-RIFLE", TgtUnitName="BLUE-GUARD", TgtUnit=blueInside,
+  IniCoalition=1, TgtCoalition=2, IniUnitName="RED-RIFLE", IniUnit=redInitiator,
+  TgtUnitName="BLUE-GUARD", TgtUnit=blueInside,
 })
 assertEqual(hitReason, "EVIDENCE_EMITTED", "hit reason")
 assertEqual(hit.evidenceType, AlarmAdapter.EvidenceType.CONFIRMED_HIT_ATTACK, "hit evidence")
+assertEqual(hit.position, redInitiator.coordinate, "hit hostile coordinate")
+assertEqual(hit.reportedTarget, blueInside.coordinate, "hit target coordinate")
 
 local dcsDirectWeapon = {}
 local directWeapon = { target=blueInside }
@@ -80,10 +99,14 @@ function directWeapon:IsRocket() return true end
 function directWeapon:IsMissile() return false end
 weaponsByDcs[dcsDirectWeapon] = directWeapon
 
-local _, shotReason = adapter:ProcessShot({ IniCoalition=1, weapon=dcsDirectWeapon, IniUnitName="RED-RPG" })
+local _, shotReason = adapter:ProcessShot({
+  IniCoalition=1, weapon=dcsDirectWeapon, IniUnitName="RED-RPG", IniGroupName="RED-GROUP", IniUnit=redInitiator,
+})
 assertEqual(shotReason, "DIRECT_TARGET_EVIDENCE", "direct projectile uses target evidence without tracking")
 assertEqual(evidence[#evidence].sourceEvent, "ShotTarget", "shot target source")
 assertEqual(evidence[#evidence].evidenceType, AlarmAdapter.EvidenceType.DIRECT_FIRE_ATTACK, "shot target evidence")
+assertEqual(evidence[#evidence].position, redInitiator.coordinate, "shot target hostile coordinate")
+assertEqual(evidence[#evidence].reportedTarget, blueInside.coordinate, "shot target coordinate")
 
 local dcsWrongTargetWeapon = {}
 local wrongTargetWeapon = { target=redInside }
@@ -95,7 +118,7 @@ function wrongTargetWeapon:IsMissile() return false end
 function wrongTargetWeapon:SetTimeStepTrack(_) error("wrong-coalition target must not track without filter") end
 weaponsByDcs[dcsWrongTargetWeapon] = wrongTargetWeapon
 local beforeWrong = #evidence
-local _, wrongReason = adapter:ProcessShot({ IniCoalition=1, weapon=dcsWrongTargetWeapon, IniUnitName="RED-RPG", allowTrack=false })
+local _, wrongReason = adapter:ProcessShot({ IniCoalition=1, weapon=dcsWrongTargetWeapon, IniUnitName="RED-RPG", IniUnit=redInitiator, allowTrack=false })
 assertEqual(wrongReason, "TRACK_FILTER_REJECTED", "wrong target falls through to track filter")
 assertEqual(#evidence, beforeWrong, "wrong coalition target emits no evidence")
 
@@ -112,7 +135,7 @@ function shell:StartTrack() self.started=true return self end
 function shell:GetImpactCoordinate() return self.impact end
 weaponsByDcs[dcsShell] = shell
 
-local _, trackReason = adapter:ProcessShot({ IniCoalition=1, weapon=dcsShell, IniUnitName="RED-ARTY", allowTrack=true })
+local _, trackReason = adapter:ProcessShot({ IniCoalition=1, weapon=dcsShell, IniUnitName="RED-ARTY", IniUnit=redInitiator, allowTrack=true })
 assertEqual(trackReason, "TRACKING_STARTED", "filtered shell tracking starts")
 assertTrue(shell.started, "shell tracking started")
 assertEqual(shell.step, 0.25, "configured non-default tracking step")
@@ -121,6 +144,7 @@ shell.impactFunc(shell)
 assertEqual(#evidence, beforeImpact + 1, "inside impact emits evidence")
 assertEqual(evidence[#evidence].evidenceType, AlarmAdapter.EvidenceType.INDIRECT_FIRE_ATTACK, "inside impact evidence")
 assertEqual(evidence[#evidence].sourceEvent, "WeaponImpact", "inside impact source")
+assertEqual(evidence[#evidence].position, redInitiator.coordinate, "indirect fire hostile coordinate preserved")
 
 local dcsRejectedShell = {}
 local rejectedShell = { allowTrack=false }
@@ -130,7 +154,7 @@ function rejectedShell:IsRocket() return false end
 function rejectedShell:IsMissile() return false end
 function rejectedShell:SetTimeStepTrack(_) error("rejected shell must not start tracking") end
 weaponsByDcs[dcsRejectedShell] = rejectedShell
-local _, rejectReason = adapter:ProcessShot({ IniCoalition=1, weapon=dcsRejectedShell, IniUnitName="RED-ARTY", allowTrack=true })
+local _, rejectReason = adapter:ProcessShot({ IniCoalition=1, weapon=dcsRejectedShell, IniUnitName="RED-ARTY", IniUnit=redInitiator, allowTrack=true })
 assertEqual(rejectReason, "TRACK_FILTER_REJECTED", "filter blocks expensive weapon tracking")
 
 local _, startedAgain = adapter:Start()

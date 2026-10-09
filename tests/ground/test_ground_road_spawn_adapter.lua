@@ -47,7 +47,9 @@ function accessZone:GetCoordinate()
   return newCoordinate(0, 0)
 end
 function accessZone:IsVec2InZone(vec2)
-  return vec2.x >= 0 and vec2.x <= 100 and math.abs(vec2.y) < 0.01
+  -- ACCESS validates the materialization road anchor only. The test zone is
+  -- intentionally narrower than the resulting formation.
+  return vec2.x >= 0 and vec2.x <= 30 and math.abs(vec2.y) < 0.01
 end
 
 local originalCalls = 0
@@ -127,8 +129,14 @@ assert(math.abs(spawnedTemplate.units[1].y) < 0.001)
 assert(math.abs(spawnedTemplate.units[2].y) < 0.001)
 assert(math.abs(spawnedTemplate.units[3].y) < 0.001)
 assert(math.abs(spawnedTemplate.units[1].heading) < 0.001)
+-- The road anchor at x=0 is valid, while the 45 m / 35 m lead members are
+-- intentionally outside the 0..30 m ACCESS zone. This must not block spawn.
+assert(accessZone:IsVec2InZone({ x = spawnedTemplate.units[1].x, y = spawnedTemplate.units[1].y }) == false)
+assert(accessZone:IsVec2InZone({ x = spawnedTemplate.units[2].x, y = spawnedTemplate.units[2].y }) == false)
+assert(accessZone:IsVec2InZone({ x = spawnedTemplate.units[3].x, y = spawnedTemplate.units[3].y }) == true)
 assert(#logs == 1)
 assert(logs[1]:find("ROAD_ALIGNED_WAREHOUSE_SPAWN", 1, true) ~= nil)
+assert(logs[1]:find("accessContainment=ANCHOR_ONLY", 1, true) ~= nil)
 
 local offroad = brigade:_SpawnAssetGroundNaval(
   "OFFROAD_TEST_GROUP",
