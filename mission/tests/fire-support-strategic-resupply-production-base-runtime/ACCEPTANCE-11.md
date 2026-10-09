@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-11
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: ACCEPTANCE_TEST
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -8,7 +8,6 @@ authoritative_for:
   - autonomous MOOSE provider selection under concurrent support demand
   - required ARTY, mortar, CAS and Strategic Resupply coverage
 not_authoritative_for:
-  - formal ACCEPTED_TECHNICAL_BASELINE before exact tested mission SHA-256 is recorded
   - provider identities or deterministic support assignments
   - new MOOSE/native-DCS exceptions
 scenario_period: 2010-08-01/2011-12-31
@@ -17,8 +16,16 @@ supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
+acceptance_branch: agent/fire-support-strategic-resupply-base-gate0
+acceptance_commit: 1193a3b9b1ad67ddfa2e43b16d408f34851b62e2
+acceptance_mission: OMW_Template_v25_GroundWorks_base.miz
+acceptance_mission_sha256: C5C0235FC0923A4A66518FD8ADCD48618536E56595E112F01EDCFD9C942FE113
+acceptance_bundle_sha256: 680D727C991A4F98A4CFA291CFA8C1BBA9AED54889DC31CC35D1F37A05A3E539
+dcs_version: 2.9.30.28738 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 validated_in_dcs: true
-validation_status: DCS_PASS_MISSION_HASH_PENDING
+validation_status: DCS_VALIDATED_FOR_DOCUMENTED_SCOPE
 ---
 
 # Production Base Acceptance 11 – Multi-FOB/COP Autonomous Full Response
@@ -548,7 +555,7 @@ mission:
 OMW_Template_v25_GroundWorks_base.miz
 
 mission SHA-256:
-PENDING OWNER HASH
+C5C0235FC0923A4A66518FD8ADCD48618536E56595E112F01EDCFD9C942FE113
 
 DCS:
 2.9.30.28738 MT
@@ -595,8 +602,34 @@ belegt.
 Der nach Dispatcher Stop auftretende lokale Saved-Games-Hookfehler bhHook.lua
 (tcp == nil) liegt außerhalb des FSSR-Lifecycles und trat erst nach dem A11-PASS auf.
 
-Governance-Grenze: Der Lauf ist als realer DCS-PASS dokumentiert und
-validated_in_dcs: true. Eine Hochstufung auf ACCEPTED_TECHNICAL_BASELINE erfolgt
-erst, wenn der exakte SHA-256 der tatsächlich getesteten Owner-MIZ nachgereicht und
-in der Acceptance-Provenienz eingetragen wurde.
+Governance-Abschluss: Der reale Owner-Hash der tatsächlich getesteten Mission wurde
+am 09.10.2026 nachgereicht und stimmt als exakte Acceptance-Provenienz mit diesem
+Lauf überein. A11 ist damit für den dokumentierten Branch-/Commit-/Mission-/Bundle-/
+DCS-/MOOSE-Stand ACCEPTED_TECHNICAL_BASELINE.
 
+
+## 18. Formale Acceptance-Provenienz geschlossen – 09.10.2026
+
+Der Projektinhaber hat den SHA-256 der tatsächlich getesteten Owner-Mission lokal
+ermittelt und zurückgemeldet:
+
+~~~text
+mission: OMW_Template_v25_GroundWorks_base.miz
+SHA-256: C5C0235FC0923A4A66518FD8ADCD48618536E56595E112F01EDCFD9C942FE113
+~~~
+
+Damit sind die Pflichtfelder aus `docs/DOCUMENT-METADATA-POLICY.md` vollständig.
+Der A11-PASS wird für exakt folgende Provenienz als technische Baseline akzeptiert:
+
+~~~text
+acceptance branch: agent/fire-support-strategic-resupply-base-gate0
+acceptance commit: 1193a3b9b1ad67ddfa2e43b16d408f34851b62e2
+acceptance bundle: 680D727C991A4F98A4CFA291CFA8C1BBA9AED54889DC31CC35D1F37A05A3E539
+mission SHA-256: C5C0235FC0923A4A66518FD8ADCD48618536E56595E112F01EDCFD9C942FE113
+DCS: 2.9.30.28738 MT
+MOOSE: 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+~~~
+
+Repository-weite normative Wirkung entsteht weiterhin erst nach Merge nach `main`
+oder einer ausdrücklichen Governance-Entscheidung gemäß `docs/00-project-governance.md`.
