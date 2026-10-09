@@ -520,7 +520,7 @@ ARMYGROUP/AUFTRAG-Lifecycle bleibt unveraendert. Der geaenderte physische
 Materialisierungsrand benoetigt einen neuen lokalen Build-/Hash-Nachweis und
 anschliessend A11-DCS-Revalidation.
 
-## 23. A11 DCS-PASS 06.10.2026 – Runtime geschlossen, Missionshash noch offen
+## 23. A11 DCS-PASS 06.10.2026 – Runtime und Provenienz geschlossen
 
 Der Wiederholungslauf auf Source-Commit
 1193a3b9b1ad67ddfa2e43b16d408f34851b62e2 mit Production Base-33 und
@@ -570,8 +570,14 @@ Moose.lua:
 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ~~~
 
-Die einzige noch fehlende Acceptance-Provenienz ist der SHA-256 der tatsächlich
-getesteten OMW_Template_v25_GroundWorks_base.miz. Bis dieser reale Owner-Hash
-vorliegt, bleibt die formale Hochstufung auf ACCEPTED_TECHNICAL_BASELINE
-governance-konform gesperrt. Der DCS-Lauf selbst ist als PASS dokumentiert.
+Der Projektinhaber hat am 09.10.2026 den SHA-256 der tatsächlich getesteten
+`OMW_Template_v25_GroundWorks_base.miz` lokal nachgereicht:
+
+~~~text
+C5C0235FC0923A4A66518FD8ADCD48618536E56595E112F01EDCFD9C942FE113
+~~~
+
+Damit ist die A11-Provenienz vollständig. Der dokumentierte A11-Stand ist auf dem
+Arbeitsbranch `ACCEPTED_TECHNICAL_BASELINE`. PR #149 bleibt bis zu einer ausdrücklichen
+Owner-Freigabe Draft; repository-weite normative Wirkung entsteht erst gemäß Governance.
 
