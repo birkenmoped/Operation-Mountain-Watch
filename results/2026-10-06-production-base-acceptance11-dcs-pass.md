@@ -1,6 +1,6 @@
 ---
 document_id: OMW-RESULT-FSSR-PRODUCTION-BASE-A11-DCS-PASS-20261006
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: RUNTIME_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -11,7 +11,6 @@ authoritative_for:
   - Strategic Resupply physical corridor/STORAGE/settlement/return evidence
 not_authoritative_for:
   - repository-wide governance
-  - ACCEPTED_TECHNICAL_BASELINE before exact tested mission SHA-256 is recorded
   - provider/site profiles not exercised by this run
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -19,8 +18,16 @@ supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
+acceptance_branch: agent/fire-support-strategic-resupply-base-gate0
+acceptance_commit: 1193a3b9b1ad67ddfa2e43b16d408f34851b62e2
+acceptance_mission: OMW_Template_v25_GroundWorks_base.miz
+acceptance_mission_sha256: C5C0235FC0923A4A66518FD8ADCD48618536E56595E112F01EDCFD9C942FE113
+acceptance_bundle_sha256: 680D727C991A4F98A4CFA291CFA8C1BBA9AED54889DC31CC35D1F37A05A3E539
+dcs_version: 2.9.30.28738 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 validated_in_dcs: true
-validation_status: DCS_PASS_MISSION_HASH_PENDING
+validation_status: DCS_VALIDATED_FOR_DOCUMENTED_SCOPE
 ---
 
 # Production Base Acceptance 11 – DCS-PASS am 06.10.2026
@@ -90,7 +97,7 @@ mission:
 OMW_Template_v25_GroundWorks_base.miz
 
 mission SHA-256:
-PENDING OWNER HASH
+C5C0235FC0923A4A66518FD8ADCD48618536E56595E112F01EDCFD9C942FE113
 
 DCS:
 2.9.30.28738 MT
@@ -178,8 +185,10 @@ FSSR-Lifecycle-Evidenz.
 Der reale Runtime-Lauf ist DCS PASS und validated_in_dcs: true für den dokumentierten
 A11 Source-/Bundle-/DCS-/MOOSE-Stand.
 
-Für ACCEPTED_TECHNICAL_BASELINE verlangt docs/DOCUMENT-METADATA-POLICY.md zusätzlich
-den exakten SHA-256 der tatsächlich getesteten Mission. Dieser Owner-Hash liegt zum
-Zeitpunkt dieses Commits noch nicht vor. Die formale Baseline-Hochstufung bleibt
-deshalb bis zur Nachlieferung dieses Hashes gesperrt.
+Der Projektinhaber hat am 09.10.2026 den exakten SHA-256 der tatsächlich getesteten
+Mission lokal nachgereicht. Damit ist die vollständige technische Acceptance-Provenienz
+geschlossen und dieser exakte A11-Stand ist ACCEPTED_TECHNICAL_BASELINE.
+
+Repository-weite normative Wirkung entsteht dadurch noch nicht; dafür gilt weiterhin
+die Governance-Grenze für Branch-Acceptances bis zum Merge nach `main`.
 
