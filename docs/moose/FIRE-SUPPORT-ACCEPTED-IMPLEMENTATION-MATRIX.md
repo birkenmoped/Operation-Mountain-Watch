@@ -10,7 +10,7 @@ authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 supersedes:
 superseded_by:
@@ -642,3 +642,35 @@ Der Descriptor-only-Pfad bleibt historische Source-Evidenz, ist aber fuer die ak
 | Combined provider autonomy | keine site->provider/nearest/preferred/fixed-carrier Auswahl im allgemeinen Base-Pfad | SOURCE_REVIEWED | A11 combined multi-site run |
 
 Keine Zeile dieser Source-Reconciliation erweitert die exakten A9-/A10-DCS-Baselines.
+
+
+## Production-Orchestration-Reuse-Gate – 13.10.2026
+
+Lifecycle-Inheritance fuer die normale Mission:
+
+| Feld | Inhalt |
+|---|---|
+| inherited_contract | Stage-3 Full Response external support requirement + A9 CAS lifecycle + A10 Functional-ARTY real-asset selection |
+| accepted_source_paths | `OMW_FireSupStratResupply_CasLifecycleRuntime.lua`, `OMW_FireSupStratResupply_ArtySelectionRuntime.lua`, `OMW_FireSupStratResupply_ArtyRealAssetRegistry.lua`, Functional-ARTY production modules |
+| evidence | Stage-3 Full-Response/Fokus-CAS evidence; A9 CAS PASS; A10 real fixed-fire-support materialization/selection; A11 combined multi-site PASS |
+| invariants | CAS and ARTY are independent external support requirements; MOOSE selects providers/assets; Functional ARTY remains sole fire-control owner; CAS release/recovery remains shared production lifecycle |
+| reuse_mode | DIRECT_REUSE + MINIMAL_ADAPTER at incident-to-C2-demand boundary |
+| harness_role | trigger/observe/assert only |
+| changed_boundary | qualified installation incident now forwards one initial CAS and one initial ARTY C2 requirement into the already configured Base adapters |
+| owner_approval | no new semantic exception; restores documented orchestration lost during Production Bootstrap extraction |
+| revalidation_scope | DCS proof that real Production incident creates/dispatches ARTY and CAS while Guard/QRF remain unaffected |
+
+Anti-Regression:
+
+~~~text
+qualified installation attack
+-> local Guard + local QRF
+-> independent CAS requirement
+-> independent ARTY requirement
+
+NOT:
+QRF failure -> CAS
+QRF failure -> ARTY
+perimeter clear -> external support cancel
+Acceptance harness -> owns production demand creation
+~~~
