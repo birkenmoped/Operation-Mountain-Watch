@@ -19,7 +19,7 @@ supersedes:
   - OMW-HANDOFF-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-20260911 for current operational handoff context
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: PENDING_MERGE
+source_commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
 validated_in_dcs: false
 moose_release: 2.9.18
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
