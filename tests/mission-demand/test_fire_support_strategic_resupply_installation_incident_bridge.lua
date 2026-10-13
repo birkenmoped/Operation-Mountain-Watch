@@ -21,7 +21,15 @@ function base:CloseIncident(incidentId,reason)
 end
 
 local registry={Sites={FOB_JOYCE={siteId="FOB_JOYCE",installationId="BLUE_GROUND_FOB_JOYCE"}}}
-local bridge=Bridge.New({base=base,siteRegistry=registry})
+local escalationCalls={}
+local bridge=Bridge.New({
+  base=base,
+  siteRegistry=registry,
+  onExternalSupportRequired=function(baseIncident,context)
+    escalationCalls[#escalationCalls+1]={incident=baseIncident,context=context}
+    return {CAS=true,ARTY=true},nil
+  end,
+})
 local position={x=1,y=2,z=3}
 local reportedTarget={targetKind="INSTALLATION_SECURITY_PERIMETER"}
 local initiatorGroup={name="BadGuys_A3_JOYCE"}
@@ -30,7 +38,7 @@ local coordinator={}
 function coordinator:GetParticipants() return {initiatorGroup} end
 local source={incidentId="INSTALLATION-ATTACK|BLUE_GROUND_FOB_JOYCE|1",installationId="BLUE_GROUND_FOB_JOYCE"}
 local evidence={evidenceType="PROXIMITY_INTRUSION",priority=80,position=position,reportedTarget=reportedTarget,initiatorGroup=initiatorGroup}
-local opened,created,reason,qrf,guard=bridge:OnIncidentStarted(coordinator,source,evidence)
+local opened,created,reason,qrf,guard,externalResult,externalReason=bridge:OnIncidentStarted(coordinator,source,evidence)
 yes(created,"base incident created")
 eq(reason,nil,"start reason")
 eq(calls.open.siteId,"FOB_JOYCE","site mapped")
@@ -58,12 +66,20 @@ eq(qrfCall.spec.cancelWhenIncidentClosed,false,"incident close must not auto-can
 eq(qrf.demandId,"QRF-1","QRF result forwarded")
 eq(guard.demandId,"GUARD-1","Guard result forwarded")
 eq(bridge:GetBaseIncidentId(source.incidentId),opened.incidentId,"source binding stored")
+eq(#escalationCalls,1,"external support escalation called once")
+eq(escalationCalls[1].incident,opened,"external escalation receives base incident")
+eq(escalationCalls[1].context.sourceCoordinator,coordinator,"external escalation receives participant authority")
+eq(escalationCalls[1].context.siteId,"FOB_JOYCE","external escalation receives site id")
+eq(externalResult.CAS,true,"external escalation result forwarded")
+eq(externalResult.ARTY,true,"external escalation ARTY result forwarded")
+eq(externalReason,nil,"external escalation reason")
 
 local refreshed,refreshCreated,refreshReason=bridge:OnIncidentUpdated(coordinator,source,{evidenceType="DIRECT_FIRE_ATTACK"})
 eq(refreshed,opened.incidentId,"refresh resolves base incident")
 no(refreshCreated,"refresh creates no response")
 eq(refreshReason,"INCIDENT_REFRESH_ONLY","refresh reason")
 eq(#calls.support,2,"refresh creates no duplicate Guard/QRF")
+eq(#escalationCalls,1,"refresh creates no duplicate external escalation")
 
 local closed,changed,closeReason=bridge:OnIncidentClosed(coordinator,source,"KNOWN_ATTACKERS_NEUTRALIZED")
 yes(changed,"base incident closed")
