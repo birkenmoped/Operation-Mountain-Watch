@@ -185,3 +185,42 @@ USERFLAG:New("OMW_GROUND_READY"):Get()
 
 Keine zusaetzliche Readiness-Autoritaet und keine Lua-Global-Spiegelung werden
 eingefuehrt. Der naechste DCS-Lauf muss Bootstrap-2 verwenden.
+
+
+## 9. Full-Response-Regressionscope nach Bootstrap-PASS
+
+Der erste Bootstrap-2-Lauf bestaetigte, dass Production Runtime, Perimeter, Site-BRIGADEs,
+AIRWING-Registrierung und QRF bis in reale Engagements funktionieren. Gleichzeitig
+wurde eine Orchestration-Regression sichtbar: der qualifizierte Installation-Incident
+erzeugte nur Guard/QRF-Demands, obwohl ARTY/CAS-Adapter bereits vorbereitet waren.
+
+Bootstrap-3 / Production-Base-34 muss deshalb zusaetzlich zeigen:
+
+~~~text
+qualified installation incident
+-> GUARD requested
+-> QRF requested
+-> C2_EXTERNAL_SUPPORT_REQUEST supportType=CAS
+-> C2_EXTERNAL_SUPPORT_REQUEST supportType=ARTY
+
+CAS:
+-> Base demand DISPATCHED
+-> MOOSE provider selection
+-> CAS_PROVIDER_PROFILE_BOUND
+-> CAS_MISSION_ASSIGNED
+-> CAS_OWNER_CORRIDOR_INSTALLED
+-> CAS_EXECUTING
+-> physical CAS behavior according to inherited lifecycle
+
+ARTY:
+-> Base demand DISPATCHED
+-> MOOSE selection-only provider reservation
+-> FUNCTIONAL_ARTY_OWNER_CREATED for selected real battery
+-> physical ARTY/Mortar EVENTS.Shot evidence
+~~~
+
+Die Acceptance darf dafuer keine neue Provider-Auswahl, kein FireAtPoint-AUFTRAG als
+zweiten ARTY-Owner und keine eigene CAS-Release-/Recovery-Logik einfuehren.
+
+Dieser Nachweis ist eine Regression der Production-Orchestration-Grenze. Die bereits
+akzeptierten A9/A10-Lifecycles werden nicht neu definiert.
