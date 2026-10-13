@@ -8,7 +8,7 @@
 
 local Bootstrap = {}
 
-Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-1"
+Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-2"
 
 local TAG = "[OMW][FireSupStratResupply.Production]"
 local QRF_TEMPLATE = "TPL_BLUE_GND_QRF_MIXED_6"
@@ -90,6 +90,24 @@ local function copy(value)
   return result
 end
 
+local function userFlagValue(name)
+  if type(USERFLAG) ~= "table" or type(USERFLAG.New) ~= "function" then
+    fail("MOOSE USERFLAG class is required for " .. tostring(name))
+  end
+  local flag = USERFLAG:New(name)
+  return flag:Get()
+end
+
+local function requireUserFlag(name, expected)
+  local actual = userFlagValue(name)
+  if actual ~= expected then
+    fail("user flag not ready name=" .. tostring(name)
+      .. " expected=" .. tostring(expected)
+      .. " actual=" .. tostring(actual))
+  end
+  return actual
+end
+
 local function setReadyFlag(name, value)
   if type(USERFLAG) ~= "table" or type(USERFLAG.New) ~= "function" then
     fail("MOOSE USERFLAG class is required for " .. tostring(name))
@@ -139,7 +157,7 @@ local function package()
 end
 
 local function groundContext()
-  if OMW_GROUND_READY ~= 1 then fail("OMW_GROUND_READY is not set") end
+  requireUserFlag("OMW_GROUND_READY", 1)
   if type(OMW) ~= "table" or type(OMW.Ground) ~= "table" or type(OMW.Ground.Base) ~= "table" then
     fail("OMW.Ground.Base is unavailable")
   end
@@ -399,7 +417,7 @@ end
 
 local function startInternal(config)
   requireMOOSE()
-  if OMW_WAREHOUSE_READY ~= 1 then fail("OMW_WAREHOUSE_READY is not set") end
+  requireUserFlag("OMW_WAREHOUSE_READY", 1)
 
   local p = package()
   local context = groundContext()
