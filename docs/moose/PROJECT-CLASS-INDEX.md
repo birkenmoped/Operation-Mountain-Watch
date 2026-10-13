@@ -13,7 +13,7 @@ supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
 source_branch: agent/automatic-response-orchestration-continuation
-source_commit: GIT_HISTORY
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -966,3 +966,24 @@ FLIGHTGROUP
 Der allgemeine Base-31-Scope ist source-implemented und DCS-pending. Der geerbte
 geroutete STORAGE-Vertrag bleibt auf einen Carrier begrenzt; daraus folgt keine
 allgemeine Multi-Carrier-Freigabe.
+
+### 13.10.2026 – FSSR Production Mission Bootstrap
+
+Die normale Mission bindet die bereits akzeptierte FSSR-Production-Base ueber einen eigenen Bootstrap an die vorhandenen OMW-Foundations.
+
+~~~text
+OMW_FireSupStratResupply_ProductionBootstrap
+-> USERFLAG OMW_FSSR_READY / OMW_FSSR_RESUPPLY_READY
+-> BRIGADE:New + PLATOON:New for six installation organisations
+-> COMMANDER:New + AddAirwing for already-running AIRWING foundations
+-> OMW_FireSupStratResupply_ArtyRealAssetRegistry
+-> Functional ARTY owner handoff
+-> OMW.FireSupStratResupply.New(spec)
+-> Runtime:Prepare
+-> Runtime:StartPerimeters
+-> Runtime:StartSite
+~~~
+
+Keine neue MOOSE-Methode und kein neuer nativer DCS-Bypass werden eingefuehrt. Der Bootstrap verwendet ausschliesslich bereits im FSSR-/Ground-/AirOps-Stack source-gepruefte MOOSE-Vertraege.
+
+Strategic Resupply bleibt im Bootstrap fail-closed, bis ein produktiver physischer STORAGE-/Transport-Descriptor injiziert wird. A11-Fixture-STORAGE wird nicht uebernommen.
