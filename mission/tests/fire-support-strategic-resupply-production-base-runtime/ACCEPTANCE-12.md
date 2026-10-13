@@ -224,3 +224,36 @@ zweiten ARTY-Owner und keine eigene CAS-Release-/Recovery-Logik einfuehren.
 
 Dieser Nachweis ist eine Regression der Production-Orchestration-Grenze. Die bereits
 akzeptierten A9/A10-Lifecycles werden nicht neu definiert.
+
+
+## 10. Fixed-Fire-Readiness-Gate
+
+Der reale Bootstrap-2-Lauf zeigte, dass die vier Fixed-Fire-Support-Assets erst kurz
+nach BRIGADE-Start physisch materialisiert werden. Ein externer ARTY-Demand darf nicht
+vor diesem MOOSE-Lifecycle-Ereignis freigegeben werden.
+
+Bootstrap-4 verwendet deshalb **keinen Timer-Retry**. Stattdessen gilt:
+
+~~~text
+BRIGADE start
+-> MOOSE OnAfterAssetSpawned
+-> ArtyRealAssetRegistry marks real asset materialized
+-> all four fixed-fire assets materialized
+AND COMMANDER started
+-> start installation perimeters
+-> OMW_FSSR_READY = 1
+~~~
+
+Damit kann ein qualifizierter Installation-Incident erst entstehen, nachdem die realen
+L118/2B11-Assets fuer die bereits akzeptierte MOOSE-Selection-/Functional-ARTY-Kette
+bereitstehen.
+
+Erwartete Marker:
+
+~~~text
+WAITING_FOR_FIXED_FIRE_ASSETS
+FIXED_FIRE_READINESS_EVENT ...
+RESULT status=RUNNING ... fixedFireMaterialized=true
+~~~
+
+Kein eigener Scheduler und kein Polling-Loop werden eingefuehrt.
