@@ -12,7 +12,7 @@ supersedes:
 superseded_by:
   - OMW-MOOSE-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME owner decision 2026-09-15
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: PENDING_MERGE
+source_commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
 validated_in_dcs: false
 ---
 
