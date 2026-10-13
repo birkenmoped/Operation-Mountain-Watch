@@ -324,7 +324,7 @@ local function onCasEvidence(fields)
   )
 end
 
-local function buildResupplySpec(config, context)
+local function buildResupplySpec(config, context, commander)
   if config.resupply == nil or config.resupply == false then
     return nil, false
   end
@@ -338,11 +338,27 @@ local function buildResupplySpec(config, context)
   if resupply.rows == nil then
     resupply.rows = OMW.Ground.Base.GetInitialStock().Rows
   end
+  if type(resupply.selectSupportType) ~= "function" then
+    fail("config.resupply.selectSupportType must be a function for production resupply")
+  end
+  if type(resupply.transport) ~= "table" then
+    fail("config.resupply.transport is required for production physical Strategic Resupply")
+  end
 
-  if resupply.transport ~= nil then
-    if type(resupply.transport) ~= "table" then fail("config.resupply.transport must be a table") end
-    resupply.transport = copy(resupply.transport)
-    resupply.transport.campaignState = context.campaignState
+  resupply.transport = copy(resupply.transport)
+  resupply.transport.campaignState = context.campaignState
+
+  local groundConfigured = type(resupply.transport.resolveGroundTransport) == "function"
+  local airConfigured = type(resupply.transport.resolveAirTransport) == "function"
+  if not groundConfigured and not airConfigured then
+    fail("production resupply requires resolveGroundTransport or resolveAirTransport")
+  end
+
+  if groundConfigured and resupply.transport.groundCommander == nil then
+    resupply.transport.groundCommander = commander
+  end
+  if airConfigured and resupply.transport.airCommander == nil then
+    resupply.transport.airCommander = commander
   end
 
   return resupply, true
@@ -419,7 +435,7 @@ local function startInternal(config)
   })
 
   local perimeters = buildPerimeters(p, brigades)
-  local resupply, resupplyConfigured = buildResupplySpec(config, context)
+  local resupply, resupplyConfigured = buildResupplySpec(config, context, commander)
 
   local runtime = p.New({
     siteRegistry = p.SiteRegistry,
