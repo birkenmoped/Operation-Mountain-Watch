@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: PENDING_MERGE
+source_commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
 validated_in_dcs: true
 acceptance_branch: agent/fire-support-strategic-resupply-base-gate0
 acceptance_commit: a7944a995954a962d2a3b33b7a6d4c459d845f1e
