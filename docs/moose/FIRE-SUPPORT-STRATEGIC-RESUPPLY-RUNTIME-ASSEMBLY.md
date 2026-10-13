@@ -16,7 +16,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -533,3 +533,42 @@ AIR_RESUPPLY helicopter transport
 ~~~
 
 Kein Direct-Line-Fallback.
+
+## Production-Bootstrap-Assembly nach Merge von PR #149
+
+Die generische Runtime bleibt unveraendert der Composition Root. Fuer die normale Mission existiert nun eine separate Bootstrap-Schicht:
+
+~~~text
+OMW_FireSupStratResupply_Base.lua
+-> stellt OMW.FireSupStratResupply.New(spec) bereit
+
+OMW_FireSupStratResupply_Production.lua
+-> bindet die real laufenden OMW-Bases an New(spec)
+-> ruft Prepare/StartPerimeters/StartSite auf
+~~~
+
+Der Bootstrap erbt die A11-produktiven Pfade, kopiert aber keine Harness-Logik:
+
+~~~text
+uebernommen:
+- SiteRegistry / SupportProfiles
+- sechs Site-BRIGADEs
+- Guard/QRF Production Runtime
+- real fixed ARTY registry
+- Functional ARTY owner handoff
+- COMMANDER + running AIRWING discovery
+- CAS production lifecycle and accepted Jalalabad route profile
+- perimeter composition
+
+nicht uebernommen:
+- BadGuys_A3_* fixtures
+- fixture routing
+- synthetic CampaignState shortage
+- SPAWNSTATIC STORAGE fixtures
+- PASS/FAIL observer
+- Acceptance watchdog/scheduler
+~~~
+
+Runtime-Start ist ereignis-/triggergesteuert durch die Mission und nicht durch einen eigenen Bootstrap-Scheduler. Die Mission muss zuerst die bekannten Base-Foundations laden und deren READY-/RUNNING-Zustaende herstellen.
+
+Strategic Resupply bleibt im Bootstrap-1 explizit injizierbar. Ohne einen produktiven physischen STORAGE-/Transport-Resolver wird der Resupply-Teil nicht aktiviert und OMW_FSSR_RESUPPLY_READY bleibt 0.
