@@ -12,7 +12,7 @@ end
 local source=read("scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua")
 
 local required={
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-2',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-3',
   'OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED',
   'requireUserFlag("OMW_WAREHOUSE_READY", 1)',
   'requireUserFlag("OMW_GROUND_READY", 1)',
@@ -26,6 +26,10 @@ local required={
   'OMW_FSSR_READY',
   'OMW_FSSR_RESUPPLY_READY',
   'PRODUCTION_PHYSICAL_TRANSPORT_DESCRIPTOR_REQUIRED',
+  'C2_EXTERNAL_SUPPORT_REQUEST',
+  'INSTALLATION_ATTACK_C2_CAS',
+  'INSTALLATION_ATTACK_C2_ARTY_INITIAL',
+  'onExternalSupportRequired = function(incident, escalationContext)',
 }
 for _,marker in ipairs(required) do
   if not contains(source,marker) then
@@ -70,4 +74,14 @@ end
 
 if not contains(source,'USERFLAG:New(name)') or not contains(source,'flag:Get()') then
   error("production bootstrap must read readiness through pinned MOOSE USERFLAG")
+end
+
+
+if not contains(source,'request("CAS", "INSTALLATION_ATTACK_C2_CAS")')
+    or not contains(source,'request("ARTY", "INSTALLATION_ATTACK_C2_ARTY_INITIAL")') then
+  error("production bootstrap must create independent CAS and ARTY requirements for a qualified installation attack")
+end
+
+if contains(source,'QRF_FAILURE') or contains(source,'QRF_FAILED') then
+  error("CAS/ARTY escalation must not be implemented as a fallback after QRF failure")
 end
