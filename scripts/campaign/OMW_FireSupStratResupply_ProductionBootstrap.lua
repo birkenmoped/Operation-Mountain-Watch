@@ -8,7 +8,7 @@
 
 local Bootstrap = {}
 
-Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-2"
+Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-3"
 
 local TAG = "[OMW][FireSupStratResupply.Production]"
 local QRF_TEMPLATE = "TPL_BLUE_GND_QRF_MIXED_6"
@@ -342,6 +342,64 @@ local function onCasEvidence(fields)
   )
 end
 
+local function requestExternalSupport(base, incident, escalationContext)
+  if type(base) ~= "table" or type(base.RequestIncidentSupport) ~= "function" then
+    return nil, "BASE_SUPPORT_REQUEST_UNAVAILABLE"
+  end
+  if type(incident) ~= "table" or type(incident.incidentId) ~= "string" then
+    return nil, "INCIDENT_UNAVAILABLE"
+  end
+
+  local priority = escalationContext and escalationContext.priority or incident.priority or 20
+  local results = {}
+
+  local function request(supportType, requestKey)
+    local demand, created, reason = base:RequestIncidentSupport(
+      incident.incidentId,
+      supportType,
+      {
+        requestKey = requestKey,
+        priority = priority,
+        cancelWhenIncidentClosed = false,
+        context = {
+          activation = "C2_ESCALATION_EXTERNAL",
+          source = "INSTALLATION_ATTACK_INCIDENT",
+          sourceIncidentId = escalationContext
+            and escalationContext.sourceIncident
+            and escalationContext.sourceIncident.incidentId
+            or nil,
+        },
+      }
+    )
+    results[supportType] = {
+      demand = demand,
+      created = created,
+      reason = reason,
+    }
+    log(
+      "C2_EXTERNAL_SUPPORT_REQUEST"
+        .. " siteId=" .. tostring(incident.siteId)
+        .. " supportType=" .. tostring(supportType)
+        .. " demandId=" .. tostring(demand and demand.demandId)
+        .. " created=" .. tostring(created)
+        .. " status=" .. tostring(demand and demand.status)
+        .. " reason=" .. tostring(reason)
+    )
+    return demand, created, reason
+  end
+
+  -- Preserve the documented full-response authority split:
+  -- the supported installation creates the external support requirement,
+  -- while MOOSE COMMANDER/LEGION owns operational provider and asset selection.
+  -- CAS is not a fallback after QRF/ARTY failure; it is an independent support
+  -- requirement. ARTY is requested in the same incident response and remains
+  -- deconflicted by its own fire-control/provider lifecycle.
+  request("CAS", "INSTALLATION_ATTACK_C2_CAS")
+  request("ARTY", "INSTALLATION_ATTACK_C2_ARTY_INITIAL")
+
+  return results, nil
+end
+
 local function buildResupplySpec(config, context, commander)
   if config.resupply == nil or config.resupply == false then
     return nil, false
@@ -455,7 +513,8 @@ local function startInternal(config)
   local perimeters = buildPerimeters(p, brigades)
   local resupply, resupplyConfigured = buildResupplySpec(config, context, commander)
 
-  local runtime = p.New({
+  local runtime
+  runtime = p.New({
     siteRegistry = p.SiteRegistry,
     brigades = brigades,
     resolveGuardPathline = function(name)
@@ -475,6 +534,9 @@ local function startInternal(config)
     blueCoalition = coalition.side.BLUE,
     redCoalition = coalition.side.RED,
     perimeters = perimeters,
+    onExternalSupportRequired = function(incident, escalationContext)
+      return requestExternalSupport(runtime and runtime:GetBase() or nil, incident, escalationContext)
+    end,
     externalSupport = {
       commander = commander,
       resolveArtyTarget = resolveArtyTarget,
