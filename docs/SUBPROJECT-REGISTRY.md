@@ -60,7 +60,6 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 66–84 | Warehouse-/CampaignState-/STORAGE-Stack | PR 66 startete von `main`; danach gestapelt | Resource ownership, Fuel/Weapon STORAGE, CampaignState transactions, loss/recovery, final fighter mapping | `scripts/campaign/`, `scripts/logistics/`, Warehouse-Testfixtures und branchgebundene Detaildokumentation | offene Draft-Historie; keine pauschale Main-Autorität | mehrere exakt dokumentierte DCS-Acceptance-Stände; finaler Fighter-Gate PASS | 85 | nicht als 214-Commit-Stack direkt integrieren; PR 85 war der saubere Main-Reconciliation-Pfad |
 | 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach gemergtem PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; aktuell nicht mergebar gegen `main` | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; vor Integration Reconciliation gegen aktuellen `main` erforderlich |
 | 136 | `agent/automatic-response-orchestration-continuation` | `main` / PR #135 accepted parent | Stage 1D-S SUPPLY und Stage 1D-P PERSONNEL orchestration baselines | `scripts/campaign/`, `scripts/logistics/`, `mission/tests/ground-resupply-execution/`, `docs/moose/`, handoffs | `DRAFT` PR; merge requires explicit owner approval | Stage 1D-S and Stage 1D-P contain exact-provenance `ACCEPTED_TECHNICAL_BASELINE` results; Stage 1D-P Air Acceptance-4 PASS | new Stage 1D-V branch after merge | current integration candidate; no repository-wide authority until merge |
-| 149 | `agent/fire-support-strategic-resupply-base-gate0` | `main` | Fire Support / Strategic Resupply Production Base reconciliation | `scripts/campaign/OMW_FireSupStratResupply_*`, `scripts/ground/`, `mission/tests/fire-support-strategic-resupply-production-base-runtime/`, `docs/moose/` | `DRAFT` PR; merge requires explicit owner approval | A9 Rotary CAS exact-provenance PASS; A10 Real Fixed ARTY/Mortar selection/materialization + M1083 regression exact-provenance PASS; A11 combined multi-demand + Strategic Resupply ACCEPTED_TECHNICAL_BASELINE with full tested MIZ provenance | final Base / PR closure decision | active FSSR integration branch; branch acceptances are exact-provenance only until merge |
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
 
@@ -87,10 +86,10 @@ main
 │                   └── PR 85 (merged clean Warehouse reconciliation)
 ├── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
 ├── PR 136 (Stage 1D-S / Stage 1D-P integration candidate; Draft until owner Ready/Merge approval)
-└── PR 149 (FSSR Production Base; A9/A10/A11 accepted branch baselines; final Base and merge decision pending owner approval)
+
 ```
 
-PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation), PR #108 (Kunar Ground Site Reconciliation / FOB Bostick), PR #112 (Ground ammo rearm lifecycle / fixed fire support), PR #114 (MissionDemand Domain Foundation), PR #115 (Ground RESUPPLY threshold gate), PR #117 (Air Tasking selective main reconciliation) und PR #135 (Ground RESUPPLY orchestration baselines) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
+PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation), PR #108 (Kunar Ground Site Reconciliation / FOB Bostick), PR #112 (Ground ammo rearm lifecycle / fixed fire support), PR #114 (MissionDemand Domain Foundation), PR #115 (Ground RESUPPLY threshold gate), PR #117 (Air Tasking selective main reconciliation), PR #135 (Ground RESUPPLY orchestration baselines) und PR #149 (Fire Support / Strategic Resupply Production Base) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
 
 Für PR #108 ist der reale GitHub-Merge-Stand:
 
@@ -192,3 +191,13 @@ Stage 1D-P Air: ACCEPTED_TECHNICAL_BASELINE
 ```
 
 Die nächste Entwicklungsstufe wird bewusst nicht auf diesen bereits großen Integrationsbranch gestapelt. Nach Merge von PR #136 wird Stage 1D-V auf einem neuen Branch vom aktualisierten `main` begonnen.
+
+Für PR #149 ist der reale GitHub-Merge-Stand:
+
+```text
+PR: 149
+status: MERGED
+merge commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
+accepted branch head: 065ded12cffd987b3458bb661025f6cd9c669da5
+A11: ACCEPTED_TECHNICAL_BASELINE
+```
