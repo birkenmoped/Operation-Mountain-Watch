@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-33'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-34'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -84,7 +84,7 @@ foreach($marker in @(
   'OMW-FLIGHTPATH-NAME-CONTRACT-1','OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8','OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2','OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1','OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-3',
   'CAS_CONTROLLED_RELEASE','CAS_HOME_LANDED','CAS_LEGION_ASSET_RETURNED',
   'PATROLZONE_ENGAGE','AUFTRAG:NewPATROLZONE','SetEngageDetected',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-6',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME-2',
   'OMW-FOB-THREAT-OPSZONE-ADAPTER-6',
@@ -180,7 +180,7 @@ foreach($marker in @(
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host 'PackageSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1'
-Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-12'
+Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-13'
 Write-Host 'ResupplyTransportRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-5'
 Write-Host 'OpsTransportCorridorAdapterSchema: OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2'
 Write-Host 'StrategicResupplyRouteLifecycle: AIR_RESUPPLY corridor mandatory -> selected MOOSE carrier AssetSpawned -> shared corridor Bind -> OnAfterTransport outbound -> OnAfterDelivered reverse'
@@ -206,7 +206,7 @@ Write-Host 'ArtyRealAssetContract: existing site-bound templates register as one
 Write-Host 'ArtyDescriptorContract: superseded descriptor-only registry excluded from active production bundle after A10 real-asset acceptance'
 Write-Host 'ExternalCasModes: CAS | PATROLZONE_ENGAGE; provider selection remains MOOSE COMMANDER-owned'
 Write-Host 'CasLifecycle: shared production route/release/recovery owner; Acceptance harness must observe only'
-Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5'
+Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-6'
 Write-Host 'PerimeterBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4'
 Write-Host 'ThreatAdapterSchema: OMW-FOB-THREAT-OPSZONE-ADAPTER-6'
 Write-Host 'GuardActivation: no physical Guard before alarm; incident-local Guard demand on qualified RED perimeter presence'
