@@ -9,7 +9,7 @@ authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: PENDING_MERGE
+source_commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
 validated_in_dcs: false
 supersedes:
   - OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-7
