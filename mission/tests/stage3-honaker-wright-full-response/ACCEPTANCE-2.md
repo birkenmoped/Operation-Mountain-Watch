@@ -11,7 +11,7 @@ supersedes:
   - OMW-TEST-STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1 for future full-response runs
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: PENDING_MERGE
+source_commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
 validated_in_dcs: false
 base_status:
   qrf: ACCEPTED_TECHNICAL_BASELINE
