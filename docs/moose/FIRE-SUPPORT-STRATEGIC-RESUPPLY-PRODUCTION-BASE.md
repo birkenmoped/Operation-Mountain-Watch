@@ -598,3 +598,74 @@ explizit injiziertes config.resupply
 Das ist fail-closed und keine Ruecknahme der A11-Acceptance. Es verhindert lediglich, dass eine Acceptance-Fixture stillschweigend zur produktiven Missionsgeometrie oder physischen STORAGE-Autoritaet wird.
 
 Der Production-Bootstrap ist bis zum realen DCS-Integrationslauf SOURCE_IMPLEMENTED / DCS_PENDING.
+
+
+## Production-Orchestration-Korrektur nach erstem A12-Full-Response-Lauf
+
+Der erste reale Production-Lauf mit funktionierendem Bootstrap zeigte eine
+Orchestration-Regression:
+
+~~~text
+qualified installation incident
+-> Guard demand created
+-> QRF demand created
+-> ARTY adapter/runtime vorhanden, aber kein ARTY demand
+-> CAS adapter/runtime vorhanden, aber kein CAS demand
+~~~
+
+Das war keine offene Fachentscheidung. Der bereits dokumentierte Full-Response-Vertrag
+fordert externe Unterstützung als eigenstaendige C2-Eskalation aus einem qualifizierten
+Installation-Angriff. CAS ist insbesondere **kein** Fallback nach QRF- oder ARTY-Fehler.
+
+Die Korrektur fuehrt deshalb keinen neuen Fire-/CAS-Lifecycle ein. Sie ergaenzt nur
+die beim Base-Umbau verlorene Orchestrationsgrenze:
+
+~~~text
+InstallationIncidentBridge
+-> local Guard
+-> local QRF
+-> onExternalSupportRequired(...)
+   -> CAS requirement
+   -> ARTY requirement
+~~~
+
+Die beiden externen Demands verwenden weiterhin ausschliesslich die bereits vorhandenen
+Production-Adapter:
+
+~~~text
+CAS demand
+-> shared CasLifecycleRuntime
+-> MOOSE COMMANDER/LEGION provider+asset selection
+-> owner execution profile
+-> PATROLZONE + SetEngageDetected
+-> accepted release/recovery lifecycle
+
+ARTY demand
+-> ArtySelectionRuntime
+-> MOOSE COMMANDER/LEGION selection-only recruitment
+-> exact real fixed battery
+-> existing Functional ARTY owner
+-> AssignTargetCoord
+~~~
+
+Harte Grenzen:
+
+~~~text
+- keine konkrete Batterie/AIRWING/SQUADRON im Orchestrator vorwaehlen;
+- CAS/ARTY cancelWhenIncidentClosed=false;
+- Alarm-/Perimeter-Clear beendet weder QRF noch CAS/ARTY automatisch;
+- keine zweite Target-/Routing-/Release-/Recovery-State-Machine;
+- Fehler einer externen Eskalation duerfen Guard/QRF nicht unterdruecken;
+- Acceptance-Harness bleibt Observer/Stimulus und ist nicht Orchestration-Owner.
+~~~
+
+Der geaenderte Scope ist nur:
+
+~~~text
+qualified installation incident
+-> external ARTY/CAS demand creation
+~~~
+
+Die geerbten ARTY- und CAS-Ausfuehrungslifecycles bleiben unveraendert und muessen im
+naechsten realen DCS-Lauf nur an dieser neuen/rekonstruierten Orchestrationsgrenze
+regressionsgeprueft werden.
