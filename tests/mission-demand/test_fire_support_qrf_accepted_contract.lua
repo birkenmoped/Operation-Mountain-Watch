@@ -52,7 +52,7 @@ excludes(runtime, 'local QRF_ENGAGE_FORMATION = "Vee"', "QRF runtime Vee overrid
 -- Existing installation incident participant registry remains QRF target authority.
 -- Bridge v5 additionally requests the local Guard, but the QRF contract itself is
 -- unchanged and explicitly remains independent of incident-close cancellation.
-contains(incidentBridge, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5", "incident bridge schema")
+contains(incidentBridge, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-6", "incident bridge schema")
 contains(incidentBridge, "sourceIncidentCoordinator=sourceCoordinator", "incident coordinator handoff")
 contains(incidentBridge, 'requestKey="INSTALLATION_ATTACK_INITIAL_QRF"', "stable QRF request key")
 contains(incidentBridge, "cancelWhenIncidentClosed=false", "incident close independence")
