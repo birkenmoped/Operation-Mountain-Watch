@@ -9,7 +9,7 @@ $source = Join-Path $repoRoot 'scripts\campaign\OMW_FireSupStratResupply_Product
 $resourceDemandPolicy = Join-Path $repoRoot 'scripts\campaign\OMW_ResourceDemandPolicy.lua'
 $outputDir = Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $output = Join-Path $outputDir 'OMW_FireSupStratResupply_Production.lua'
-$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-1'
+$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-2'
 
 foreach ($file in @($source, $resourceDemandPolicy)) {
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
@@ -21,10 +21,10 @@ $bootstrap = Get-Content -LiteralPath $source -Raw -Encoding UTF8
 $policy = Get-Content -LiteralPath $resourceDemandPolicy -Raw -Encoding UTF8
 
 foreach ($marker in @(
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-1',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-2',
   'OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED',
-  'OMW_WAREHOUSE_READY',
-  'OMW_GROUND_READY',
+  'requireUserFlag("OMW_WAREHOUSE_READY", 1)',
+  'requireUserFlag("OMW_GROUND_READY", 1)',
   'OMW.Ground.Base.GetContext',
   'OMW.Ground.Base.GetInitialStock',
   'COMMANDER:New',
@@ -119,7 +119,7 @@ foreach ($marker in @(
 Write-Host "Built: $output"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "GitCommit: $commit"
-Write-Host "BootstrapSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-1"
+Write-Host "BootstrapSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-2"
 Write-Host "BaseDependency: OMW_FireSupStratResupply_Base.lua loaded first"
 Write-Host "ReadyFlag: OMW_FSSR_READY"
 Write-Host "ResupplyReadyFlag: OMW_FSSR_RESUPPLY_READY"
