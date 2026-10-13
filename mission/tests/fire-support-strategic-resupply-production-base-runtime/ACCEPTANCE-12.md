@@ -83,8 +83,8 @@ Runtime-Abhaengigkeiten zusaetzlich selbst fail-closed.
 Der reale DCS-Lauf muss mindestens zeigen:
 
 ~~~text
-OMW_WAREHOUSE_READY = 1
-OMW_GROUND_READY = 1
+DCS user flag OMW_WAREHOUSE_READY = 1
+DCS user flag OMW_GROUND_READY = 1
 OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED = 1
 OMW_FSSR_PRODUCTION_BOOTSTRAP_LOADED = 1
 
@@ -161,3 +161,27 @@ relevant dcs.log excerpt
 ~~~
 
 VALIDATED beziehungsweise ACCEPTED_TECHNICAL_BASELINE erst nach diesem realen Nachweis.
+
+
+## 8. Readiness-Nachtrag nach erstem A12-Lauf
+
+Der erste reale A12-Start hat die Mission-Editor-Bedingungen passiert, der Bootstrap
+hat jedoch irrtuemlich gleichnamige Lua-Globals statt der DCS-Userflags gelesen.
+
+Realer Befund:
+
+~~~text
+FSSR-Trigger wurde ausgefuehrt
+-> Mission-Editor OMW_WAREHOUSE_READY / OMW_GROUND_READY waren damit erfuellt
+-> Production Bootstrap brach mit "OMW_WAREHOUSE_READY is not set" ab
+~~~
+
+Die Korrektur verwendet die gepinnte MOOSE-USERFLAG-API:
+
+~~~text
+USERFLAG:New("OMW_WAREHOUSE_READY"):Get()
+USERFLAG:New("OMW_GROUND_READY"):Get()
+~~~
+
+Keine zusaetzliche Readiness-Autoritaet und keine Lua-Global-Spiegelung werden
+eingefuehrt. Der naechste DCS-Lauf muss Bootstrap-2 verwenden.
