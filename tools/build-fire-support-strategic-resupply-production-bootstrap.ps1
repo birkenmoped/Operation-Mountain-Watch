@@ -9,7 +9,7 @@ $source = Join-Path $repoRoot 'scripts\campaign\OMW_FireSupStratResupply_Product
 $resourceDemandPolicy = Join-Path $repoRoot 'scripts\campaign\OMW_ResourceDemandPolicy.lua'
 $outputDir = Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $output = Join-Path $outputDir 'OMW_FireSupStratResupply_Production.lua'
-$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-2'
+$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-3'
 
 foreach ($file in @($source, $resourceDemandPolicy)) {
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
@@ -34,7 +34,10 @@ foreach ($marker in @(
   'runtime:StartSite',
   'OMW_FSSR_READY',
   'OMW_FSSR_RESUPPLY_READY',
-  'PRODUCTION_PHYSICAL_TRANSPORT_DESCRIPTOR_REQUIRED'
+  'PRODUCTION_PHYSICAL_TRANSPORT_DESCRIPTOR_REQUIRED',
+  'C2_EXTERNAL_SUPPORT_REQUEST',
+  'INSTALLATION_ATTACK_C2_CAS',
+  'INSTALLATION_ATTACK_C2_ARTY_INITIAL'
 )) {
   if (-not $bootstrap.Contains($marker)) {
     throw "Production bootstrap marker missing: $marker"
