@@ -9,7 +9,7 @@ local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][GroundInstallationAlarmEvidenceAdapter]"
-Adapter.SchemaVersion = "OMW-GROUND-INSTALLATION-ALARM-EVIDENCE-2"
+Adapter.SchemaVersion = "OMW-GROUND-INSTALLATION-ALARM-EVIDENCE-3"
 
 Adapter.EvidenceType = {
   PROXIMITY_INTRUSION = "PROXIMITY_INTRUSION",
@@ -42,6 +42,13 @@ end
 
 local function isFinite(value)
   return type(value) == "number" and value == value and value > -math.huge and value < math.huge
+end
+
+local function coordinateOf(object)
+  if type(object) == "table" and type(object.GetCoordinate) == "function" then
+    return object:GetCoordinate()
+  end
+  return nil
 end
 
 function Adapter.New(spec)
@@ -115,24 +122,34 @@ function Instance:_targetIsInAlarmZone(target, eventData)
   return false
 end
 
+function Instance:_directEvidenceData(eventData, target, sourceEvent, weaponTypeName)
+  return {
+    sourceEvent = sourceEvent,
+    initiatorUnitName = eventData.IniUnitName,
+    initiatorGroupName = eventData.IniGroupName,
+    targetUnitName = eventData.TgtUnitName or (type(target) == "table" and type(target.GetName) == "function" and target:GetName() or nil),
+    weaponTypeName = weaponTypeName,
+    position = coordinateOf(eventData.IniUnit) or coordinateOf(eventData.IniGroup),
+    reportedTarget = coordinateOf(target),
+    initiatorUnit = eventData.IniUnit,
+    initiatorGroup = eventData.IniGroup,
+  }
+end
+
 function Instance:ProcessHit(eventData)
   if not self:_isRedInitiator(eventData) or not self:_isBlueTarget(eventData) then return nil, "NOT_HOSTILE_BLUE_HIT" end
-  if not self:_targetIsInAlarmZone(eventData.TgtUnit or eventData.TgtStatic, eventData) then return nil, "TARGET_OUTSIDE_ALARM_ZONE" end
-  return self:_emit(Adapter.EvidenceType.CONFIRMED_HIT_ATTACK, {
-    sourceEvent = "Hit",
-    initiatorUnitName = eventData.IniUnitName,
-    targetUnitName = eventData.TgtUnitName,
-  }), "EVIDENCE_EMITTED"
+  local target = eventData.TgtUnit or eventData.TgtStatic
+  if not self:_targetIsInAlarmZone(target, eventData) then return nil, "TARGET_OUTSIDE_ALARM_ZONE" end
+  return self:_emit(Adapter.EvidenceType.CONFIRMED_HIT_ATTACK,
+    self:_directEvidenceData(eventData, target, "Hit", nil)), "EVIDENCE_EMITTED"
 end
 
 function Instance:ProcessShootingStart(eventData)
   if not self:_isRedInitiator(eventData) or not self:_isBlueTarget(eventData) then return nil, "NOT_HOSTILE_BLUE_FIRE" end
-  if not self:_targetIsInAlarmZone(eventData.TgtUnit or eventData.TgtStatic, eventData) then return nil, "TARGET_OUTSIDE_ALARM_ZONE" end
-  return self:_emit(Adapter.EvidenceType.DIRECT_FIRE_ATTACK, {
-    sourceEvent = "ShootingStart",
-    initiatorUnitName = eventData.IniUnitName,
-    targetUnitName = eventData.TgtUnitName,
-  }), "EVIDENCE_EMITTED"
+  local target = eventData.TgtUnit or eventData.TgtStatic
+  if not self:_targetIsInAlarmZone(target, eventData) then return nil, "TARGET_OUTSIDE_ALARM_ZONE" end
+  return self:_emit(Adapter.EvidenceType.DIRECT_FIRE_ATTACK,
+    self:_directEvidenceData(eventData, target, "ShootingStart", nil)), "EVIDENCE_EMITTED"
 end
 
 function Instance:_newWeapon(dcsWeapon)
@@ -155,8 +172,12 @@ function Instance:_trackImpact(weapon, eventData)
       adapter:_emit(Adapter.EvidenceType.INDIRECT_FIRE_ATTACK, {
         sourceEvent = "WeaponImpact",
         initiatorUnitName = eventData.IniUnitName,
+        initiatorGroupName = eventData.IniGroupName,
         weaponTypeName = type(trackedWeapon.GetTypeName) == "function" and trackedWeapon:GetTypeName() or nil,
+        position = coordinateOf(eventData.IniUnit) or coordinateOf(eventData.IniGroup) or impactCoordinate,
         impactCoordinate = impactCoordinate,
+        initiatorUnit = eventData.IniUnit,
+        initiatorGroup = eventData.IniGroup,
       })
     end
   end)
@@ -175,12 +196,9 @@ function Instance:ProcessShot(eventData)
     local target = weapon:GetTarget()
     if target ~= nil and self:_targetCoalitionIsBlue(target, eventData) and self:_targetIsInAlarmZone(target, eventData) then
       targetInAlarmZone = true
-      self:_emit(Adapter.EvidenceType.DIRECT_FIRE_ATTACK, {
-        sourceEvent = "ShotTarget",
-        initiatorUnitName = eventData.IniUnitName,
-        targetUnitName = type(target.GetName) == "function" and target:GetName() or nil,
-        weaponTypeName = type(weapon.GetTypeName) == "function" and weapon:GetTypeName() or nil,
-      })
+      self:_emit(Adapter.EvidenceType.DIRECT_FIRE_ATTACK,
+        self:_directEvidenceData(eventData, target, "ShotTarget",
+          type(weapon.GetTypeName) == "function" and weapon:GetTypeName() or nil))
     end
   end
 

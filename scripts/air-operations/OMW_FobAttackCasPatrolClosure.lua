@@ -12,7 +12,7 @@
 local Closure = {}
 
 local TAG = "[OMW][FobAttackCasPatrolClosure]"
-Closure.SchemaVersion = "OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-2"
+Closure.SchemaVersion = "OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-3"
 Closure.ReleaseAuthority = "SUPPORTED_ELEMENT"
 
 local function fail(message)
@@ -22,6 +22,24 @@ end
 local function requireTable(value, label)
   if type(value) ~= "table" then fail(label .. " must be a table") end
   return value
+end
+
+function Closure.Request(spec)
+  requireTable(spec, "spec")
+  if type(spec.demandId) ~= "string" or spec.demandId == "" then fail("spec.demandId is required") end
+  if spec.tacticalComplete ~= true then return nil, false, "TACTICAL_COMPLETION_REQUIRED" end
+  if spec.requireExecutionEvidence == true and spec.executionEvidenceConfirmed ~= true then
+    return nil, false, "EXECUTION_EVIDENCE_REQUIRED"
+  end
+
+  if spec.requestClosure ~= nil then
+    if type(spec.requestClosure) ~= "function" then fail("spec.requestClosure must be a function when provided") end
+    return spec.requestClosure(spec.demandId, spec.reason or "TACTICAL_COMPLETION_CONFIRMED")
+  end
+
+  local adapter = requireTable(spec.adapter, "spec.adapter")
+  if type(adapter.RequestMissionClosure) ~= "function" then fail("adapter.RequestMissionClosure() is required") end
+  return adapter:RequestMissionClosure(spec.demandId, spec.reason or "TACTICAL_COMPLETION_CONFIRMED")
 end
 
 function Closure.Complete(spec)
@@ -39,7 +57,14 @@ function Closure.Complete(spec)
     fail("MissionDemand registry Get/Activate/Succeed are required")
   end
 
-  local mission, requested, reason = adapter:RequestMissionClosure(spec.demandId, spec.reason or "TACTICAL_COMPLETION_CONFIRMED")
+  local mission, requested, reason = Closure.Request({
+    adapter=adapter,
+    demandId=spec.demandId,
+    tacticalComplete=true,
+    requireExecutionEvidence=adapter.requireExecutionEvidence == true,
+    executionEvidenceConfirmed=spec.executionEvidenceConfirmed == true,
+    reason=spec.reason,
+  })
   if requested ~= true then return mission, false, reason end
 
   local demand = registry:Get(spec.demandId)

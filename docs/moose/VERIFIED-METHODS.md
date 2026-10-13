@@ -853,9 +853,240 @@ Verbindliche Einordnung: [MOOSE Support Request Lifecycle Law](MOOSE-SUPPORT-REQ
 | `AUFTRAG:SetTime`, `AddConditionSuccess`, `AddConditionFailure`, `IsReadyToCancel`, `Cancel` | `SOURCE_REVIEWED` | Tstop oder eine wahre Success-/Failure-Condition macht den Auftrag abbrechbar. Der Cancel-FSM propagiert durch die operative MOOSE-Hierarchie. |
 | `LEGION:CheckMissionQueue` | `SOURCE_REVIEWED` | Prüft `IsReadyToCancel()` und ruft `mission:Cancel()`; zugleich wiederholt es die Rekrutierung. |
 | `COMMANDER:CheckMissionQueue` | `SOURCE_REVIEWED` | Versucht `RecruitAssetsForMission(...)`; bei fehlender Rekrutierung bleibt der Auftrag geplant. Im geprüften Pfad wird `IsReadyToCancel()` nicht aufgerufen. |
+| `COMMANDER:CanMission(...)` | `SOURCE_REVIEWED` | FSSR-ARTY-Review 22.09.2026: prueft im gepinnten Source die registrierten Cohorts mit `LEGION._CohortCan(...)` gegen Missionsart, Requirements und Targetposition; wird im neuen Functional-ARTY-Pfad nur als Capability-/Range-Gate verwendet. |
+| `COMMANDER:RecruitAssetsForMission(...)` | `SOURCE_REVIEWED` | FSSR-ARTY-Review 22.09.2026: delegiert an `LEGION.RecruitCohortAssets(...)` und liefert `recruited, assets, legions`. Direkte Selection-only-Nutzung fuer OMW ARTY ist noch DCS_PENDING. |
+| `LEGION.UnRecruitAssets(...)` | `SOURCE_REVIEWED` | FSSR-ARTY-Review 22.09.2026: hebt die durch Recruitment gesetzte Asset-Reservierung wieder auf; im neuen Selection-only-Pfad fuer terminale Fire-Mission-Zustaende vorgesehen, noch DCS_PENDING. |
 | `COMMANDER:MissionCancel` / `CHIEF:MissionCancel` | `SOURCE_REVIEWED` | Entfernt einen noch geplanten Auftrag aus der jeweiligen MOOSE-Queue beziehungsweise propagiert den Cancel an die zugewiesene Legion. |
 | `OPSTRANSPORT:SetTime`, `AddConditionStart`, `Cancel` | `SOURCE_REVIEWED` | Öffentliche Transport-Start-, Zeit- und Cancel-Schnittstellen. Eine öffentliche Transport-Failure-Condition wurde für diesen Commit nicht bestätigt. |
 | `WAREHOUSE:_CheckRequestConsistancy`, `_CheckRequestValid`, `_CheckRequestNow` | `INTERNAL_RESTRICTED / SOURCE_REVIEWED` | Source-Befund für MOOSE-eigene Invalid-/Temporär-Wartelogik. Diese internen Methoden sind keine OMW-Aufruf-API. Insbesondere darf `_DeleteQueueItem...` nicht verwendet werden. |
 | `ARTY:RemoveTarget`, `ARTY:SetTimeToShot` | `SOURCE_REVIEWED` | Native Entfernung eines Ziels beziehungsweise Abbruch bei ausbleibendem erstem Schuss innerhalb konfigurierter Zeit. |
 
 DCS-Validierung bleibt für die im Gesetz aufgeführten generischen Fälle verpflichtend.
+
+
+## 12. Production Base A9 – CAS mission, detection and recovery methods
+
+Praktische DCS-Evidenz:
+
+```text
+source commit:
+c956b7b03b82c4ab04e529d09b1ff9bf4e480bf2
+
+Acceptance bundle SHA-256:
+D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0
+
+DCS:
+2.9.29.27468
+
+MOOSE:
+2.9.18
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+result:
+PASS
+```
+
+| Methode / Callback | Status | Belegter Umfang |
+|---|---|---|
+| `AUFTRAG:IsExecuting()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | A9 nutzt den MOOSE-Missionsstatus als Execution-Gate; der CAS-Lifecycle erreichte danach Sensor-/Release- und Recovery-Phasen. |
+| `COMMANDER:OnBeforeMissionAssign(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | A9 band nach MOOSE-Providerselektion das owner-authored Ausfuehrungsprofil und liess die Mission nur bei vorhandenem Profil weiterlaufen. |
+| `COMMANDER:OnAfterMissionAssign(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Selektiertes Asset/Squadron/Home wurde fuer den real ausgefuehrten CAS-Auftrag korreliert. |
+| `COMMANDER:OnAfterOpsOnMission(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Physische FLIGHTGROUP wurde an den produktiven Tactical-Corridor gebunden. |
+| `FLIGHTGROUP:GetDetectedGroups()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Eigene CAS-Detection lieferte einen gueltigen MOOSE-Set-Vertrag; A9 qualifizierte daraus das profilierte No-Contact-Kriterium. `nil` bleibt explizit nicht gleichbedeutend mit no contact. |
+| `FLIGHTGROUP:OnAfterLanded(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Physische Home-Landung in Jalalabad wurde vor dem Asset-Return bestaetigt. |
+| `LEGION:OnAfterLegionAssetReturned(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Exact asset return wurde nach Home-Landung bestaetigt und ist terminale Return-Evidenz fuer den A9-Lifecycle. |
+| `AUFTRAG:Cancel()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Kontrollierter Mission-Closure-Pfad nach profilierter Release-Qualifikation fuehrte in die MOOSE-Recovery, nicht in einen OMW-eigenen RTB. |
+| `FLIGHTGROUP:OnAfterFuelLow(...)` | `SOURCE_REVIEWED_WITH_RUNTIME_NEGATIVE_CONFIRMATION` | Callback war produktiv verdrahtet; im finalen A9-PASS trat kein FuelLow vor dem kontrollierten Release auf. Dies validiert nicht FuelLow als Completion-Pfad. |
+
+A9 belegt **nicht** die allgemeine Gleichwertigkeit fuer Fixed-Wing-CAS, andere Providerprofile, andere Basen oder andere MOOSE-Versionen.
+
+Zusatzregel aus dem realen A9-Lauf:
+
+```text
+LegionAssetReturned
+-> exact return confirmed
+-> later physical group despawn / CountAliveUnits()==0
+   is cleanup, not loss evidence
+```
+
+Dieser Befund gilt fuer den dokumentierten A9-Lifecycle und ist in `ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md` als Anti-Regression-Regel festgehalten.
+
+
+## FSSR ARTY Option-A descriptor source review – 25.09.2026
+
+Pinned MOOSE:
+
+```text
+release 2.9.18
+commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+| Method | Status | OMW use / limitation |
+|---|---|---|
+| `COMMANDER:AddBrigade(...)` | `SOURCE_REVIEWED` | Registers the existing site BRIGADE with the external-support COMMANDER for ARTY descriptor selection. |
+| `COMMANDER:CanMission(...)` | `SOURCE_REVIEWED` | Capability/range preflight for selection descriptor cohorts. |
+| `COMMANDER:RecruitAssetsForMission(...)` | `SOURCE_REVIEWED` | Reserves exactly the MOOSE-selected descriptor asset; no queued AUFTRAG. |
+| `BRIGADE:AddPlatoon(...)` | `SOURCE_REVIEWED` | Registers one descriptor PLATOON; template must be non-alive because WAREHOUSE:AddAsset destroys a live group. |
+| `COHORT:AddMissionCapability(AUFTRAG.Type.ARTY,...)` | `SOURCE_REVIEWED` | Descriptor capability only. |
+| `COHORT:SetMissionRange(0)` | `SOURCE_REVIEWED` | Removes broad default cohort mission radius for descriptor selection. |
+| `COHORT:AddWeaponRange(min,max,Auto)` | `SOURCE_REVIEWED` | Explicit ARTY selection envelope. No project default is invented. |
+| `LEGION.UnRecruitAssets(...)` | `SOURCE_REVIEWED` | Releases descriptor reservation after Functional ARTY terminal state. |
+
+No method in this section is upgraded to DCS validation by the source review alone.
+
+## FSSR active-ME-ARTY adoption source review – 27.09.2026
+
+Pinned MOOSE:
+
+```text
+release 2.9.18
+commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+| Method / path | Status | OMW finding |
+|---|---|---|
+| `BRIGADE:AddPlatoon(...)` -> `AddAssetToPlatoon(...)` -> `WAREHOUSE:AddAsset(...)` | `SOURCE_REVIEWED` | Cannot adopt the current live fixed battery; `WAREHOUSE:AddAsset` removes a live group after registration. |
+| `COHORT:AddAsset(Asset)` | `SOURCE_REVIEWED` | Attaches an already-existing `WAREHOUSE.Assetitem`; it is not a public live-GROUP registration/adoption API. |
+| `LEGION:onafterAssetSpawned(...)` | `SOURCE_REVIEWED_INTERNAL_LIFECYCLE` | Creates the ARMYGROUP wrapper for a registered spawned asset after the Warehouse/Legion spawn event. Not a public adoption shortcut. |
+| `COHORT:RecruitAssets(...)` spawned branch | `SOURCE_REVIEWED` | Spawned cohort assets are recruitable when their `asset.flightgroup` exists/alive and combat-ready. This does not make arbitrary live ME groups recruitable. |
+| `BRIGADE:LoadBackAssetInPosition(...)` | `SOURCE_REVIEWED` | Restores a previously registered asset by spawning it with `SPAWN:NewWithAlias(...):SpawnFromCoordinate(...)` and then calling `__AssetSpawned(...)`; it does not adopt the existing live ME group. |
+
+No public pinned-MOOSE method was verified that adopts an arbitrary already-active ME GROUP into a BRIGADE/PLATOON as a spawned recruitable asset without a physical lifecycle change.
+
+## FSSR real Fixed-ARTY asset materialization review – 01.10.2026
+
+| Method / source | Status | OMW finding |
+|---|---|---|
+| `WAREHOUSE:_SpawnAssetGroundNaval(...)` | `SOURCE_REVIEWED_INTERNAL_LIFECYCLE` | Standard ground-asset materialization translates every unit by the delta between chosen spawn coordinate and original template route point; exact original coordinate preserves exact ME unit geometry. |
+| `ZONE_RADIUS:GetRandomVec2(...)` with radius 0 | `SOURCE_REVIEWED` | Source resolves inner=0 / outer=0 and therefore returns the zone center. OMW use as exact bootstrap spawn point remains DCS_PENDING. |
+| `LEGION:onafterAssetSpawned(...)` | `SOURCE_REVIEWED_INTERNAL_LIFECYCLE` | Creates the real ARMYGROUP wrapper and binds `asset.flightgroup` after Warehouse spawn. |
+| `COHORT:RecruitAssets(...)` spawned branch | `SOURCE_REVIEWED` | Real spawned artillery assets are recruitable when alive/combat-ready and not reserved/rearming/returning. |
+| `ARTY.db["L118_Unit"]` | `SOURCE_REVIEWED` | Pinned range data: 500..17500 m. |
+| `ARTY.db["2B11 mortar"]` | `SOURCE_REVIEWED` | Pinned range data: 500..7000 m. |
+| `UTILS.MetersToNM(...)` | `SOURCE_REVIEWED` | Conversion path for PLATOON `AddWeaponRange(...)`. |
+| `BRIGADE:LoadBackAssetInPosition(...)` | `SOURCE_REVIEWED` | Exact coordinate materialization exists, but remains a persistence/load-back API and is not the preferred normal initial-bootstrap path. |
+
+Owner decision 01.10.2026 permits MOOSE materialization of the four real site-bound ARTY/Mortar assets. Descriptor-only representation is therefore superseded before DCS validation.
+
+## FSSR ARTY real-asset bootstrap source implementation – 02.10.2026
+
+| Method / path | Status | OMW use |
+|---|---|---|
+| `GROUP:GetTemplateRoutePoints()` | `SOURCE_REVIEWED` | Reads the original first ME route point used as exact startup materialization coordinate. |
+| `BRIGADE:AddPlatoon(...)` | `SOURCE_REVIEWED` | Registers exactly one real fixed-fire-support asset from the existing late-activation template. |
+| `BRIGADE:LoadBackAssetInPosition(...)` | `SOURCE_IMPLEMENTED / DCS_PENDING` | One-time exact-coordinate startup materialization of the registered asset; selected because the normal self-request path has no per-request spawn coordinate. |
+| `LEGION OnAfterNewAsset` user callback | `SOURCE_IMPLEMENTED / DCS_PENDING` | Starts exact materialization after the real Assetitem has been assigned to its cohort and has its MOOSE AID alias. |
+| `LEGION OnAfterAssetSpawned` user callback | `SOURCE_IMPLEMENTED / DCS_PENDING` | Correlates real Assetitem and physical runtime group after MOOSE AssetSpawned lifecycle. |
+| `OPSGROUP:GetGroup()` | `SOURCE_REVIEWED` | Resolves the exact physical group from the selected `asset.flightgroup`. |
+| `ARTY.db["L118_Unit"]` | `SOURCE_REVIEWED` | Selection range 500..17500 m. |
+| `ARTY.db["2B11 mortar"]` | `SOURCE_REVIEWED` | Selection range 500..7000 m. |
+
+## FSSR A10 real-asset runtime validation – 02.10.2026
+
+Exakte Provenienz: source commit 4c8793a9b155f85e7a229117725fca55f58987c3; mission SHA-256 95F28962F15659399051813F426A1401797EA95F931588349F9EAB1523E28232; A10 bundle SHA-256 FA0CD024F050BA19DECAEE9AB1EF71C35B976346A327D118EFCC59DC249C84C9; DCS 2.9.30.28536 MT; MOOSE 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54.
+
+| Methode / Pfad | Status | Praktisch belegter A10-Scope |
+|---|---|---|
+| BRIGADE:AddPlatoon(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | je site-bound Fire-Support-Template ein reales rekrutierbares Asset |
+| BRIGADE:LoadBackAssetInPosition(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | vier Fixed-Fire-Support-Assets am urspruenglichen emplacement; max delta 0.014 m |
+| LEGION NewAsset / AssetSpawned callback boundary | VALIDATED_FOR_DOCUMENTED_SCOPE | Assetitem und physische Gruppe fuer alle vier Sites korreliert |
+| COMMANDER:AddBrigade(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | vier site BRIGADEs beim gemeinsamen BLUE COMMANDER |
+| COMMANDER:CanMission(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | Capability/Range gate fuer A10 ARTY selection |
+| COMMANDER:RecruitAssetsForMission(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | Wright/Honaker gleichzeitig geeignet; MOOSE rekrutierte Wright ohne OMW-Providerwahl |
+| LEGION.UnRecruitAssets(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | selection reservation nach Functional ARTY CeaseFire freigegeben |
+| OPSGROUP:GetGroup() | VALIDATED_FOR_DOCUMENTED_SCOPE | selected asset.flightgroup auf exakte physische Wright-Gruppe aufgeloest |
+| ARTY.db L118_Unit / 2B11 mortar range configuration | VALIDATED_FOR_DOCUMENTED_SCOPE | Wright 4610.4/17500 m und Honaker 4737.7/7000 m gleichzeitig geeignet |
+
+Grenze: keine allgemeine LoadBackAssetInPosition-Validierung; concurrent multi-demand, selected 2B11 fire und Strategic Resupply bleiben offen.
+
+
+## FSSR Strategic Resupply source closure – 02.10.2026
+
+Pinned MOOSE:
+
+```text
+release 2.9.18
+commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+| Method / callback | Status | OMW use / limitation |
+|---|---|---|
+| `OPSTRANSPORT:New(nil, pickupZone, deployZone)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | creates the generic STORAGE transport assignment; no carrier selected by OMW |
+| `OPSTRANSPORT:AddCargoStorage(source, destination, cargoType, amount, weight)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | physical STORAGE amount is explicit and independent of strategic CampaignState package count |
+| `OPSTRANSPORT:SetRequiredCarriers(min,max)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | only carrier cardinality constraint; concrete recruitment remains MOOSE |
+| `COMMANDER:RecruitAssetsForTransport(transport, cargoWeight, totalWeight)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | public COMMANDER wrapper over MOOSE cohort/asset recruitment; generic Base passes the explicit physical STORAGE manifest weight and does not name a provider |
+| `OPSTRANSPORT:AddAsset(asset)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | binds only Assetitems already selected/reserved by MOOSE recruitment |
+| `COMMANDER:TransportAssign(transport, legions)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | assigns the transport to the MOOSE-selected Legions; pinned onafterTransportAssign calls Legion:AddOpsTransport + TransportRequest |
+| `LEGION.UnRecruitAssets(assets)` | `SOURCE_REVIEWED / EXISTING_PROJECT_USE` | rollback guard only for malformed/aborted recruitment before assignment; not a provider selector |
+| `OPSTRANSPORT:GetCargoStorages()` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | reads public STORAGE delivery/loss/loading counters for lifecycle evidence |
+| `OPSTRANSPORT:GetCarriers()` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | observes MOOSE-assigned carriers; not used as an OMW selector |
+| `OPGROUP:IsInZone(zone)` / `OPSGROUP:IsInZone(zone)` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | assigned carrier departure proof against the configured pickup zone |
+| `OPSTRANSPORT OnAfterStatusUpdate` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | piggybacks on OPSTRANSPORT's own recurring status FSM; OMW creates no transport polling scheduler |
+| `OPSTRANSPORT OnAfterExecuting` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | strategic transaction progresses from RESERVED to LOADING |
+| `OPSTRANSPORT OnAfterDelivered` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | evaluates full delivered/full lost/mixed physical STORAGE outcome |
+| `OPSTRANSPORT OnAfterCancel` | `SOURCE_REVIEWED / SOURCE_IMPLEMENTED` | releases strategic reservation only before confirmed in-transit |
+
+Source detail from the pinned file: STORAGE loading removes the physical amount from
+`storageFrom` and increments `cargoLoaded`; unloading adds the physical amount to
+`storageTo` and increments `cargoDelivered`; destroyed carrier cargo increments
+`cargoLost`. OPSTRANSPORT itself schedules its next `StatusUpdate` while not delivered.
+
+No method in this section is upgraded to `VALIDATED_FOR_DOCUMENTED_SCOPE` until the
+Strategic-Resupply path runs under DCS with exact provenance.
+
+## FSSR 2B11 generic selected-owner source coverage – 02.10.2026
+
+The pinned `ARTY.db["2B11 mortar"]` range remains `500..7000 m`. The
+RealAssetRegistry Contract-Test now runs the 2B11 through the same generic
+PLATOON/BRIGADE materialization correlation and `ResolveFunctionalArty` identity path
+used by L118. Status: `SOURCE_TESTED / DCS_SELECTED_FIRE_PENDING`.
+
+
+### FSSR Strategic Resupply recruitment reconciliation – 02.10.2026
+
+Pinned-source correction retained from the earlier Stage-3 implementation:
+
+```text
+COMMANDER:AddOpsTransport(storageOnlyTransport)
+is not sufficient as the generic recruitment handoff
+because CheckTransportQueue derives weight from GetCargoOpsGroups(false).
+
+COMMANDER:RecruitAssetsForTransport(
+  transport,
+  physicalManifestWeight,
+  physicalManifestWeight
+)
+-> _GetCohorts()
+-> LEGION.RecruitCohortAssets(... AUFTRAG.Type.OPSTRANSPORT ...)
+-> MOOSE-selected Assetitems/Legions
+-> OPSTRANSPORT:AddAsset(...)
+-> COMMANDER:TransportAssign(...)
+```
+
+This preserves the previously used MOOSE-native Stage-3 recruitment mechanism while
+removing the acceptance-specific Jalalabad/CH-47 cohort binding. No OMW nearest-provider
+or concrete carrier selector is introduced.
+
+
+## FSSR Strategic Resupply route preservation – 04.10.2026
+
+Fuer die Base-31-Reconciliation werden keine neuen MOOSE-APIs erfunden. Wiederverwendet
+wird die bereits vorhandene Stage-3-Produktionskomponente
+`OMW_OpsTransportCorridorAdapter.lua`.
+
+Source-/Projektgrenzen:
+
+| Method / callback | Status | FSSR use / limitation |
+|---|---|---|
+| `LEGION OnAfterAssetSpawned` | `SOURCE_REVIEWED / EXISTING_PROJECT_USE` | korreliert das bereits von MOOSE selektierte Assetitem mit dessen physischem `asset.flightgroup`; keine Assetselektion |
+| `FLIGHTGROUP OnAfterTransport` | `SOURCE_REVIEWED / HISTORICAL_STAGE3_USE` | gemeinsamer OPSTRANSPORT-Corridoradapter installiert den owner-authored Outbound-Weg |
+| `FLIGHTGROUP OnAfterDelivered` | `SOURCE_REVIEWED / HISTORICAL_STAGE3_USE` | derselbe Adapter installiert nach Delivery den owner-authored Rueckweg |
+| `FLIGHTGROUP:AddWaypoint(...)` / `UpdateRoute()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | vorhandene OMW FlightPath-/Stage-3-Routenverwendung; Base-31 generalisiert nur die Bindung an das von MOOSE gewaehlte Asset |
+| `OPSTRANSPORT:IsCarrier(...)` | `SOURCE_REVIEWED` | der gemeinsame Adapter bindet nur den zu diesem OPSTRANSPORT gehoerenden Carrier |
+
+Die neue allgemeine Base-Bindung ist `SOURCE_IMPLEMENTED / CI_PENDING /
+DCS_REVALIDATION_PENDING`. Historische Stage-3-Evidenz wird nicht pauschal auf A11
+hochgestuft.

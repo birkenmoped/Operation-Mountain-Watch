@@ -100,3 +100,28 @@ do
 end
 
 print("PASS test_fob_attack_cas_patrol_closure")
+
+
+-- Shared production path: generic closure request can reuse the same supported-element
+-- contract without depending on the legacy MissionDemand registry adapter.
+do
+  local called = { count=0, reason=nil }
+  local mission = { name="GENERIC_CAS" }
+  local returned, requested, reason = Closure.Request({
+    demandId="MD-CAS-GENERIC-REQUEST",
+    tacticalComplete=true,
+    executionEvidenceConfirmed=true,
+    reason="SUPPORTED_ELEMENT_RELEASE_NO_CONTACT",
+    requestClosure=function(demandId, closeReason)
+      assertEqual(demandId, "MD-CAS-GENERIC-REQUEST", "generic demandId")
+      called.count=called.count+1
+      called.reason=closeReason
+      return mission, true, nil
+    end,
+  })
+  assertEqual(returned, mission, "generic closure mission")
+  assertTrue(requested, "generic closure requested")
+  assertEqual(reason, nil, "generic closure reason")
+  assertEqual(called.count, 1, "generic closure callback count")
+  assertEqual(called.reason, "SUPPORTED_ELEMENT_RELEASE_NO_CONTACT", "generic closure callback reason")
+end

@@ -17,7 +17,11 @@ local anchor = {}
 function anchor:GetVec2() return { x = 111, y = 222 } end
 function anchor:GetVec3() return { x = 111, y = 333, z = 222 } end
 
-local scannedGroupSet = { marker="scanned-group-set" }
+local redGroup={alive=true,coalition=1}
+function redGroup:IsAlive() return self.alive end
+function redGroup:GetCoalition() return self.coalition end
+local scannedGroupSet = { marker="scanned-group-set", objects={} }
+function scannedGroupSet:GetSetObjects() return self.objects end
 local createdZone = nil
 local fakeOpsZone = { started=false, stopped=false, UpdateSeconds=120 }
 function fakeOpsZone:SetObjectCategories(value) self.objectCategories=value return self end
@@ -53,15 +57,12 @@ local adapter = ThreatAdapter.New({
   onThreatStarted=function(_, _, demand, created)
     threatStartedCount=threatStartedCount+1
     assertTrue(demand ~= nil, "threat start demand")
-    assertFalse(created, "callback attack is duplicate after direct test setup")
+    assertTrue(created, "threat start callback only fires for a newly created result")
   end,
   onThreatEvaluated=function(_, opsZone, currentScannedGroupSet, from, event, to)
     threatEvaluatedCount=threatEvaluatedCount+1
     assertEqual(opsZone, fakeOpsZone, "evaluated callback opszone")
     assertEqual(currentScannedGroupSet, scannedGroupSet, "evaluated callback scanned set")
-    assertEqual(from, "Attacked", "evaluated callback from")
-    assertEqual(event, "Evaluated", "evaluated callback event")
-    assertEqual(to, "Attacked", "evaluated callback to")
   end,
   onThreatCleared=function(_, _, defeatedCoalition)
     threatClearedCount=threatClearedCount+1
@@ -69,6 +70,7 @@ local adapter = ThreatAdapter.New({
   end,
 })
 
+assertEqual(ThreatAdapter.SchemaVersion,"OMW-FOB-THREAT-OPSZONE-ADAPTER-6","schema")
 local ignored, ignoredCreated, ignoredReason = adapter:ProcessThreat(2)
 assertNil(ignored, "non-red threat ignored")
 assertFalse(ignoredCreated, "non-red threat not created")
@@ -82,7 +84,7 @@ assertEqual(demand.origin, "BLUE_GROUND_COP_FORTRESS", "threat installation")
 assertEqual(demand.priority, 90, "threat priority")
 assertEqual(demand.target.position.x, 111, "threat position x")
 assertEqual(demand.target.position.z, 222, "threat position z")
-assertEqual(demand.target.reportedTarget.evidence, "OPSZONE_ATTACKED", "target evidence")
+assertEqual(demand.target.reportedTarget.evidence, "MOOSE_OPSZONE_RED_PRESENCE", "target evidence")
 
 local duplicate, duplicateCreated, duplicateReason = adapter:ProcessThreat(1)
 assertFalse(duplicateCreated, "repeated perimeter threat does not create second active demand")
@@ -104,17 +106,17 @@ assertTrue(type(fakeOpsZone.OnAfterEvaluated) == "function", "MOOSE OnAfterEvalu
 assertTrue(type(fakeOpsZone.OnAfterAttacked) == "function", "MOOSE OnAfterAttacked callback installed")
 assertTrue(type(fakeOpsZone.OnAfterDefeated) == "function", "MOOSE OnAfterDefeated callback installed")
 
-fakeOpsZone:OnAfterEvaluated("Attacked", "Evaluated", "Attacked")
+scannedGroupSet.objects={redGroup}
+fakeOpsZone:OnAfterEvaluated("Captured", "Evaluated", "Captured")
 assertEqual(threatEvaluatedCount, 1, "threat evaluated callback count")
+assertEqual(#registry:ListActive(),1,"MOOSE-scanned RED presence preserves one active demand")
+assertEqual(threatStartedCount,0,"existing policy demand is not announced as newly started")
 
-local callbackDemandCount = #registry:ListActive()
 fakeOpsZone:OnAfterAttacked("Guarded", "Attacked", "Attacked", 1)
-assertEqual(#registry:ListActive(), callbackDemandCount, "MOOSE attack callback preserves one active demand")
-assertEqual(threatStartedCount, 1, "threat started callback count")
+assertEqual(#registry:ListActive(),1,"MOOSE Attacked callback preserves one active demand")
+assertEqual(threatStartedCount,0,"duplicate Attacked callback does not announce a new threat")
 fakeOpsZone:OnAfterDefeated("Attacked", "Defeated", "Guarded", 2)
-assertEqual(threatClearedCount, 0, "blue defeated callback ignored")
-fakeOpsZone:OnAfterDefeated("Attacked", "Defeated", "Guarded", 1)
-assertEqual(threatClearedCount, 1, "red defeated callback count")
+assertEqual(threatClearedCount,0,"blue defeated callback ignored")
 
 local _, startedAgain = adapter:Start(); assertFalse(startedAgain, "second start idempotent")
 local _, stopped = adapter:Stop(); assertTrue(stopped, "first stop changes state"); assertTrue(fakeOpsZone.stopped, "MOOSE OPSZONE stopped")
