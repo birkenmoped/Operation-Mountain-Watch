@@ -12,7 +12,7 @@ local Bridge = {}
 local Instance = {}
 Instance.__index = Instance
 
-Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5"
+Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-6"
 local TAG = "[OMW][FireSupStratResupply.InstallationIncidentBridge]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -32,6 +32,9 @@ function Bridge.New(spec)
   needFunction(base, "CloseIncident", "base")
   if type(siteRegistry.Sites) ~= "table" then fail("siteRegistry.Sites is required") end
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
+  if spec.onExternalSupportRequired ~= nil and type(spec.onExternalSupportRequired) ~= "function" then
+    fail("onExternalSupportRequired must be a function when provided")
+  end
 
   local byInstallationId = {}
   for key, site in pairs(siteRegistry.Sites) do
@@ -45,6 +48,7 @@ function Bridge.New(spec)
     base=base,
     byInstallationId=byInstallationId,
     sourceToBaseIncident={},
+    onExternalSupportRequired=spec.onExternalSupportRequired,
     logger=spec.logger,
   }, Instance)
 end
@@ -109,7 +113,34 @@ function Instance:OnIncidentStarted(sourceCoordinator, incident, evidence)
     installationId, tostring(entry.siteId), sourceIncidentId, tostring(opened.incidentId), tostring(created),
     tostring(guardCreated), tostring(guardReason), tostring(qrfCreated), tostring(qrfReason),
     tostring(physicalTargetGroup and physicalTargetGroup:GetName())))
-  return opened, created, guardReason or qrfReason or reason, qrf, guard
+
+  local externalResult=nil
+  local externalReason=nil
+  if self.onExternalSupportRequired then
+    local ok,resultOrError,reasonOrNil=xpcall(function()
+      return self.onExternalSupportRequired(opened,{
+        sourceCoordinator=sourceCoordinator,
+        sourceIncident=incident,
+        evidence=evidence,
+        site=entry.site,
+        siteId=entry.siteId,
+        priority=priority,
+      })
+    end,function(message) return tostring(message) end)
+    if ok then
+      externalResult=resultOrError
+      externalReason=reasonOrNil
+      self:_log(string.format(
+        "external support escalation forwarded installationId=%s siteId=%s baseIncidentId=%s reason=%s",
+        installationId,tostring(entry.siteId),tostring(opened.incidentId),tostring(externalReason)))
+    else
+      externalReason="EXTERNAL_SUPPORT_ESCALATION_EXCEPTION:"..tostring(resultOrError)
+      self:_log(string.format(
+        "external support escalation isolated installationId=%s siteId=%s baseIncidentId=%s reason=%s",
+        installationId,tostring(entry.siteId),tostring(opened.incidentId),externalReason))
+    end
+  end
+  return opened, created, guardReason or qrfReason or reason, qrf, guard, externalResult, externalReason
 end
 
 function Instance:OnIncidentUpdated(_, incident, evidence)
