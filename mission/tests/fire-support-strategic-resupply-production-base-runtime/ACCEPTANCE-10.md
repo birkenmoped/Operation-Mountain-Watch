@@ -10,7 +10,7 @@ authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: PENDING_MERGE
+source_commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
 acceptance_branch: agent/fire-support-strategic-resupply-base-gate0
 acceptance_commit: 4c8793a9b155f85e7a229117725fca55f58987c3
 acceptance_mission: OMW_Template_v25_GroundWorks_base.miz
