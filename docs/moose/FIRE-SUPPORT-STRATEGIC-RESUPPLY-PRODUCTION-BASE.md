@@ -669,3 +669,21 @@ qualified installation incident
 Die geerbten ARTY- und CAS-Ausfuehrungslifecycles bleiben unveraendert und muessen im
 naechsten realen DCS-Lauf nur an dieser neuen/rekonstruierten Orchestrationsgrenze
 regressionsgeprueft werden.
+
+
+### Fixed-Fire-Readiness vor Perimeter-Aktivierung
+
+Die normale Mission startet die Security-Perimeter erst nach dem MOOSE-
+`OnAfterAssetSpawned`-Nachweis fuer alle vier registrierten Fixed-Fire-Support-Assets.
+Damit wird die externe ARTY-Eskalation nicht gegen noch nicht materialisierte
+Warehouse-Assets freigegeben.
+
+~~~text
+BRIGADE/WAREHOUSE materialization
+-> all fixed fire assets materialized
+-> COMMANDER running
+-> perimeter start
+-> incidents / response demands allowed
+~~~
+
+Diese Barriere ist eventgetrieben und verwendet keinen zusaetzlichen Scheduler.
