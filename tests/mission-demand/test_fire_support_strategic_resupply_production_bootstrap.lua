@@ -12,7 +12,7 @@ end
 local source=read("scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua")
 
 local required={
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-3',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-4',
   'OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED',
   'requireUserFlag("OMW_WAREHOUSE_READY", 1)',
   'requireUserFlag("OMW_GROUND_READY", 1)',
@@ -30,6 +30,9 @@ local required={
   'INSTALLATION_ATTACK_C2_CAS',
   'INSTALLATION_ATTACK_C2_ARTY_INITIAL',
   'onExternalSupportRequired = function(incident, escalationContext)',
+  'WAITING_FOR_FIXED_FIRE_ASSETS',
+  'FIXED_FIRE_READINESS_EVENT',
+  'fixedFireMaterialized=true',
 }
 for _,marker in ipairs(required) do
   if not contains(source,marker) then
@@ -84,4 +87,11 @@ end
 
 if contains(source,'QRF_FAILURE') or contains(source,'QRF_FAILED') then
   error("CAS/ARTY escalation must not be implemented as a fallback after QRF failure")
+end
+
+
+local startPerimetersPos=source:find("runtime:StartPerimeters()",1,true)
+local readinessPos=source:find("allFixedFireAssetsMaterialized()",1,true)
+if not startPerimetersPos or not readinessPos or readinessPos > startPerimetersPos then
+  error("perimeters must not start before fixed-fire materialization readiness is evaluated")
 end
