@@ -12,10 +12,10 @@ end
 local source=read("scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua")
 
 local required={
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-1',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-2',
   'OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED',
-  'OMW_WAREHOUSE_READY',
-  'OMW_GROUND_READY',
+  'requireUserFlag("OMW_WAREHOUSE_READY", 1)',
+  'requireUserFlag("OMW_GROUND_READY", 1)',
   'OMW.Ground.Base.GetContext',
   'OMW.Ground.Base.GetInitialStock',
   'COMMANDER:New',
@@ -62,3 +62,12 @@ if not contains(source,'config.resupply == nil or config.resupply == false') the
 end
 
 print("PASS fire support production bootstrap boundary")
+
+
+if contains(source,'if OMW_WAREHOUSE_READY ~= 1') or contains(source,'if OMW_GROUND_READY ~= 1') then
+  error("Lua globals must not be used as readiness authority; Mission Editor readiness is a DCS user flag")
+end
+
+if not contains(source,'USERFLAG:New(name)') or not contains(source,'flag:Get()') then
+  error("production bootstrap must read readiness through pinned MOOSE USERFLAG")
+end
