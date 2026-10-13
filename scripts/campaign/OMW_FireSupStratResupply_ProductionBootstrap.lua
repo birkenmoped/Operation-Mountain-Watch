@@ -8,7 +8,7 @@
 
 local Bootstrap = {}
 
-Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-3"
+Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-4"
 
 local TAG = "[OMW][FireSupStratResupply.Production]"
 local QRF_TEMPLATE = "TPL_BLUE_GND_QRF_MIXED_6"
@@ -72,6 +72,8 @@ local state = {
   artyOwners = {},
   airwingCount = 0,
   resupplyConfigured = false,
+  commanderStarted = false,
+  perimetersStarted = false,
   error = nil,
 }
 
@@ -560,23 +562,6 @@ local function startInternal(config)
   end
   runtime = preparedRuntime or runtime
 
-  local _, perimetersStarted, perimeterReason = runtime:StartPerimeters()
-  if perimetersStarted ~= true then
-    fail("perimeter start failed reason=" .. tostring(perimeterReason))
-  end
-
-  for _, brigade in pairs(brigades) do
-    brigade:Start()
-  end
-  commander:Start()
-
-  for _, siteId in ipairs(SITE_IDS) do
-    local _, started, reason = runtime:StartSite(siteId, {})
-    if started ~= true and reason ~= "ALREADY_STARTED" then
-      fail("site start failed siteId=" .. siteId .. " reason=" .. tostring(reason))
-    end
-  end
-
   state.runtime = runtime
   state.base = runtime:GetBase()
   state.commander = commander
@@ -585,19 +570,76 @@ local function startInternal(config)
   state.artyRegistry = registry
   state.airwingCount = airwingCount
   state.resupplyConfigured = resupplyConfigured
-  state.status = "RUNNING"
+  state.commanderStarted = false
+  state.perimetersStarted = false
 
-  setReadyState(true, resupplyConfigured)
+  for _, siteId in ipairs(SITE_IDS) do
+    local _, started, reason = runtime:StartSite(siteId, {})
+    if started ~= true and reason ~= "ALREADY_STARTED" then
+      fail("site start failed siteId=" .. siteId .. " reason=" .. tostring(reason))
+    end
+  end
 
-  log(
-    "RESULT status=RUNNING sites=" .. tostring(#SITE_IDS)
-      .. " airwings=" .. tostring(airwingCount)
-      .. " fixedFireAssets=" .. tostring(#FIXED_ASSETS)
-      .. " strategicResupplyConfigured=" .. tostring(resupplyConfigured)
-      .. " acceptanceFixtures=false artificialShortage=false"
-  )
-  if not resupplyConfigured then
-    log("STRATEGIC_RESUPPLY_NOT_CONFIGURED reason=PRODUCTION_PHYSICAL_TRANSPORT_DESCRIPTOR_REQUIRED")
+  local function allFixedFireAssetsMaterialized()
+    for _, definition in ipairs(FIXED_ASSETS) do
+      if registry:IsMaterialized(definition.id) ~= true then return false end
+    end
+    return true
+  end
+
+  local activationInProgress = false
+  local function activatePerimetersWhenReady()
+    if state.perimetersStarted then return true end
+    if activationInProgress then return false end
+    if state.commanderStarted ~= true or not allFixedFireAssetsMaterialized() then return false end
+
+    activationInProgress = true
+    local _, perimetersStarted, perimeterReason = runtime:StartPerimeters()
+    if perimetersStarted ~= true then
+      activationInProgress = false
+      fail("perimeter start failed reason=" .. tostring(perimeterReason))
+    end
+
+    state.perimetersStarted = true
+    state.status = "RUNNING"
+    setReadyState(true, resupplyConfigured)
+
+    log(
+      "RESULT status=RUNNING sites=" .. tostring(#SITE_IDS)
+        .. " airwings=" .. tostring(airwingCount)
+        .. " fixedFireAssets=" .. tostring(#FIXED_ASSETS)
+        .. " fixedFireMaterialized=true"
+        .. " strategicResupplyConfigured=" .. tostring(resupplyConfigured)
+        .. " acceptanceFixtures=false artificialShortage=false"
+    )
+    if not resupplyConfigured then
+      log("STRATEGIC_RESUPPLY_NOT_CONFIGURED reason=PRODUCTION_PHYSICAL_TRANSPORT_DESCRIPTOR_REQUIRED")
+    end
+
+    activationInProgress = false
+    return true
+  end
+
+  for siteId, brigade in pairs(brigades) do
+    local previous = brigade.OnAfterAssetSpawned
+    function brigade:OnAfterAssetSpawned(From, Event, To, group, asset, request)
+      if previous then previous(self, From, Event, To, group, asset, request) end
+      log(
+        "FIXED_FIRE_READINESS_EVENT siteId=" .. tostring(siteId)
+          .. " asset=" .. tostring(asset and asset.spawngroupname)
+      )
+      activatePerimetersWhenReady()
+    end
+  end
+
+  for _, brigade in pairs(brigades) do
+    brigade:Start()
+  end
+  commander:Start()
+  state.commanderStarted = true
+
+  if not activatePerimetersWhenReady() then
+    log("WAITING_FOR_FIXED_FIRE_ASSETS required=" .. tostring(#FIXED_ASSETS))
   end
 
   return state
