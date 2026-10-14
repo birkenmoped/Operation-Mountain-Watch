@@ -379,3 +379,20 @@ einschliesslich Warehouse-Materialisierung, M1083-Entnahme, physischem
 Anforderung geprueft werden. Aus alter Acceptance folgt fuer den neu
 gebuendelten und anders initialisierten Production-Pfad kein automatisches
 `VALIDATED`.
+
+
+## ARTY-Completion-Observer fuer FSSR Production
+
+Der produktive `ArtySelectionRuntime` besitzt einen optionalen Callback
+`onFireMissionFinished(demand, context, entry, reason)`, der **nach**
+MOOSE-`OnAfterCeaseFire` und Freigabe der Selection-Reservierung einmalig
+ausgeloest wird. Ausserdem werden vorzeitiger Cancel sowie der MOOSE-`Dead`-
+Fehler signalisiert. Diese Notification verwendet die bereits installierten
+MOOSE-ARTY-FSM-Hooks; sie implementiert keinen eigenen ARTY-Lifecycle.
+
+Die Signalbruecke **startet weder** einen neuen Feuerauftrag **noch** den M1083.
+Nachladen bleibt Aufgabe des zuvor dokumentierten `FixedFireSupportAmmoRearmService`,
+nachfolgende Ziel- und CAS-Deconfliction-Entscheidungen bleiben Aufgabe der
+autoritativen C2-Laufzeit. Das Signal ersetzt keinen physischen
+`EVENTS.Shot`-Nachweis und wurde im neuen Production-Bundle noch nicht in
+DCS bestaetigt.
