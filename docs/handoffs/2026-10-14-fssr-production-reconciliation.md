@@ -283,3 +283,28 @@ Nach MOOSE-Materialisierung des definierten Fixed-Fire-Assets wird für den ents
 **Nicht implementiert:** Munitionsmangel-Ereignis/Threshold → Produktions-Request, ARTY-Continuation nach `CeaseFire`, neuer C2-Target-Resolver und Strategic Ground-/Air-Transportdescriptor. Diese Nachbarfunktionen benötigen ihren eigenen Reuse-/MOOSE-/Acceptance-Abgleich. Kein automatischer Scheduler zur Request-Erzeugung.
 
 **DCS-Gate:** Der Builder und die Lua-Quellen sind noch nicht lokal gebaut oder in DCS geprüft. `OMW_FSSR_READY` kann deshalb aus dieser Source-Änderung nicht als erfolgreicher neuer Test interpretiert werden. Die Production-Bundle-Datei in der `.miz` darf nicht ohne echte Build-Hashes und gezielte Regression ausgetauscht werden.
+
+
+## 9. ARTY-CeaseFire-/Loss-Eventbruecke (14.10.2026)
+
+Der FSSR-Produktionsstand wurde um einen **optionalen, ereignisgebundenen Completion-Callback** erweitert. Dies ist eine minimale Schnittstelle zur Wiederanbindung des bereits vorgesehenen C2-Retarget-Lifecycles, **noch keine automatische ARTY-Continuation**.
+
+`OMW_FireSupStratResupply_ArtySelectionRuntime.lua` bindet an den **bestehenden** MOOSE-Functional-ARTY-Owner (`OnAfterCeaseFire` und `OnAfterDead`). Erst nach `LEGION.UnRecruitAssets` ruft es `onFireMissionFinished(demand, context, entry, reason)` fuer diesen Fire-Mission-Handle genau einmal auf. Auch der Cancel-vor-Start wird als `CANCELLED_BEFORE_FIRE_START` signalisiert. Fehler des externen Listeners werden protokolliert, duerfen aber den MOOSE-FSM-Hook nicht zerstoeren. Ein `CeaseFire` bleibt nur ein MOOSE-FSM-Ereignis und ist **kein** unabhaengiger physischer `Shot`-Beweis.
+
+Der Callback wird durch `OMW_FireSupStratResupply_ExternalSupportRuntime.lua` und die Production-Konfiguration `OMW.FireSupStratResupplyProductionConfig.onArtyFireMissionFinished` lediglich **weitergereicht**. Ohne diesen optionalen Callback bleibt die aktuelle Fire-Selection-Semantik unveraendert. Ein Listener darf keine eigenen MOOSE-Asset-Reservierungen, Zielscans oder parallelen ARTY-Owner einfuehren.
+
+### Lifecycle-Inheritance-Map
+
+| Feld | Reconciliation |
+|---|---|
+| inherited_contract | Ein Functional ARTY pro physischer Batterie, `AssignTargetCoord`, `OnAfterCeaseFire`, `LEGION.UnRecruitAssets` |
+| accepted_source_paths | `OMW_FireSupStratResupply_ArtySelectionRuntime.lua`, `OMW_FobAttackFunctionalArtyDispatchAdapter.lua`, urspruenglicher C2-Fire-Observation-Pfad noch zu rekonstruieren |
+| evidence | FSSR ARTY Selection A10/A12; historische Fire-Continuation nur als vergangene Testbeobachtung, nicht als Production-PASS |
+| invariants | Selection-only MOOSE AUFTRAG; keine zweite ARTY-FSM, kein neuer Scheduler, keine ungepruefte Folgesalve |
+| reuse_mode | MINIMAL_ADAPTER am bereits vorhandenen MOOSE-FSM-Hook |
+| harness_role | einmalige Eventzustellung/Abbruch beobachten; physisches `EVENTS.Shot` getrennt nachweisen |
+| changed_boundary | Optionaler Completion-/Failure-Callback mit Demand-/Context-/Owner-Korrelation |
+| owner_approval | Keine geaenderte Feuerdoktrin; Zielauswahl und Fortsetzung verbleiben in der bisherigen C2-Verantwortung |
+| revalidation_scope | Lua-Unit-Test fuer exactly-once und Cancel; DCS-Test von MOOSE-`CeaseFire`/`Dead` inkl. physischem Schussbeleg erforderlich |
+
+**Offen:** Ein verbindlicher C2-Listener muss nach dem Event lebende autorisierte Gegner, CAS ON STATION, physische Munition, Pending-Rearm und geeignete MOOSE-Provider pruefen. Die konkrete bereits akzeptierte C2-`queueNextFireMission`-Implementierung wurde auf dem aktuellen Production-Stand noch nicht gefunden. Daher wird weder ein automatisches erneutes `RequestIncidentSupport` noch eine selbstentwickelte Ersatzschleife aktiviert. Ground-/Air-Strategic-Resupply bleibt unveraendert fail-closed ohne produktiven Transportdescriptor.
