@@ -313,3 +313,12 @@ Der Production-Bootstrap-5 bettet die **unveraenderten** vorhandenen Ground-Modu
 Fuer den DCS-Lauf benoetigt der Projektinhaber reale Builder-/Bundle-Hashes, Missions-/MOOSE-/DCS-Provenienz, M1083- und ARTY-Lifecycle-Evidenz sowie Ressourcen-Snapshots. Die vorhandene A10-Fixture-Konfiguration wird nicht automatisch als Production-Manifest uebernommen.
 
 **Status:** SOURCE_IMPLEMENTED / LOCAL_BUILD_PENDING / DCS_PENDING. Weder ARTY-Continuation noch Ground-/Air-Strategic-Resupply sind durch diese A12-Erweiterung abgenommen.
+
+
+## 13. ARTY-Selection-Completion-Signal – Source-Gate
+
+Die Production enthaelt einen **optionalen** Completion-Listener `onArtyFireMissionFinished`. Seine einzige aktuelle Aufgabe ist, `OnAfterCeaseFire` / `OnAfterDead` und fruehen Cancel des bereits existierenden MOOSE-Functional-ARTY-Lifecycles korreliert und einmalig nach Freigabe der MOOSE-Selection-Reservierung zu melden. Es existiert derzeit **kein** eingerichteter automatischer C2-Retarget-Listener.
+
+Zu pruefen: exakte Demand-ID und Site-Korrelation, nur ein Callback pro Fire-Mission, Ursache `CEASE_FIRE` / `FUNCTIONAL_ARTY_DEAD` / `CANCELLED_BEFORE_FIRE_START`, Release vor Callback, Listenerfehler ohne MOOSE-FSM-Ausfall. `CeaseFire` ohne physische `EVENTS.Shot`-Evidenz zaehlt weiterhin **nicht** als nachgewiesenes Feuer; neue Fire-Mission nach CeaseFire und Wiederaufnahme nach Rearm bleiben eigene ausstehende DCS-Gates.
+
+**Status:** SOURCE_IMPLEMENTED / TEST_NOT_RUN / DCS_PENDING.
