@@ -383,8 +383,8 @@ local function resolveFunctionalOwner(definition, asset, legion, group)
     acceptedShots = 4,
     weaponType = ARTY.WeaponType.Auto,
   }
-  state.artyOwners[definition.id] = owner
   createLocalRearmService(definition, group, arty)
+  state.artyOwners[definition.id] = owner
   log("FUNCTIONAL_ARTY_OWNER_CREATED assetId=" .. definition.id .. " group=" .. tostring(group:GetName()))
   return owner, nil
 end
