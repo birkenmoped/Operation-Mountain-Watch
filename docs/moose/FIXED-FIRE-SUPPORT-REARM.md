@@ -346,3 +346,36 @@ Post-merge direct production artifact hash readback: VERIFIED
 Ground rearm integration block: CLOSED
 External filesystem/server persistence host: NOT PRESENT / NOT TESTED / NOT CLAIMED
 ```
+
+
+## FSSR Production-Bootstrap-5 – Wiederverwendung der vorhandenen Rearm-Module
+
+Die Reconciliation vom 14.10.2026 ergaenzt eine **opt-in Composition** im
+`OMW_FireSupStratResupply_ProductionBootstrap.lua`. Die vier bereits vorhandenen
+Module `GroundSupportMaterializer`, `FixedFireSupportAmmoSupport`,
+`GroundAmmoRearmAdapter` und `FixedFireSupportAmmoRearmService` werden ohne
+Aenderung ihrer Lifecycle-Implementierung in das Production-Bundle eingebettet.
+
+Pro explizit konfigurierter Fixed-Fire-Batterie wird beim ersten Aufruf des
+MOOSE-Selected-Functional-ARTY-Resolvers der Rearm-Service fuer die physische
+Batterie erzeugt. Dieser Dienst benoetigt eine durch die Produktivmission
+nachgewiesene eigene MOOSE-Spawnzone, ein M1083-Template sowie eindeutige
+`nodeId`, `assignment`, `platoonName` und `carrierEntityId`.
+Erzeugung und MOOSE-Bereitschaft des Dienstes sind **kein** automatischer
+Munitionsverbrauch und **keine** physische Rearm-Anforderung.
+
+Eine spaetere autorisierte lokale Rearm-Anforderung wird durch
+`OMW.FireSupStratResupplyProduction.RequestLocalArtyRearm(assetId, spec)`
+an den **bestehenden** Rearm-Service delegiert, ohne das Materialisierungs-,
+MOOSE-ARTY-, CampaignState- oder Return-to-stock-Verhalten zu kopieren.
+`startArty=false` und die konkrete materialisierte Batteriereferenz werden
+erzwungen. Die fachlich gueltige Ausloeseschwelle, Transaktionsidentitaet,
+Menge und erneute Freigabe des ARTY-Fire-Support-Auftrags sind derzeit
+**nicht** durch diesen Adapter implementiert.
+
+Wichtig: Die neue Zusammensetzung muss noch lokal gebaut und in DCS
+einschliesslich Warehouse-Materialisierung, M1083-Entnahme, physischem
+`ARTY:Rearm()`, Ressourcentransaktion, M1083-Rueckkehr und wiederholter
+Anforderung geprueft werden. Aus alter Acceptance folgt fuer den neu
+gebuendelten und anders initialisierten Production-Pfad kein automatisches
+`VALIDATED`.
