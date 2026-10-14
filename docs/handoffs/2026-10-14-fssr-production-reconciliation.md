@@ -231,3 +231,55 @@ Offene Tests vor technischem Abschluss:
 8. Keine Regression bei bereits akzeptierter QRF, CAS-Korridoren, Flugzeug-Recovery und ARTY-Selection-only.
 
 **Prüfstatus:** SOURCE_REVIEWED / RECONCILIATION_PENDING. Der Source-Readback allein rechtfertigt keine Änderung der laufenden Missionsdatei, keinen neuen Build-Hash und kein `VALIDATED`.
+
+
+## 8. Production-Implementierung: opt-in M1083-Rearm-Komposition (14.10.2026)
+
+**Source-Status: IMPLEMENTED / DCS_PENDING.** Die Production-Bootstrap-Source und der Production-Bootstrap-Builder wurden geändert. Der vorhandene funktionale ARTY-/Mörser-Fire-Control-Owner wird ausdrücklich beibehalten. Die A10-Module selbst bleiben unverändert und werden in das Production-Bundle eingebettet:
+
+```text
+OMW_GroundSupportMaterializer.lua
+OMW_FixedFireSupportAmmoSupport.lua
+OMW_GroundAmmoRearmAdapter.lua
+OMW_FixedFireSupportAmmoRearmService.lua
+```
+
+### Lifecycle-Inheritance-Map
+
+| Feld | Übernommener Vertrag |
+|---|---|
+| inherited_contract | MOOSE Local M1083 materialization → bestehender Functional ARTY `Rearm()` → CampaignState CONSUMED/COMPLETED → Rückkehr zum MOOSE Warehouse |
+| accepted_source_paths | die vier unverändert eingebetteten Ground-Module sowie der bereits laufende `ARTY`-Owner |
+| evidence | `docs/moose/FIXED-FIRE-SUPPORT-REARM.md`; Fixed Fire Support Rearm Acceptance 2-11; FSSR Production A10 als vorhandene Composition-Referenz |
+| invariants | genau ein ARTY-Fire-Control-Owner pro Batterie; `startArty=false`; keine zweite Ressourcenhoheit; Materialisierung und Return-to-stock über MOOSE |
+| reuse_mode | DIRECT_REUSE der vier Ground-Module plus MINIMAL_ADAPTER im Bootstrap |
+| harness_role | spätere Acceptance triggert/observiert, besitzt aber weder Rearm-FSM noch Recredit |
+| changed_boundary | optionale Creation pro MOOSE-materialisierter Fixed-Fire-Batterie und explizite Request-Weiterleitung |
+| owner_approval | keine Änderung der akzeptierten Rearm-Lifecycle-Invarianten; neue Non-MOOSE-Parallelimplementierung wird nicht eingeführt |
+| revalidation_scope | Builder-Bundling, MOOSE-Site-Warehouse/ZONE-Integration, vier physische M1083-Rearm-/Return-Lifecycles und CampaignState-Settlement |
+
+### Produktionskonfiguration
+
+Die Funktion wird **nicht automatisch aktiviert**. Optionaler Input:
+
+```lua
+OMW.FireSupStratResupplyProductionConfig.localArtyRearm = {
+  BOSTICK = {
+    nodeId = "GROUND_NODE_BOSTICK",
+    supportZoneName = "ZON_BLUE_GND_BOSTICK_RESUPPLY",
+    supportTemplateName = "TPL_BLUE_GND_SUP_M1083",
+    platoonName = "PLT_FSSR_PROD_REARM_BOSTICK",
+    assignment = "OMW:PROD:BOSTICK:AMMO-SUPPORT",
+    carrierEntityId = "FSSR-BOSTICK-M1083",
+    alias = "Bostick L118",
+  },
+}
+```
+
+Das ist **ein Konfigurationsschema und Beispiel, keine bestätigte `.miz`-Konfiguration**. Weitere Asset-Keys: `WRIGHT`, `FORTRESS`, `HONAKER`. `nodeId`, `supportZoneName`, `supportTemplateName`, `platoonName`, `assignment`, `carrierEntityId`, `alias` sind pro Eintrag Pflicht. Die Werte müssen aus der echten Mission und den CampaignState-/Warehouse-Baselines validiert sein; keine automatische Ergänzung aus A10-Testdaten.
+
+Nach MOOSE-Materialisierung des definierten Fixed-Fire-Assets wird für den entsprechend konfigurierten Standort genau ein bestehender Rearm-Service aufgebaut. Ein fachlich autorisierter Caller kann über `OMW.FireSupStratResupplyProduction.RequestLocalArtyRearm(assetId, spec)` einen Request an den vorhandenen Service weitergeben. Dessen `transactionId`, `quantity`, `missionDemandId`, etwaige Rearm-Distanzen und die strategische Verfügbarkeit stammen ausdrücklich vom fachlich autorisierten Caller. `artilleryGroup` wird aus der vom MOOSE Asset Registry materialisierten Batterie gebunden, `startArty=false` erzwungen. Die Erstellung des Service löst **noch keinen Rearm** aus.
+
+**Nicht implementiert:** Munitionsmangel-Ereignis/Threshold → Produktions-Request, ARTY-Continuation nach `CeaseFire`, neuer C2-Target-Resolver und Strategic Ground-/Air-Transportdescriptor. Diese Nachbarfunktionen benötigen ihren eigenen Reuse-/MOOSE-/Acceptance-Abgleich. Kein automatischer Scheduler zur Request-Erzeugung.
+
+**DCS-Gate:** Der Builder und die Lua-Quellen sind noch nicht lokal gebaut oder in DCS geprüft. `OMW_FSSR_READY` kann deshalb aus dieser Source-Änderung nicht als erfolgreicher neuer Test interpretiert werden. Die Production-Bundle-Datei in der `.miz` darf nicht ohne echte Build-Hashes und gezielte Regression ausgetauscht werden.
