@@ -304,6 +304,11 @@ local function createLocalRearmService(definition, group, arty)
   if not site or type(site.warehouseName) ~= "string" then
     fail("local rearm site Warehouse missing assetId=" .. definition.id)
   end
+  if row.nodeId ~= site.campaignNodeId then
+    fail("local rearm CampaignState node mismatch assetId=" .. definition.id
+      .. " expected=" .. tostring(site.campaignNodeId)
+      .. " configured=" .. tostring(row.nodeId))
+  end
   local supportBrigade = BRIGADE:New(
     site.warehouseName, "BDE_FSSR_PRODUCTION_REARM_" .. definition.id
   )
@@ -804,7 +809,21 @@ function Bootstrap.RequestLocalArtyRearm(assetId, spec)
   if spec.startArty ~= nil and spec.startArty ~= false then
     fail("local rearm requires startArty=false for the existing Functional ARTY owner")
   end
+  local row = state.localRearmConfig and state.localRearmConfig[assetId] or nil
+  if not row then return nil, false, "LOCAL_REARM_CONFIGURATION_MISSING" end
+  if spec.nodeId ~= nil and spec.nodeId ~= row.nodeId then
+    fail("local rearm request nodeId mismatch assetId=" .. assetId)
+  end
+  if spec.carrierEntityId ~= nil and spec.carrierEntityId ~= row.carrierEntityId then
+    fail("local rearm request carrierEntityId mismatch assetId=" .. assetId)
+  end
+  if spec.resourceId ~= nil and spec.resourceId ~= "GROUND_AMMO_PACKAGE" then
+    fail("local rearm resourceId must be GROUND_AMMO_PACKAGE")
+  end
   local request = copy(spec)
+  request.nodeId = row.nodeId
+  request.carrierEntityId = row.carrierEntityId
+  request.resourceId = "GROUND_AMMO_PACKAGE"
   request.artilleryGroup = physical
   request.startArty = false
   return service:Request(request)
