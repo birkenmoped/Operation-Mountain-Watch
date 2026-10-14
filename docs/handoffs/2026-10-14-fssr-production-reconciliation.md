@@ -20,6 +20,12 @@ validated_in_dcs: false
 
 # FSSR – Production Reconciliation nach DCS-Lauf vom 14.10.2026
 
+## AKTUELLER STAND / CHAT-WECHSEL – zuerst lesen
+
+Dieses Dokument ist die **fortlaufende, jederzeit uebergabefaehige Arbeitsakte**. Bei einem neuen Chat **zuerst Abschnitt 12 (kompakte Betriebs-/Uebergabeakte) lesen**, danach die vorangegangenen Abschnitte fuer Ursachen, Quellen und Entscheidungen. Die Metadaten `source_commit` im Header kennzeichnen den urspruenglichen Test-/Aufzeichnungsstand, **nicht** den neuesten Git-HEAD. Der jeweils aktuelle Remote-HEAD muss vor neuer Arbeit per GitHub abgefragt werden.
+
+Letzter vom Projektinhaber real lokal verifizierter Source-HEAD: `a134022f80606d9c353869d1c11f365b2e8c6c24` (siehe Abschnitt 11). Der letzte Dokumentations-Commit vor der hier beschriebenen Fortsetzung war `56f566d9d12f6ab64c434384654ee280577fc2ad`, vom Nutzer per `git pull --ff-only` und SHA-256 bestaetigt. **Kein Production-DCS-PASS** fuer die neue ARTY-Continuation oder M1083-Composition.
+
 ## 1. Einordnung und Beweisgrenzen
 
 Dieses Handoff dokumentiert die vom Projektinhaber bereitgestellte Gesprächs-/Auswertungsaufzeichnung `Eingefügter Text(20261014-202154).txt`. Die dort genannten Log- und Debrief-Befunde sind **übernommene Testauswertung**, nicht unabhängig hier erneut geprüfte Rohlogs. Es erfolgt weder eine neue DCS-Validierung noch eine neue fachliche Freigabe. Für die endgültige Acceptance sind die ursprünglichen `dcs(20261014-191645).log`, `debrief(20261014-191647).log`, die tatsächlich gespeicherte `.miz` mit Hash sowie DCS-/MOOSE-Version gegen den konkreten Lauf zu archivieren.
@@ -364,3 +370,141 @@ MizMutation: false
 Ein separater `Get-FileHash -Algorithm SHA256` bestaetigt exakt denselben Base-Bundle-Hash. `git status --short` enthaelt ausschliesslich das bereits existierende untracked Verzeichnis `mission/fire-support-strategic-resupply/`.
 
 **Beweisgrenze:** Build und Marker sind bestaetigt; die ARTY-Unit-Tests und MOOSE-/DCS-Runtime sind dadurch **nicht** ausgefuehrt oder validiert. Es wurde kein neuer Trigger fuer die ARTY-Continuation aktiviert. Der C2-Quellenabgleich zeigt bereits die Incident-Quelle `sourceIncidentCoordinator:GetParticipants(true)` im bestehenden `InstallationIncidentBridge`; die CAS-On-Station-Quelle und die bewaffnete Wiederaufnahme muessen gesondert gegen den aktiven CAS-Lifecycle und bestehende Support-Lifecycle-Reservierungen geprueft werden. Keine parallele `C2_FIRE_OBSERVATION`-Weltabfrage, keine Annahme, dass Perimeter-Clear ein Missionsende ist.
+
+
+## 12. SELBSTSTAENDIGE UEBERGABEAKTE – fortlaufend pflegen
+
+### 12.1 Auftrag und Arbeitsmodus
+
+**Konkreter Owner-Auftrag:** `Production-Reconciliation der ARTY-/Moerser-Continuation und der vorhandenen M1083-/Ground-/Air-Resupply-Lifecycles`. Der Projektinhaber hat zusaetzlich angewiesen, **jeden Arbeitsschritt so zu dokumentieren, dass jederzeit ein anderer Chat ohne Informationsverlust uebernehmen kann**. Dieses Dokument ist die fortzufuehrende Handoff-Datei. Nicht nur die Ergebnisse, sondern auch abgewiesene Ansaetze, Fehlannahmen, Source-Luecken, lokale Testdaten, exakte Commits und verbleibende Blocker sind hier zu pflegen.
+
+Repository: `birkenmoped/Operation-Mountain-Watch`.
+Aktiver Arbeitsbranch: `agent/fire-support-strategic-resupply-production-bootstrap`.
+Letzte reale Nutzer-Verifikation: `git pull --ff-only` bis `56f566d9d12f6ab64c434384654ee280577fc2ad`, danach `Get-FileHash` dieses Handoffs SHA-256 `D70C705619998A36F25B88F7B57D02624151FCDEE338D8FCF08A869F1EF044CB`. Anschliessend wurde fuer die **vorliegende** Fortsetzung zunaechst nur eine weitere Quellenpruefung durchgefuehrt; der neue Handoff-Commit wird aus der GitHub-Toolantwort entnommen und dem Projektinhaber zur lokalen Verifikation mitgeteilt, nicht vorweg angenommen.
+
+Lokaler Nutzer-Worktree: `P:\DCS-DEV\Operation-Mountain-Watch-fssr-production-bootstrap`. Das Verzeichnis `mission/fire-support-strategic-resupply/` existiert untracked und wurde bewusst **nicht** geloescht, bewegt oder versioniert. Die `.miz` nicht stillschweigend veraendern.
+
+### 12.2 Verbindliche Normen und Abhaengigkeiten – zuerst pruefen
+
+Autoritaetsreihenfolge laut `docs/00-project-governance.md`:
+`main`-Owner-Entscheidung / `BINDING` -> belegter exakter DCS-Acceptance-Stand -> Manifeste -> Handoffs -> historische Quellen. Pflichtdateien:
+
+```text
+AGENTS.md
+docs/00-project-governance.md
+docs/26-moose-first-development-policy.md
+docs/moose/ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md
+docs/moose/FIRE-SUPPORT-ACCEPTED-IMPLEMENTATION-MATRIX.md
+docs/moose/FIXED-FIRE-SUPPORT-REARM.md
+docs/moose/FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE.md
+docs/moose/FIRE-SUPPORT-STRATEGIC-RESUPPLY-RESOURCE-MONITOR.md
+docs/05-logistics.md                              [main: binding Abschnitt 2.1]
+mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-12.md
+```
+
+MOOSE-first, gepinnter Referenzstand **2.9.18**, Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`, `Moose.lua` SHA-256 `E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`. Neue MOOSE-Klassen/-Methoden muessen gegen die tatsaechlich gebundelte `Moose.lua` verifiziert werden, nicht anhand von vermuteten APIs. CampaignState ist alleinige strategische Ressourcenautoritaet; MOOSE besitzt physische Assetwahl und FSM-Lifecycles. Neue Native-DCS- oder Parallelimplementierungen beduerfen ausdruecklicher Owner-Freigabe. Code/Identifiers/Logs/Commits Englisch; Design-Dokumentation Deutsch. Kein CODEX. PR-/Merge-/MIZ- und DCS-Acceptance-Gates beachten.
+
+### 12.3 Source-Karte / unveraenderte akzeptierte Module
+
+| Verantwortlichkeit | Aktuelle Source / Nachweis | Verbindliche Grenze |
+|---|---|---|
+| Production-Einstieg | `scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua` | Bootstrap-5; kein Testfixture / kuenstlicher Bestand |
+| Generische Base | `scripts/campaign/OMW_FireSupStratResupply_Runtime.lua` | Runtime-13; per `p.New(...)` komponiert |
+| Physische ARTY-Registrierung | `scripts/campaign/OMW_FireSupStratResupply_ArtyRealAssetRegistry.lua` | Vier feste Batterien; MOOSE BRIGADE/PLATOON; Selection-only, keine zweite Mission |
+| Funktionales ARTY-Feuer | `scripts/campaign/OMW_FireSupStratResupply_ArtySelectionRuntime.lua` | Schema 2; `AssignTargetCoord`; `OnAfterCeaseFire`-/`Dead`-Abschlussnotifikation genau einmal |
+| Externer C2-Support | `scripts/campaign/OMW_FireSupStratResupply_ExternalSupportRuntime.lua` | Schema 4; optionalen ARTY-Finish-Callback weiterreichen |
+| Incident-Zielautoritaet | `scripts/campaign/OMW_FireSupStratResupply_InstallationIncidentBridge.lua` | `incident.context.sourceIncidentCoordinator:GetParticipants(true)` |
+| Incident-/Demand-Semantik | `scripts/campaign/OMW_FireSupStratResupply_Base.lua` | `RequestIncidentSupport` dedupliziert nach `requestKey`, `Cancel`/Incident-Close nicht mit physischen Lifecycle-Enden verwechseln |
+| CAS-Status | `scripts/campaign/OMW_FireSupStratResupply_CasLifecycleRuntime.lua` | `entry.executing`, `releaseRequested`, `homeLanded`, `assetReturned`; **kein verifizierter produktionstauglicher On-Station-Status-Resolver fuer ARTY** |
+| Local M1083 materialisieren | `scripts/ground/OMW_GroundSupportMaterializer.lua`; `OMW_FixedFireSupportAmmoSupport.lua` | BRIGADE/PLATOON/WAREHOUSE; keine zweite SPAWN-Implementierung |
+| Local M1083 rearmen | `scripts/ground/OMW_FixedFireSupportAmmoRearmService.lua`; `OMW_GroundAmmoRearmAdapter.lua` | Ein Functional-ARTY-Owner, `startArty=false`; `OnBeforeRearm`/ `OnAfterRearmed` bindet CampaignState |
+| Strategische Shortage | `scripts/campaign/OMW_ResourceDemandPolicy.lua`; `OMW_FireSupStratResupply_ResupplyMonitor.lua` | Ereignis-/Aufrufer-gesteuerte `EvaluateAll` oder `EvaluateRow`; ein Demand pro Shortage-Episode |
+| Ground-Versorgung | `scripts/ground/OMW_GroundAmmoResupplyExecutor.lua` | akzeptierter `AUFTRAG:NewAMMOSUPPLY`-Pfad; nicht parallel zu zweitem OPSTRANSPORT-Owner verwenden |
+| Ground-/Air-Transport | `scripts/campaign/OMW_FireSupStratResupply_ResupplyTransportRuntime.lua`, `OMW_FireSupStratResupply_StorageTransportFactory.lua`, `OMW_FireSupStratResupply_TransportSettlement.lua` | MOOSE `OPSTRANSPORT`/`STORAGE`; produktiver Descriptor fehlt |
+| Alter Fire-Continuation-Test | `mission/tests/stage3-honaker-wright-full-response/src/a2/04-fire-support.lua` | `queueNextFireMission` / `selectNextFireTarget`; **Test-Harness**, kein kopierbarer produktiver C2-Owner |
+
+### 12.4 Bewiesener lokaler Buildstand (nicht DCS-validiert)
+
+Vom Nutzer selbst in PowerShell geliefert:
+
+```text
+Local verified HEAD: a134022f80606d9c353869d1c11f365b2e8c6c24
+Builder: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-35
+Builder SHA-256: 973820DF44D14F55D7A489739B28C64CC10988717C079AF4255239CB848B8118
+Base bundle SHA-256: 0CB17F45D44870F58D944EAE8B8F68A95BEF55845F2083FA0B65240236467909
+ArtySelectionRuntimeSchema: ...-2
+ExternalSupportRuntimeSchema: ...-4
+Base bundle contains onFireMissionFinished: PASS
+MizMutation: false
+```
+
+Letzter ebenfalls real bestaetigter Production-Bootstrap-5-Build im selben vorangegangenen Feature-Stand (exakter vorheriger HEAD `128ee20c19e418a9773f560e1df06db9f4fae6ab`):
+
+```text
+Bootstrap Builder SHA-256: B951D52BFE99793317ED7B80C6005B744F9A2C18EAAF3AE532AC70E932E1B40A
+Production bundle SHA-256: 3DE95321470D48FDB7AB25C1169C6D7EFE32CFB8E2F642FF7317F839EC8D4BB4
+MizMutation: false
+```
+
+Diese beiden Bundle-Hashes sind **nicht als gemeinsamer neu erzeugter Bundle-Satz am selben Commit** nachgewiesen. Vor einer DCS-Acceptance beide Bundles auf demselben finalen Source-HEAD erneut bauen und real hashen. Der Head `56f566d9...` hat nur Dokumentation geaendert. Alte DCS-Aufzeichnungen mit frueheren Bundles (Abschnitte 1–6) nicht auf diese Builds hochrechnen. Unit-Test-Ausfuehrung bislang **nicht** durch lokale Ausgabe belegt.
+
+### 12.5 Fachlicher Soll-Vertrag, ohne Policy-Neuerfindung
+
+```text
+authentischer Installation-Incident / C2-Gefechtsraum
+  -> lebende autorisierte RED-Ground-Ziele
+  -> physischer CAS-ON-STATION-Status (keine neue ARTY-Aufnahme)
+  -> MOOSE COMMANDER rekrutiert verfuegbare geeignete Batterie
+  -> bestehender Functional ARTY:AssignTargetCoord(...; kurze Salve)
+  -> MOOSE Fire-Completion + unabhaengiges EVENTS.Shot
+  -> nach MOOSE Release erneut autorisierte C2-Bedarfs-/Zielentscheidung
+  -> physische Munition? ja: naechste begrenzte Fire Mission
+  -> Nachladen noetig? bestehender lokaler M1083-Rearm-Request
+       -> MOOSE Rearm/OnAfterRearmed
+       -> CampaignState CONSUMED/COMPLETED
+       -> M1083 Warehouse ReturnToStock
+       -> C2-Continuation nur sofern weiterhin Bedarf und CAS frei
+  -> lokaler strategischer Ressourcenmangel:
+       ResourceDemandPolicy -> ResupplyMonitor
+       -> reale Ground-/Air-Transportausfuehrung
+       -> bestaetigte physische Lieferung
+       -> genau ein CampaignState-Credit
+```
+
+Die `main`-Policy `docs/05-logistics.md` Abschnitt 2.1 (Commit `b348a589642e13f60ce7541e4820bd973dd848f5`) ist freigegeben: **kritische Versorgung: rechtzeitiger Lufttransport vor Kosten, Ground-Fallback/Ergaenzung; regulare Versorgung: Kosten/Kapazitaet vor Geschwindigkeit**. Keine frei erfundenen CH-47/C-130/Konvoi-Kapazitaeten, keine eigenmaechtige Umrechnung `GROUND_AMMO_PACKAGE` in physische Tonnen oder Ladevolumen.
+
+### 12.6 Source-Review dieser Fortsetzung: C2 und CAS – nachgewiesen/offen
+
+**Nachgewiesen:** `InstallationIncidentBridge:OnIncidentStarted` uebernimmt `sourceIncidentCoordinator` in den Base-Incident-Kontext. `CasLifecycleRuntime` liest denselben `GetParticipants(true)`-Bestand fuer Supported-Element-Clear. Das wiederverwendbare API-Zielbild existiert also. Ebenso `CasLifecycleRuntime:GetState(demandId)` und `GetStateByMission(mission)`.
+
+**Nicht nachgewiesen:** `entry.executing=true` ist noch kein belastbarer geografisch/zeitlich qualifizierter physischer `CAS ON STATION`-Nachweis. Die schon vorhandene `CasLifecycleRuntime` muss dafuer quellen- und MOOSE-konform analysiert werden. Mehrere CAS-Demands/AOs koennen ueberlappen; weder `releaseRequested` noch eine einzelne Site-Demand-ID bilden automatisch die gesamten Kampfzonenbelegungen ab. Vor neuer ARTY-Continuation muss ein **autoritatives** read-only Deconfliction-Signal an die C2-Entscheidung angeschlossen werden. Ein zusaetzlicher staendiger Enemy-World-Scan ist nicht erlaubt.
+
+**Nachgewiesen:** `Base:RequestIncidentSupport(incidentId, "ARTY", {requestKey=...})` ist pro Request-Key dedupliziert. Der initiale Key `INSTALLATION_ATTACK_C2_ARTY_INITIAL` darf also nicht fuer alle weiteren Salven wiederverwendet werden. Neue Cycle-Keys beduerfen einer kollisionsfreien, fachlich an autorisierter Fire-Mission-/Demand-Identitaet gebundenen Regel.
+
+**Nicht nachgewiesen:** Der aus der A2-Harness `queueNextFireMission` uebernommene Anti-Double-Engagement-Set-Mechanismus ist kein produktiv genehmigter alleiniger Target-Resolver. Der historische `EVENTS.Shot`-Nachweis muss fuer die aktuellen MOOSE-ARTY-Targets erhalten bleiben, sonst droht Fortress erneut `CeaseFire` ohne physischen Feuerbeleg. Kein unbegrenztes Retry bei gescheitertem Schuss/Provider.
+
+**Nachgewiesen:** Bootstrap-5 kann bei vorhandener `config.localArtyRearm[assetId]` einen vorhandenen `FixedFireSupportAmmoRearmService` konfigurieren und `RequestLocalArtyRearm(assetId, spec)` durchleiten. Ohne gueltige Standortkonfiguration und autorisierten Request geschieht nichts. Die automatische Munitions-/Rearm-Ausloesung **ist nicht implementiert**. Die benoetigten Zonen `ZON_BLUE_GND_{BOSTICK,WRIGHT,FORTRESS,HONAKER}_RESUPPLY` sind aus A10 bekannt, muessen jedoch gegen die aktuell verwendete `.miz` geprueft werden. Ground- und Air-Strategic-Resupply sind weiterhin fail-closed, sofern nicht gezielt physische Deskriptoren injiziert werden.
+
+### 12.7 Naechste Arbeitspakete mit eindeutigen Exit-Gates
+
+| Prioritaet | Auftrag | Nachweis fuer Abschluss |
+|---|---|---|
+| P0 | Vollstaendiger Readback des funktionierenden A2-Feuerpfades, der autoritativen Incident-C2-Quellen und des CAS-Lifecycles | Lebenszyklus-Inheritance-Map + gepruefte MOOSE-FSM-/API-Signaturen; kein neuer Target-Scan |
+| P0 | Genauen ARTY-C2-Continuation-Kontrakt dokumentieren: laufender Demand, neuer Cycle-Key, pro Fire-Mission Exactly-once, physische Shot-Evidenz, Selbstverteidigungsprioritaet, CAS-Sperre | deterministische Tests fuer 2+ Salven, No-Shot, Provider busy, CAS On Station, Incident close und Reentranz |
+| P1 | C2-Reconciliation **als kleine Production-Composition**, nicht im Acceptance-Harness, an den bereits existierenden Completion-Hook anschliessen | Source Diff, Unit-Tests, lokaler Base/Bootstrap-Build; DCS mit Honaker/Wright/Joyce/Fortress |
+| P1 | Lokal-Rearm-Ausloeser an bestaetigte physische Ammo-/Mangel-Evidenz anbinden; vorhandene M1083-Services viermal konfigurieren | Mission-Editor-Template/Zonen, MOOSE Rearm/Return, idempotente CampaignState-Buchungen, Wiederaufnahme nach Rearm |
+| P2 | Ground-/Air-Resupply auf produktive SOURCE-/STORAGE-Deskriptoren und geeignete Routen reconciliieren | keine doppelte Transporthoheit; End-to-end Ground und Air einschliesslich Carrier-Rueckkehr |
+| P2 | Shortage-Priorisierung kritisch/regulaer gemaess bindendem `main`, erst nach Kapazitaetsbeleg | Tests beider Prioritaeten, Fallback, fehlende Assets, idempotentes Settlement |
+| P3 | A12-/Produktions-Acceptance real in DCS | identischer Commit/Build/Bundle/Miz/MOOSE/DCS-Nachweis; Logs/Events/Hashes; `VALIDATED` nur dann |
+
+**Bei unbekanntem Source-Vertrag nicht raten.** Kein neues `ARTY:New`, keine parallel neu geschriebene `NewAMMOSUPPLY`-/`OPSTRANSPORT`-Lifecycle-Steuerung, keine stillschweigende MIZ-Bearbeitung. Neue Architektur-/Nicht-MOOSE-Ausnahme immer erst dem Projektinhaber vorlegen. Beibehalten: QRF/CAS-/Warehouse- und Ground-Road-Acceptance-Invarianten, unabhaengiges CAS-Multiflight-Engagement nicht ohne Evidenz filtern.
+
+### 12.8 Verifikationsprozess und Chatwechsel-Regel
+
+ChatGPT erledigt per GitHub-App: Source lesen, minimal implementieren, vollstaendigen Diff pruefen, Dokumentations-/Moose-Class-Index bei neuer MOOSE-Nutzung pflegen, Tests soweit tatsaechlich ausfuehrbar, committen und remote pushen. Nur **nach** Remote-Commit erhaelt der Projektinhaber **eine nummerierte PowerShell-Anweisung** fuer `git pull`, die relevanten Builder, Hash-Abgleich und `git status --short`. Der Projektinhaber sendet die echte Ausgabe; neue Builds/Hashes/DCS-Runtime niemals erfinden. Die lokale PowerShell-Execution-Policy hat zuvor `& .\tools\...` verhindert; akzeptierter, real erfolgreicher Weg war `powershell.exe -NoProfile -ExecutionPolicy Bypass -File '.\tools\<builder>.ps1'`. Das aendert nicht systemweit die Execution-Policy.
+
+Vor jedem weiteren Chatwechsel hier eintragen: Source-Branch, Remote-HEAD, geaenderte Dateien, verwendete MOOSE-Fundstelle/Signatur, Tests (ausgefuehrt vs. nur geschrieben), reale Nutzer-Build-Hashes, Status DCS, Risiken und den **naechsten unmittelbaren Auftrag**. Die `source_commit`-Metadaten des Original-Handoffs sind historische Herkunft und muessen nicht so umgedeutet werden, als waeren sie der aktuelle Build.
+
+**Sofortiger Fortsetzungssatz fuer einen neuen Chat (mit Scope):**
+
+> Arbeite auf `agent/fire-support-strategic-resupply-production-bootstrap`. Lies vollstaendig `AGENTS.md`, `docs/00-project-governance.md`, `docs/26-moose-first-development-policy.md`, `docs/moose/ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md`, `docs/moose/FIRE-SUPPORT-ACCEPTED-IMPLEMENTATION-MATRIX.md` und `docs/handoffs/2026-10-14-fssr-production-reconciliation.md` (insbesondere Abschnitt 12). Gleiche aktuellen Remote-HEAD und Source gegen das Handoff ab. Setze die ARTY-/Moerser-Continuation und lokale M1083-/Ground-/Air-Resupply-Reconciliation MOOSE-first fort. Baue keinen parallelen Targeting-/Transport-/Rearm-Lifecycle; implementiere nur mit nachgewiesenem C2-/CAS-/Shot-/Ammo-Vertrag. Dokumentiere Entscheidungen, Aenderungen, Tests und reale Hashes nach jedem Schritt in derselben fortlaufenden Uebergabedatei. Aendere keine `.miz` ohne erforderliche Owner-Freigabe; keine DCS-PASS-Behauptung ohne realen Test; kein CODEX.
