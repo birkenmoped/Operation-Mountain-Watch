@@ -220,4 +220,80 @@ do
   eq(released2,2,"two independent selection releases")
 end
 
+
+-- Dead must release the recruited asset and notify C2 once, even if the
+-- MOOSE FSM delivers the same terminal event more than once.
+do
+  local selected={spawngroupname="DEAD_ARTY",isReserved=false}
+  local selectedLegion={alias="DEAD_LEGION"}
+  local deadCommander={}
+  function deadCommander:CanMission() return true end
+  function deadCommander:RecruitAssetsForMission()
+    selected.isReserved=true
+    return true,{selected},{[selectedLegion.alias]=selectedLegion}
+  end
+  local releaseCount=0
+  local finished={}
+  local deadArty={}
+  function deadArty:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
+  function deadArty:RemoveTarget() end
+  local deadRuntime=Runtime.New({
+    commander=deadCommander,
+    artyMissionFactory=factory,
+    resolveFunctionalArty=function() return {arty=deadArty} end,
+    releaseAssets=function(assets)
+      eq(assets[1],selected,"dead release asset identity")
+      selected.isReserved=false
+      releaseCount=releaseCount+1
+    end,
+    onFireMissionFinished=function(demandArg,context,entry,reason)
+      yes(entry.released,"dead callback must follow release")
+      finished[#finished+1]={id=demandArg.demandId,reason=reason}
+    end,
+  })
+  local deadDemand={demandId="DEAD_FIRE",supportType="ARTY"}
+  local handle,created=deadRuntime:Dispatch(deadDemand,{marker="CTX"})
+  yes(created and handle~=nil,"dead fixture dispatched")
+  deadArty:OnAfterDead(nil,nil,nil,nil,"battery")
+  no(selected.isReserved,"dead asset released")
+  eq(releaseCount,1,"dead release once")
+  eq(#finished,1,"dead callback once")
+  eq(finished[1].id,deadDemand.demandId,"dead callback demand")
+  eq(finished[1].reason,"FUNCTIONAL_ARTY_DEAD","dead callback reason")
+  deadArty:OnAfterDead(nil,nil,nil,nil,"battery")
+  eq(#finished,1,"duplicate dead callback suppressed")
+  eq(releaseCount,1,"duplicate dead release suppressed")
+end
+
+-- A faulty C2 listener must not break MOOSE selection release.
+do
+  local selected={spawngroupname="THROW_ARTY"}
+  local selectedLegion={alias="THROW_LEGION"}
+  local throwCommander={}
+  function throwCommander:CanMission() return true end
+  function throwCommander:RecruitAssetsForMission()
+    return true,{selected},{[selectedLegion.alias]=selectedLegion}
+  end
+  local releaseCount=0
+  local fireArty={}
+  function fireArty:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
+  function fireArty:RemoveTarget() end
+  local throwRuntime=Runtime.New({
+    commander=throwCommander,
+    artyMissionFactory=factory,
+    resolveFunctionalArty=function() return {arty=fireArty} end,
+    releaseAssets=function() releaseCount=releaseCount+1 end,
+    onFireMissionFinished=function() error("C2_LISTENER_FAILED") end,
+  })
+  local demandArg={demandId="THROW_LISTENER",supportType="ARTY"}
+  local _,created=throwRuntime:Dispatch(demandArg,{marker="CTX"})
+  yes(created,"throwing listener fixture dispatched")
+  local ok=pcall(function()
+    fireArty:OnAfterCeaseFire(nil,nil,nil,nil,{name=throwRuntime:GetState(demandArg.demandId).targetName})
+  end)
+  yes(ok,"throwing listener contained")
+  eq(releaseCount,1,"release survives throwing listener")
+  yes(throwRuntime:GetState(demandArg.demandId).completed,"completion state retained")
+end
+
 print("PASS test_fire_support_strategic_resupply_arty_selection_runtime")
