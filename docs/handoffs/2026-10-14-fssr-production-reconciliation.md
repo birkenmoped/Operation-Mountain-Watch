@@ -307,4 +307,20 @@ Der Callback wird durch `OMW_FireSupStratResupply_ExternalSupportRuntime.lua` un
 | owner_approval | Keine geaenderte Feuerdoktrin; Zielauswahl und Fortsetzung verbleiben in der bisherigen C2-Verantwortung |
 | revalidation_scope | Lua-Unit-Test fuer exactly-once und Cancel; DCS-Test von MOOSE-`CeaseFire`/`Dead` inkl. physischem Schussbeleg erforderlich |
 
-**Offen:** Ein verbindlicher C2-Listener muss nach dem Event lebende autorisierte Gegner, CAS ON STATION, physische Munition, Pending-Rearm und geeignete MOOSE-Provider pruefen. Die konkrete bereits akzeptierte C2-`queueNextFireMission`-Implementierung wurde auf dem aktuellen Production-Stand noch nicht gefunden. Daher wird weder ein automatisches erneutes `RequestIncidentSupport` noch eine selbstentwickelte Ersatzschleife aktiviert. Ground-/Air-Strategic-Resupply bleibt unveraendert fail-closed ohne produktiven Transportdescriptor.
+**Offen:** Ein verbindlicher C2-Listener muss nach dem Event lebende autorisierte Gegner, CAS ON STATION, physische Munition, Pending-Rearm und geeignete MOOSE-Provider pruefen. Der historische `queueNextFireMission`-Pfad wurde inzwischen **im Stage-3-A2-Acceptance-Harness auf `main` lokalisiert**, ist aber **keine** vorhandene produktive C2-Komponente. Er darf gemaess Lifecycle-Preservation-Law nicht aus dem Harness kopiert und als bereits abgenommene Production-Continuation ausgegeben werden. Daher wird weder ein automatisches erneutes `RequestIncidentSupport` noch eine selbstentwickelte Ersatzschleife aktiviert. Ground-/Air-Strategic-Resupply bleibt unveraendert fail-closed ohne produktiven Transportdescriptor.
+
+### 9.1 Historische Fire-Continuation-Quelle – nachtraeglich lokalisiert
+
+`mission/tests/stage3-honaker-wright-full-response/src/a2/04-fire-support.lua` (auf `main`) enthaelt `selectNextFireTarget()`, `queueNextFireMission(demandId)` und die zugehoerige `onTargetComplete`-Bindung. `selectNextFireTarget()` stoppt neue Fire-Mission-Targets, wenn `state.casOnStation` gilt, liest zuerst `c2FireObservationGroups()`, faellt bei leerer Beobachtung auf `incidentGroups()` zurueck und schliesst zuvor bearbeitete Source-Gruppen durch `state.fireScheduledSourceGroups` aus. Die neue Zuweisung erfolgt mittels `state.fireAdapter:QueueTarget(demandId,target)`; der zugrundeliegende Functional-ARTY-Lifecycle wird nicht ersetzt.
+
+Die groessere historische Source `mission/tests/stage3-honaker-wright-full-response/src/01-honaker-wright-full-response-acceptance.lua` weist zudem getrennt `EVENTS.Shot`, `verifyFireComplete` und `onFireRejected` nach. Das sind wichtige **Akzeptanz-Invarianten**, keine pauschale Production-Freigabe fuer deren fixturegebundene `state.*`-Tabellen oder eigene Beobachtungs-Schleifen.
+
+**Verbindliche Naechste-Gate-Fragen vor echter Continuation:**
+
+- Welche produktive MOOSE-OPSZONE/Incident-Instanz ist die autoritative C2-Zielquelle (nicht die Perimeter-Trigger-Zone)?
+- Wie wird `CAS ON STATION` aus dem bestehenden CAS-Lifecycle bereitgestellt?
+- Wie werden existierende physische Artilleriemunition, `OnAfterRearmed` und M1083-Request ohne erfundene Schwellwerte dem C2-Listener gemeldet?
+- Soll der neue Demand aus dem bestaetigten Abschluss-Callback erzeugt werden oder muessen MOOSE-/MissionDemand-Callbacks zur Vermeidung reentranten Dispatches entkoppelt werden?
+- Wie wird unabhaengige `EVENTS.Shot`-Evidenz je Functional-ARTY-Target abgebildet und ein FALSE-PASS bei Fortress verhindert?
+
+Der bestehende Abschluss-Callback ist jetzt ein moeglicher **Reuse-Hook**. Alle Fragen beduerfen einer konkreten Quellen-/MOOSE- und Acceptance-Pruefung vor Production-Aktivierung; keine zusaetzliche Owner-Entscheidung ueber bereits gebilligte Grundsaetze wird unterstellt.
