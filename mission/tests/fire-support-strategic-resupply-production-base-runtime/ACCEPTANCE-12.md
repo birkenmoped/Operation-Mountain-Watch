@@ -293,3 +293,23 @@ jedoch kein eindeutig belegter Fuel-Starvation-Crash. Asset-Level-Settlement
 ist gegenüber Flight-Level-Landing-Meldungen gesondert zu prüfen.
 
 Dieser Nachtrag ist ein Scope-/Evidenzverweis und **kein A12-PASS**.
+
+
+## 12. Production-Bootstrap-5 – optionales Local-M1083-Rearm-Gate
+
+Der Production-Bootstrap-5 bettet die **unveraenderten** vorhandenen Ground-Module `OMW_GroundSupportMaterializer`, `OMW_FixedFireSupportAmmoSupport`, `OMW_GroundAmmoRearmAdapter` und `OMW_FixedFireSupportAmmoRearmService` in das Production-Bundle ein.
+
+**Ohne** `OMW.FireSupStratResupplyProductionConfig.localArtyRearm` darf sich das bisherige Bootstrap-Verhalten nicht aendern. Der normale A12-Start darf weder automatisch einen M1083 materialisieren noch einen CampaignState-Rearm-Verbrauch buchen.
+
+**Mit** ausdruecklicher, gepruefter Standortkonfiguration ist zusaetzlich zu pruefen:
+
+1. Der MOOSE-ausgewaehlte, physisch vorhandene Functional-ARTY-Owner wird weiterhin ausschliesslich einmal erzeugt; kein zweiter `ARTY:New`-Owner fuer den Rearm.
+2. Die Local-Rearm-Composition wird beim ersten Resolve dieses Functional-Owners eingerichtet; MOOSE-Support-BRIGADE und Support-PLATOON sind genau einem Standort zugeordnet.
+3. `nodeId` der Konfiguration muss `SiteRegistry.Sites[siteId].campaignNodeId` entsprechen. Falsche Node-ID muss fail-closed abgewiesen werden.
+4. `RequestLocalArtyRearm(assetId, spec)` darf keine andere Artilleriegruppe, keinen fremden Carrier und keine andere Ressourcenart unterschieben; `startArty=false` bleibt zwingend.
+5. Der Request nutzt nur den bestehenden Service: reale M1083-Materialisierung, `ARTY:Rearm()`, `OnAfterRearmed`, CampaignState-Consumption/Completion, Rueckkehr zum Warehouse und erneute Wiederverwendbarkeit.
+6. Schwellwert-/Request-Ausloesung und ARTY-Continuation muessen als separate Produktionsintegration nachgewiesen werden. Ohne diese Verdrahtung ist das vorliegende Gate **kein** Ende-zu-Ende-Resupply-/Fire-Continuation-PASS.
+
+Fuer den DCS-Lauf benoetigt der Projektinhaber reale Builder-/Bundle-Hashes, Missions-/MOOSE-/DCS-Provenienz, M1083- und ARTY-Lifecycle-Evidenz sowie Ressourcen-Snapshots. Die vorhandene A10-Fixture-Konfiguration wird nicht automatisch als Production-Manifest uebernommen.
+
+**Status:** SOURCE_IMPLEMENTED / LOCAL_BUILD_PENDING / DCS_PENDING. Weder ARTY-Continuation noch Ground-/Air-Strategic-Resupply sind durch diese A12-Erweiterung abgenommen.
