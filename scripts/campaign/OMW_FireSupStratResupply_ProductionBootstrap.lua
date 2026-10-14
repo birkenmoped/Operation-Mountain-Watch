@@ -579,6 +579,9 @@ local function startInternal(config)
 
   local p = package()
   local context = groundContext()
+  if config.onArtyFireMissionFinished ~= nil and type(config.onArtyFireMissionFinished) ~= "function" then
+    fail("config.onArtyFireMissionFinished must be a function when provided")
+  end
   if config.localArtyRearm ~= nil and type(config.localArtyRearm) ~= "table" then
     fail("config.localArtyRearm must be a table when configured")
   end
