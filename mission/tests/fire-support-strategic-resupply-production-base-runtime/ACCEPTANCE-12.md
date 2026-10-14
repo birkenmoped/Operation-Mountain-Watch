@@ -257,3 +257,39 @@ RESULT status=RUNNING ... fixedFireMaterialized=true
 ~~~
 
 Kein eigener Scheduler und kein Polling-Loop werden eingefuehrt.
+
+
+## 11. Owner-Beobachtung und Regression nach Lauf 14.10.2026
+
+Die Gesprächsauswertung und der vorliegende Owner-Bericht sind gesondert als
+Reconciliation-Handoff dokumentiert:
+
+```text
+docs/handoffs/2026-10-14-fssr-production-reconciliation.md
+```
+
+Der Eigentümer beobachtete zwei gleichzeitig über Honaker operierende AH-64D-Two-Ships:
+alle vier Helikopter bekämpften aktiv RED-Einheiten, die Two-Ships griffen
+unterschiedliche Ziele an. Die nominellen Demands AID-158 bis AID-161 blieben
+Honaker/Joyce/Wright/Fortress zugeordnet. Ein formelles Retasking, eine
+PATROLZONE-Überlappung oder eine fehlerhafte AO-Geometrie ist **nicht bewiesen**.
+Die nächste Acceptance benötigt zugeordnetes CAS-Target-/Flight-/Demand-Logging.
+Das beobachtete Verhalten darf vor Klärung nicht blind unterbunden werden.
+
+In derselben Auswertung wurde eine Production-Regression beim ARTY-/Mörser-Lifecycle
+festgehalten: Nach einer einzelnen Vier-Schuss-Fire-Mission wurde der gesamte
+ARTY-Bedarf beendet statt das lebende C2-Zielbild erneut auszuwerten und
+gegebenenfalls die nächste begrenzte Mission zu starten. Der historische lokale
+M1083-Rearm-/CampaignState-Verbrauch und die Ground-/Air-Strategic-Resupply-
+Capability müssen aus akzeptierten Implementierungen in Production reconciliert
+werden. Bei Fortress fehlt physische Shot-Evidenz trotz protokolliertem Abschluss.
+
+**Offene Owner-Entscheidung:** konkrete `selectSupportType`-Policy für
+gleichzeitig mögliche `GROUND_RESUPPLY` und `AIR_RESUPPLY`. A12-Storage-
+Fixtures dürfen nicht als Production-Konfiguration ausgegeben werden.
+
+Ein AH-64D-Verlust (MissionID 1000080) wurde in der Auswertung berichtet,
+jedoch kein eindeutig belegter Fuel-Starvation-Crash. Asset-Level-Settlement
+ist gegenüber Flight-Level-Landing-Meldungen gesondert zu prüfen.
+
+Dieser Nachtrag ist ein Scope-/Evidenzverweis und **kein A12-PASS**.
