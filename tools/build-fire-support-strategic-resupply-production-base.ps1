@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-34'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-35'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -193,7 +193,12 @@ Write-Host 'GuardMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD
 Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13'
 Write-Host 'QrfMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8'
 Write-Host 'ArtyMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-MISSION-FACTORY-2'
-Write-Host 'ArtySelectionRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-1'
+$artySelectionSchema = [regex]::Match($sources.ArtySelectionRuntime, 'Runtime\.SchemaVersion\s*=\s*"([^"]+)"')
+if (-not $artySelectionSchema.Success) { throw 'ArtySelectionRuntime source schema not readable.' }
+Write-Host "ArtySelectionRuntimeSchema: $($artySelectionSchema.Groups[1].Value)"
+$externalSupportSchema = [regex]::Match($sources.ExternalSupportRuntime, 'Runtime\.SchemaVersion\s*=\s*"([^"]+)"')
+if (-not $externalSupportSchema.Success) { throw 'ExternalSupportRuntime source schema not readable.' }
+Write-Host "ExternalSupportRuntimeSchema: $($externalSupportSchema.Groups[1].Value)"
 Write-Host 'ArtyRealAssetRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-REAL-ASSET-REGISTRY-1'
 Write-Host 'CasMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3'
 Write-Host 'CasLifecycleRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1'
