@@ -176,3 +176,58 @@ Ziel der Diagnose ist die Unterscheidung zwischen formellem Retask, PATROLZONE-�
 - `mission/tests/ground-ammo-rearm-integration/results/2026-08-22-acceptance-2-11-runtime.md`
 
 **Status:** Dokumentierte Reconciliation-Anforderung, keine implementierte Runtime-Änderung. Kein neuer Runtime-PASS. Die Ground-versus-Air-Bedarfspriorisierung ist inzwischen auf `main` fachlich verbindlich entschieden; Carrier-Kapazitäten, konkrete Selektionslogik und DCS-Acceptance bleiben offen.
+
+
+## 7. Production-Source-Readback 14.10.2026 – verbindlicher Reconciliation-Gate
+
+Dieser Abschnitt ist ein **Quellcodebefund**, keine neue Runtime-Acceptance. Die in diesem Abschnitt genannten Dateien wurden auf dem FSSR-Branch gelesen; die fachliche Ground-/Air-Priorität kommt aus `docs/05-logistics.md` auf `main` (Commit `b348a589642e13f60ce7541e4820bd973dd848f5`).
+
+### 7.1 ARTY-Continuation – konkret fehlende Verbindung
+
+In `scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua`:
+
+- `resolveFunctionalOwner` erzeugt jeweils `ARTY:New(...)`, `SetWaitForShotTime(120)`, `Start()`, behält jedoch `maxEngagements=1` und `acceptedShots=4` bei.
+- `resolveArtyTarget` verwendet ausschließlich `incident.context.physicalTargetGroup`, sofern lebendig, und liefert `shots=4, radiusM=50`; eine längerlebige C2-Target-Picture-/Retarget-Quelle ist hier **nicht** angeschlossen.
+- `requestExternalSupport` erzeugt einen ARTY-Request-Key `INSTALLATION_ATTACK_C2_ARTY_INITIAL`. Dieser beschreibt einen initialen Demand, nicht automatisch weitere Fire Missions.
+- `scripts/campaign/OMW_FireSupStratResupply_ArtySelectionRuntime.lua` setzt im `ARTY.OnAfterCeaseFire`-Hook `entry.completed=true`, führt `LEGION.UnRecruitAssets` aus und protokolliert „functional ARTY fire complete“. Es existiert an dieser Schnittstelle keine nachgewiesene neuerliche C2-Target-Picture-Auswertung oder Fortsetzungsaufforderung. Ein bestätigtes `CeaseFire` liefert dort zugleich **keinen** physischen `EVENTS.Shot`-Beweis.
+
+**Notwendige Korrekturgrenze:** Vor der Wiederanbindung des Retarget-Cycles müssen die ursprüngliche autoritative `C2_FIRE_OBSERVATION`, deren lebende Zielgruppen und die alten `queueNextFireMission`-Ausführungspfade quellen- und acceptancebezogen nachgewiesen werden. Kein eigener zusätzlicher World-Scan oder eigenes Selektions-/Polling-Subsystem. Das aktuelle `OnAfterCeaseFire`-Release darf nicht mit einer zusätzlichen parallelen ARTY-Mission umgangen werden. Das physische `Shot`-Evidence-/No-Fire-Verhalten muss separat klassifiziert werden.
+
+### 7.2 Lokaler Rearm – Vertrag vorhanden, Composition fehlt
+
+`OMW_FixedFireSupportAmmoSupport.lua`, `OMW_FixedFireSupportAmmoRearmService.lua` und `OMW_GroundAmmoRearmAdapter.lua` existieren weiterhin. Der Rearm-Service erwartet eine Standort-/Warehouse-/Spawn-Zone-Konfiguration, einen Materializer, die echte ARTY-Instanz und CampaignState-Transaktionsdaten. Er kann `startArty=false` für den bereits laufenden Functional-Owner verwenden und nach bestätigtem MOOSE-Rearm das Rückführen des M1083 zum Warehouse koordinieren.
+
+Im aktuell geprüften `ProductionBootstrap.lua` wird kein `FixedFireSupportAmmoRearmService.New` oder `FixedFireSupportAmmoSupport.New` aufgerufen. Die bereits erzeugten `state.artyOwners` werden nicht durch einen produktiv verdrahteten Rearm-Service ergänzt.
+
+**Notwendige Korrekturgrenze:** Site-spezifische M1083-Templates, Spawnzonen, CampaignState-Node-IDs, Rearm-Schwellen/Mengen und Warehouse-Rückgabeverträge zuerst gegen `docs/moose/FIXED-FIRE-SUPPORT-REARM.md`, die Ground-Manifeste und die echte `.miz` prüfen. Vier separate Batterie-Services dürfen nicht unkontrolliert dasselbe MOOSE-Materialisierungsasset doppelt registrieren.
+
+### 7.3 Strategic Resupply – Runtime vorhanden, Production-Descriptor fehlt
+
+`ProductionBootstrap.buildResupplySpec()` aktiviert den Transportvertrag nur bei explizitem `config.resupply`. Er verlangt:
+
+```text
+resupply.selectSupportType(candidate, site, snapshot)
+resupply.transport
+resolveGroundTransport and/or resolveAirTransport
+groundCommander / airCommander
+CampaignState-backed store and resource rows
+```
+
+Ohne diesen Vertrag bleibt Resupply absichtlich deaktiviert. `OMW_FireSupStratResupply_ResupplyMonitor` besitzt keine eigene Scheduling-/Retry-/Bestandsautorität. `OMW_FireSupStratResupply_StorageTransportFactory` bildet physische `OPSTRANSPORT`-/STORAGE-Deskriptoren, wählt aber keine eigenen Carrier. Der bereits existierende `OMW_GroundAmmoResupplyExecutor` ist ein eigener akzeptierter AMMOSUPPLY-Ground-Execution-Pfad und **nicht** durch ein beliebiges `resolveGroundTransport` schon integriert.
+
+**Notwendige Korrekturgrenze:** Für Ground muss geklärt werden, welcher akzeptierte MOOSE-Execution-Vertrag im FSSR-Production-Transport zur Anwendung kommt, ohne GroundAmmoResupplyExecutor und OPSTRANSPORT zu doppelten Transport-Ownern für dieselbe Cargo-ID zu machen. Für Air muss der produktive STORAGE-/Cargo-/FlightPath-Descriptor nachgewiesen werden. Die fachlich beschlossene Critical-vs-Regular-Priorisierung alleine ersetzt keine Transportfähigkeit, keine konkrete Lade-/Entladerepräsentation und keine quantitative Paket-zu-Carrier-Zuordnung.
+
+### 7.4 Kein vorzeitiger PASS
+
+Offene Tests vor technischem Abschluss:
+
+1. Wiederholte physische ARTY-Missionen nach je vier Schuss, solange lebende autorisierte Ziele existieren und CAS nicht ON STATION ist.
+2. Keine weitere neue ARTY-Mission bei CAS ON STATION; keine künstliche Unterbrechung einer laufenden Salve.
+3. Fortress: `CeaseFire` ohne `Shot` darf nicht als erfolgreiches physisches Feuer gelten.
+4. Vier Site-Batterien: realer M1083-Rearm mit derselben Functional ARTY, CampaignState-Verbrauch, Rückführung und Wiederaufnahme.
+5. Reorder-Schwelle: echter `CampaignState`-Mangel, genau ein Shortage-Demand pro Episode, kein Fake-Stock.
+6. Ground- und Air-Lieferung: echte physische Ankunft, Einmalgutschrift, Verlust-/Teil-Liefersemantik sowie keine doppelte Transportautorität.
+7. Auswahl nach `main`-Policy für kritisch/regulär unter tatsächlicher Capacity-/Erreichbarkeitsprüfung.
+8. Keine Regression bei bereits akzeptierter QRF, CAS-Korridoren, Flugzeug-Recovery und ARTY-Selection-only.
+
+**Prüfstatus:** SOURCE_REVIEWED / RECONCILIATION_PENDING. Der Source-Readback allein rechtfertigt keine Änderung der laufenden Missionsdatei, keinen neuen Build-Hash und kein `VALIDATED`.
