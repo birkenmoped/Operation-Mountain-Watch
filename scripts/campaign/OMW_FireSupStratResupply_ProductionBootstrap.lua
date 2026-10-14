@@ -651,6 +651,7 @@ local function startInternal(config)
       artyRequiredAssetsMax = 1,
       artyFunctionalSelection = {
         resolveFunctionalArty = registry:GetResolver(),
+        onFireMissionFinished = config.onArtyFireMissionFinished,
       },
       casRequiredAssetsMin = 1,
       casRequiredAssetsMax = 1,
