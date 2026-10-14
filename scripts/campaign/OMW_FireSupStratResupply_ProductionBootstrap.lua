@@ -8,7 +8,7 @@
 
 local Bootstrap = {}
 
-Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-4"
+Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-5"
 
 local TAG = "[OMW][FireSupStratResupply.Production]"
 local QRF_TEMPLATE = "TPL_BLUE_GND_QRF_MIXED_6"
@@ -70,6 +70,10 @@ local state = {
   perimeters = {},
   artyRegistry = nil,
   artyOwners = {},
+  localRearmServices = {},
+  localRearmConfig = nil,
+  campaignContext = nil,
+  siteRegistry = nil,
   airwingCount = 0,
   resupplyConfigured = false,
   commanderStarted = false,
@@ -268,6 +272,94 @@ local function buildPerimeters(p, brigades)
   return result
 end
 
+
+local function createLocalRearmService(definition, group, arty)
+  local configuration = state.localRearmConfig
+  if configuration == nil then return nil end
+  local row = configuration[definition.id]
+  if row == nil then return nil end
+  if type(row) ~= "table" then
+    fail("localArtyRearm entry must be a table assetId=" .. definition.id)
+  end
+  local required = {
+    "nodeId", "supportZoneName", "supportTemplateName",
+    "platoonName", "assignment", "carrierEntityId", "alias",
+  }
+  for _, key in ipairs(required) do
+    if type(row[key]) ~= "string" or row[key] == "" then
+      fail("localArtyRearm." .. definition.id .. "." .. key .. " is required")
+    end
+  end
+  if type(WAREHOUSE) ~= "table" or type(WAREHOUSE.Descriptor) ~= "table"
+      or WAREHOUSE.Descriptor.GROUPNAME == nil then
+    fail("MOOSE WAREHOUSE.Descriptor.GROUPNAME is required for local rearm")
+  end
+  ensureTemplate(row.supportTemplateName, true)
+  local zone = ZONE:FindByName(row.supportZoneName)
+  if not zone then
+    fail("local rearm MOOSE spawn zone missing assetId=" .. definition.id
+      .. " zone=" .. row.supportZoneName)
+  end
+  local site = state.siteRegistry.Sites[definition.siteId]
+  if not site or type(site.warehouseName) ~= "string" then
+    fail("local rearm site Warehouse missing assetId=" .. definition.id)
+  end
+  local supportBrigade = BRIGADE:New(
+    site.warehouseName, "BDE_FSSR_PRODUCTION_REARM_" .. definition.id
+  )
+  local service = FixedFireSupportAmmoRearmService.New({
+    fixedFireSupportAmmoSupportModule = FixedFireSupportAmmoSupport,
+    groundAmmoRearmAdapterModule = GroundAmmoRearmAdapter,
+    store = state.campaignContext.store,
+    campaignState = state.campaignContext.campaignState,
+    artyFactory = function(artilleryGroup)
+      if artilleryGroup ~= group then
+        fail("local rearm artillery group identity mismatch assetId=" .. definition.id)
+      end
+      return arty
+    end,
+    brigade = supportBrigade,
+    spawnZone = zone,
+    spawnZoneMaxDistanceM = row.spawnZoneMaxDistanceM or 500,
+    materializerModule = GroundSupportMaterializer,
+    platoonFactory = function(templateName, count, platoonName)
+      return PLATOON:New(templateName, count, platoonName)
+    end,
+    descriptorGroupName = WAREHOUSE.Descriptor.GROUPNAME,
+    templateName = row.supportTemplateName,
+    platoonName = row.platoonName,
+    assignment = row.assignment,
+    carrierEntityId = row.carrierEntityId,
+    nodeId = row.nodeId,
+    alias = row.alias,
+    stockCount = row.stockCount or 1,
+    priority = row.priority or 20,
+    returnCheckIntervalSec = row.returnCheckIntervalSec or 5,
+    returnTimeoutSec = row.returnTimeoutSec or 300,
+    log = function(level, message)
+      log("LOCAL_ARTY_REARM assetId=" .. definition.id
+        .. " level=" .. tostring(level) .. " " .. tostring(message))
+    end,
+    onRearmed = function(context)
+      log("LOCAL_ARTY_REARMED assetId=" .. definition.id
+        .. " transactionId=" .. tostring(context and context.transactionId))
+    end,
+    onSupportReturned = function(context)
+      log("LOCAL_ARTY_M1083_RETURNED assetId=" .. definition.id
+        .. " transactionId=" .. tostring(context and context.transactionId))
+    end,
+    onSupportReturnFailed = function(context, reason)
+      log("LOCAL_ARTY_M1083_RETURN_FAILED assetId=" .. definition.id
+        .. " transactionId=" .. tostring(context and context.transactionId)
+        .. " reason=" .. tostring(reason))
+    end,
+  })
+  state.localRearmServices[definition.id] = service
+  log("LOCAL_ARTY_REARM_READY assetId=" .. definition.id
+    .. " nodeId=" .. row.nodeId .. " zone=" .. row.supportZoneName)
+  return service
+end
+
 local function resolveFunctionalOwner(definition, asset, legion, group)
   local existing = state.artyOwners[definition.id]
   if existing then return existing, nil end
@@ -287,6 +379,7 @@ local function resolveFunctionalOwner(definition, asset, legion, group)
     weaponType = ARTY.WeaponType.Auto,
   }
   state.artyOwners[definition.id] = owner
+  createLocalRearmService(definition, group, arty)
   log("FUNCTIONAL_ARTY_OWNER_CREATED assetId=" .. definition.id .. " group=" .. tostring(group:GetName()))
   return owner, nil
 end
@@ -481,6 +574,12 @@ local function startInternal(config)
 
   local p = package()
   local context = groundContext()
+  if config.localArtyRearm ~= nil and type(config.localArtyRearm) ~= "table" then
+    fail("config.localArtyRearm must be a table when configured")
+  end
+  state.localRearmConfig = config.localArtyRearm
+  state.campaignContext = context
+  state.siteRegistry = p.SiteRegistry
 
   if type(_DATABASE) ~= "table" or type(_DATABASE.PATHLINES) ~= "table" then
     fail("MOOSE PATHLINE registry is unavailable")
@@ -690,6 +789,25 @@ end
 
 function Bootstrap.GetArtyRegistry()
   return state.artyRegistry
+end
+
+function Bootstrap.RequestLocalArtyRearm(assetId, spec)
+  if type(assetId) ~= "string" or assetId == "" then fail("assetId is required") end
+  if type(spec) ~= "table" then fail("local rearm request spec must be a table") end
+  local service = state.localRearmServices[assetId]
+  if not service then return nil, false, "LOCAL_REARM_NOT_CONFIGURED_OR_NOT_MATERIALIZED" end
+  local definition = state.artyRegistry and state.artyRegistry:GetAsset(assetId) or nil
+  local physical = definition and definition.group or nil
+  if not physical or type(physical.IsAlive) ~= "function" or not physical:IsAlive() then
+    return nil, false, "LOCAL_REARM_ARTY_GROUP_NOT_ALIVE"
+  end
+  if spec.startArty ~= nil and spec.startArty ~= false then
+    fail("local rearm requires startArty=false for the existing Functional ARTY owner")
+  end
+  local request = copy(spec)
+  request.artilleryGroup = physical
+  request.startArty = false
+  return service:Request(request)
 end
 
 return Bootstrap
