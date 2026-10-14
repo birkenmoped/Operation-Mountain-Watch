@@ -347,3 +347,20 @@ Der Base-Builder 34 verlangte korrekt `ARTY-SELECTION-RUNTIME-2` und `EXTERNAL-S
 Der anschliessende Base-Builder 35 extrahiert die tatsächlichen `Runtime.SchemaVersion`-Werte aus den gebuendelten ARTY-Selection- und External-Support-Quellen und gibt beide aus. Die neue ARTY-Completion-Unit-Test-Suite behandelt `OnAfterCeaseFire`, fruehen Cancel, `OnAfterDead`, doppelte terminale Events und fehlerhafte externe C2-Listener. Diese Tests wurden als Source-Tests erweitert, aber noch **nicht lokal ausgefuehrt**.
 
 **Ausstehend:** Build-35-Readback, Testausfuehrung und spaeter DCS. Der zuvor bestaetigte Build-34-Hash ist nicht fuer Builder 35 wiederzuverwenden. Keine neue `.miz`-Mutation, kein neuer DCS-PASS.
+
+
+## 11. Lokaler Base-35-Build – reale Konsolenevidenz (14.10.2026)
+
+Der Projektinhaber hat den FSSR-Branch auf Commit `a134022f80606d9c353869d1c11f365b2e8c6c24` synchronisiert und den Production-Base-Builder 35 erfolgreich ausgefuehrt. Die Konsole meldet `ArtySelectionRuntimeSchema: ...-2`, `ExternalSupportRuntimeSchema: ...-4` und der gesonderte Markercheck auf `onFireMissionFinished` im erzeugten Bundle ergibt PASS.
+
+```text
+GitCommit: a134022f80606d9c353869d1c11f365b2e8c6c24
+BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-35
+BuilderSHA256: 973820DF44D14F55D7A489739B28C64CC10988717C079AF4255239CB848B8118
+BundleSHA256: 0CB17F45D44870F58D944EAE8B8F68A95BEF55845F2083FA0B65240236467909
+MizMutation: false
+```
+
+Ein separater `Get-FileHash -Algorithm SHA256` bestaetigt exakt denselben Base-Bundle-Hash. `git status --short` enthaelt ausschliesslich das bereits existierende untracked Verzeichnis `mission/fire-support-strategic-resupply/`.
+
+**Beweisgrenze:** Build und Marker sind bestaetigt; die ARTY-Unit-Tests und MOOSE-/DCS-Runtime sind dadurch **nicht** ausgefuehrt oder validiert. Es wurde kein neuer Trigger fuer die ARTY-Continuation aktiviert. Der C2-Quellenabgleich zeigt bereits die Incident-Quelle `sourceIncidentCoordinator:GetParticipants(true)` im bestehenden `InstallationIncidentBridge`; die CAS-On-Station-Quelle und die bewaffnete Wiederaufnahme muessen gesondert gegen den aktiven CAS-Lifecycle und bestehende Support-Lifecycle-Reservierungen geprueft werden. Keine parallele `C2_FIRE_OBSERVATION`-Weltabfrage, keine Annahme, dass Perimeter-Clear ein Missionsende ist.
