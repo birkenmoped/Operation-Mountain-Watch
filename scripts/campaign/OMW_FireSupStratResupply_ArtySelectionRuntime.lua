@@ -17,7 +17,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-1"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-2"
 
 local TAG = "[OMW][FireSupStratResupply.ArtySelectionRuntime]"
 
@@ -74,6 +74,9 @@ function Runtime.New(spec)
   if spec.releaseAssets ~= nil and type(spec.releaseAssets) ~= "function" then
     fail("releaseAssets must be a function when provided")
   end
+  if spec.onFireMissionFinished ~= nil and type(spec.onFireMissionFinished) ~= "function" then
+    fail("onFireMissionFinished must be a function when provided")
+  end
   if spec.logger ~= nil and type(spec.logger) ~= "function" then
     fail("logger must be a function when provided")
   end
@@ -94,6 +97,7 @@ function Runtime.New(spec)
     defaultPriority = defaultPriority,
     defaultMaxEngagements = defaultMaxEngagements,
     logger = spec.logger,
+    onFireMissionFinished = spec.onFireMissionFinished,
     entries = {},
     entriesByTargetName = {},
     artyHooks = {},
@@ -102,6 +106,17 @@ end
 
 function Instance:_log(message)
   if self.logger then self.logger(TAG .. " " .. tostring(message)) end
+end
+
+function Instance:_notifyFinished(entry, reason)
+  if entry.finishedNotified then return end
+  entry.finishedNotified = true
+  if not self.onFireMissionFinished then return end
+  local ok, err = pcall(self.onFireMissionFinished, entry.demand, entry.context, entry, reason)
+  if not ok then
+    self:_log("fire completion callback error demandId=" .. tostring(entry.demand.demandId)
+      .. " reason=" .. tostring(err))
+  end
 end
 
 function Instance:_release(entry, reason)
@@ -149,6 +164,7 @@ function Instance:_installArtyHooks(arty)
     entry.completed = true
     entry.completedReason = entry.cancelRequested and "CANCELLED_AFTER_FIRE_START" or "CEASE_FIRE"
     runtime:_release(entry, entry.completedReason)
+    runtime:_notifyFinished(entry, entry.completedReason)
     runtime:_log(string.format(
       "functional ARTY fire complete demandId=%s target=%s cancelled=%s",
       tostring(entry.demand.demandId), tostring(targetName), tostring(entry.cancelRequested == true)))
@@ -164,6 +180,7 @@ function Instance:_installArtyHooks(arty)
         entry.failed = true
         entry.failureReason = "FUNCTIONAL_ARTY_DEAD"
         runtime:_release(entry, entry.failureReason)
+        runtime:_notifyFinished(entry, entry.failureReason)
       end
     end
   end
@@ -320,6 +337,7 @@ function Instance:Dispatch(demand, context)
       entry.completed = true
       entry.completedReason = "CANCELLED_BEFORE_FIRE_START"
       runtime:_release(entry, entry.completedReason)
+      runtime:_notifyFinished(entry, entry.completedReason)
     end
     return true
   end
