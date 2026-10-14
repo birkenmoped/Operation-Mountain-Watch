@@ -6,7 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - documentation of the 2026-10-14 owner observation and production reconciliation work scope
 not_authoritative_for:
-  - unapproved ground-versus-air support selection policy
+  - implementation details or carrier-capacity values not authorized by the approved main logistics policy
   - new MOOSE or native-DCS implementation exceptions
   - acceptance or validation of a new production build
 scenario_period: 2010-08-01/2011-12-31
@@ -119,9 +119,9 @@ Erforderliche Production-Reconciliation:
 - Settlement nur nach bestätigter physischer Lieferung, idempotent und durch CampaignState.
 - Keine Jalalabad/Wright-Testspezialwerte als generische Production-Policy.
 
-### Offene fachliche Owner-Entscheidung: Ground oder Air?
+### Owner-Entscheidung vom 14.10.2026: Ground oder Air – auf `main` verbindlich
 
-`docs/moose/FIRE-SUPPORT-STRATEGIC-RESUPPLY-RESOURCE-MONITOR.md` sieht den injizierten Vertrag `selectSupportType(candidate, site, snapshot)` vor. Es liegt laut Gesprächsaufzeichnung **keine** abschließende generelle Auswahlregel für gleichzeitig verfügbare Straße und Hubschrauber vor. Daher keine stillschweigende Regel `convoy first`, `critical -> helicopter`, `nearest carrier wins` oder Heuristik aus Entfernung, ACCESS oder Warehouse-Namen festlegen. Diese eine Policy benötigt eine ausdrückliche Owner-Entscheidung; beide Transportcapabilities können unabhängig davon gegen ihre bisherigen Verträge vorbereitet werden.
+`docs/moose/FIRE-SUPPORT-STRATEGIC-RESUPPLY-RESOURCE-MONITOR.md` sieht den injizierten Vertrag `selectSupportType(candidate, site, snapshot)` vor. Der Projektinhaber hat am 14.10.2026 die grundsätzliche Bedarfspriorisierung ausdrücklich freigegeben und auf `main` im bindenden `docs/05-logistics.md`, Abschnitt 2.1, dokumentieren lassen (Commit `b348a589642e13f60ce7541e4820bd973dd848f5`). **Kritisch/zeitkritisch:** rechtzeitige geeignete Luftversorgung hat vor Kosten Vorrang; Straßenkonvoi ist Fallback bzw. Ergänzung, wenn Lufttransport nicht verfügbar, unzureichend oder nicht rechtzeitig geeignet ist. **Regulär/planbar:** Wirtschaftlichkeit und Kapazität dominieren; bei passierbarer Straße werden Lebensmittel und allgemeine Versorgung bevorzugt am Boden transportiert. Fixed Wing bleibt für geeignete Flugplätze möglich. Das ist eine fachliche Policy, keine fertig implementierte `selectSupportType`-Strategie. Verbindliche Nutzlast-/Volumenwerte je Konvoityp, CH-47 und C-130 sowie die Umrechnung normalisierter CampaignState-Pakete sind vor Implementierung nachzuweisen; es werden keine Kapazitätsrangfolgen erfunden. MOOSE besitzt weiterhin die operative Assetwahl.
 
 ## 5. CAS: real beobachtetes Multi-Flight-Engagement erhalten und aufklären
 
@@ -161,7 +161,7 @@ Ziel der Diagnose ist die Unterscheidung zwischen formellem Retask, PATROLZONE-�
 3. ARTY-Continuation und Fire-Mission-Ende korrekt wieder anbinden; keine pauschale Erhöhung der Einzelsalve; anhaltendes Zielbild und CAS-On-Station-Deconfliction absichern.
 4. Lokalen M1083-/Functional-ARTY-Rearm für vier Standorte wieder anschließen; physische Rearm-Evidenz, Ressourcenbuchung und Return-to-stock nachweisen.
 5. Ground- und Air-Transportpfade mit **produktiver** Descriptor-/STORAGE-Konfiguration reconciliieren; Resource-Demand-Schwellen aus realem CampaignState; kein künstlicher Stock-Mangel.
-6. Ground-vs-Air-Auswahlregel als **offene Owner-Entscheidung** behandeln und erst nach Freigabe als Production-Policy einführen.
+6. Die auf `main` in `docs/05-logistics.md` Abschnitt 2.1 beschlossene Ground-/Air-Priorisierung übernehmen, aber vor der technischen Policy die tatsächlichen Carrier-Kapazitäten, Manifestumrechnung und MOOSE-Verträge nachweisen; noch kein Dispatch-PASS.
 7. CAS-Flights nach AID, tatsächlichem Ziel, Korridor, Anchor, Recovery und Asset-Level-Loss instrumentieren; zunächst ohne Verhaltensänderung.
 8. Syntax/Tests/Diff, tatsächliche Builder-/Bundle-Hashes und dann reale DCS-Acceptance durchführen; `VALIDATED` nur für konkret nachgewiesene Ergebnisse.
 
@@ -175,4 +175,4 @@ Ziel der Diagnose ist die Unterscheidung zwischen formellem Retask, PATROLZONE-�
 - `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-12.md`
 - `mission/tests/ground-ammo-rearm-integration/results/2026-08-22-acceptance-2-11-runtime.md`
 
-**Status:** Dokumentierte Reconciliation-Anforderung, keine implementierte Änderung. Kein neuer Runtime-PASS. Die Ground-versus-Air-Policy ist bewusst nicht entschieden.
+**Status:** Dokumentierte Reconciliation-Anforderung, keine implementierte Runtime-Änderung. Kein neuer Runtime-PASS. Die Ground-versus-Air-Bedarfspriorisierung ist inzwischen auf `main` fachlich verbindlich entschieden; Carrier-Kapazitäten, konkrete Selektionslogik und DCS-Acceptance bleiben offen.
