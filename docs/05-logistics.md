@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - common logistics manifest and ownership model
   - supported strategic transport modes
+  - binding urgency-versus-economy transport-mode priority
   - one-time cargo credit and loss semantics
   - separation of theater-level supply ingress from inner-Afghan distribution
   - separation of the Pakistan Southern Distribution Network from Northern Distribution Network corridors
@@ -52,6 +53,36 @@ Dokument 50 ist die quellenqualifizierte historische Referenz für Kräfte-, Bas
 - ausdrücklich genehmigte begrenzte AI-Notversorgung.
 
 Kein Transportverfahren ersetzt automatisch die anderen. Kapazität, Reichweite, Infrastruktur, Bedrohung und Verfügbarkeit bestimmen die Auswahl.
+
+### 2.1 Verbindliche Transportpriorisierung – Owner-Entscheidung 14.10.2026
+
+**Status: BINDING_PROJECT_DECISION innerhalb dieser Logistikbaseline.** Der Projektinhaber hat die Priorisierung zwischen Straße und Luft sowie die nachstehende Bedarfsklassifizierung ausdrücklich freigegeben. Diese Entscheidung konkretisiert die Auswahlkriterien, ohne MOOSE-Transportausführung oder strategische Ressourcenhoheit zu ersetzen.
+
+**Kritische/zeitkritische Versorgung:** Rechtzeitige Lieferung hat grundsätzlich Vorrang vor Transportkosten. Bevorzugt wird der tatsächlich **rechtzeitig verfügbare und geeignete Lufttransport**, sofern Transportfähigkeit, Ladungskapazität, Route, Zielinfrastruktur, Wetter und Gefährdung dies zulassen. Reicht eine einzelne Lufttransportkapazität nicht aus, sind weitere verfügbare zulässige Carrier beziehungsweise ein ergänzender Straßenanteil fachlich zu prüfen. Ist geeigneter Lufttransport nicht verfügbar, unzureichend oder nicht rechtzeitig ausführbar, wird auf einen geeigneten Straßenkonvoi zurückgegriffen, sofern dessen Route passierbar ist. Ein nominell schnellerer Flugzeugtyp ist kein automatischer Gewinner, wenn Bereitstellung, Beladung oder Entladung die Lieferung verzögern.
+
+**Reguläre/planbare Versorgung:** Wirtschaftlichkeit und geeignete Transportkapazität haben grundsätzlich Vorrang. Lebensmittel, allgemeines Material und planmäßige Vorratsauffüllung sollen bei erreichbarem Ziel und vertretbarer Sicherheitslage bevorzugt auf dem Straßenweg erfolgen. Lufttransport bleibt möglich, wenn Infrastruktur, Liefermenge, Gesamttransportaufwand, Straßenzustand oder Bedrohung ihn im konkreten Fall zweckmäßiger machen. Größere Lieferungen an geeignete Flugplätze dürfen mittels Fixed Wing erfolgen; daraus folgt keine allgemeine C-130-Priorität für jeden FOB/COP.
+
+**Fachliche Beispiele:**
+
+| Bedarf | Grundpriorität | Alternative bzw. Bedingung |
+|---|---|---|
+| Kritischer Munitionsmangel unter Angriff | Schnellste geeignete, rechtzeitig verfügbare Luftversorgung | Straßenkonvoi bei fehlender/ungenügender Luftkapazität oder ungeeigneter Luftoperation |
+| Akuter betriebsrelevanter Treibstoff-/Materialmangel | Zeitgerechte Luftversorgung | Geeigneter Straßenkonvoi als Fallback oder Ergänzung |
+| Reguläre Lebensmittel-/Materialversorgung | Wirtschaftlicher Straßenkonvoi bei passierbarer Strecke | Luftversorgung bei fehlender Erreichbarkeit oder im konkreten Fall vorteilhafterer Gesamtleistung |
+| Große planmäßige Lieferung an geeigneten Flugplatz | Geeigneter großvolumiger Transport nach tatsächlicher Kapazität und Wirtschaftlichkeit, einschließlich Fixed Wing | Straße oder kombinierter Umschlag nach vorhandener Infrastruktur |
+| Isolierter COP ohne nutzbare Straße | Geeigneter Lufttransport (Landeversorgung bzw. zulässiger Abwurf) | Keine fiktive Straßenverbindung als Fallback |
+
+**Kapazitäts- und Eigentumsgrenze:**
+
+- Ladefähigkeit ist je konkretem Carrier-/Convoy-Typ **anhand eines genehmigten Transportprofils** zu prüfen; Masse, Volumen, Ladungsart, Reichweite und Zielinfrastruktur sind voneinander zu unterscheiden.
+- Die normalisierten `SUPPLY_UNIT`, `AMMO_UNIT` und `FUEL_UNIT` entsprechen **nicht** automatisch Tonnen, Kubikmetern oder Paletten. Eine quantitative Carrier-Zuordnung braucht einen nachgewiesenen Ressourcen-/Manifest-Umrechnungsvertrag.
+- Eine feste Größenfolge „Konvoi > CH-47“ oder „C-130 > Konvoi“ wird hier **nicht** behauptet: Sie hängt von Konvoizusammensetzung, Flugzeugprofil und Ladung ab.
+- Teilen, kombinieren oder umladen ist nur unter Wahrung stabiler Cargo-IDs, reservierter Teilmengen, eindeutiger Transportzuordnung und einmaliger CampaignState-Gutschrift zulässig. Es wird kein ungeprüfter automatischer Split-Dispatcher genehmigt.
+- Die Priorisierung beschreibt **Bedarfs-/Transportmodus-Policy**. Operative Carrier-/Asset-Selektion, Rekrutierung, Routing und physischer Lifecycle bleiben bei MOOSE nach vorhandenen MOOSE-first-Verträgen. CampaignState behält die alleinige strategische Mengen- und Settlement-Autorität.
+- Bestehende Ground-`AMMOSUPPLY`-/Convoy- und Air-`OPSTRANSPORT`-/`STORAGE`-Implementierungen sind wiederzuverwenden. Die neue Entscheidung ist **keine** Freigabe für eigene parallele Transportlogik, willkürliche Carrier-Kapazitätswerte oder die Übernahme von Acceptance-STORAGE-Fixtures in Production.
+
+**Implementierungsgrenze:** Die konkrete Transportmodus-Entscheidung wird fachlich an der bereits vorgesehenen injizierten `selectSupportType(candidate, site, snapshot)`-Grenze beziehungsweise ihrer vorhandenen autoritativen Anbindung realisiert. Erst nach Prüfung der tatsächlich gespeicherten Carrier-/Cargo-Kapazitäten, der aktuellen MOOSE-Methoden und der bestehenden Accepted-Implementation-Matrix kann der Algorithmus implementiert und in DCS akzeptiert werden. Dieses Dokument verzeichnet eine **fachliche Entscheidung**, keinen DCS-validierten Dispatch.
+
 
 Historisch belegte Zusatzaufgaben werden als Spezialisierungen der vorhandenen Transportarten modelliert:
 
