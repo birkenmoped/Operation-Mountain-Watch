@@ -39,6 +39,7 @@ function arty:AssignTargetCoord(coord,prio,radius,shots,maxengage,time,weapontyp
 end
 function arty:RemoveTarget(name) self.removeCalls[#self.removeCalls+1]=name end
 
+local notifications={}
 local runtime=Runtime.New({
   commander=commander,
   artyMissionFactory=factory,
@@ -49,6 +50,12 @@ local runtime=Runtime.New({
     return {arty=arty,priority=7,maxEngagements=1,acceptedShots=4,acceptedRadiusM=60}
   end,
   releaseAssets=releaseAssets,
+  onFireMissionFinished=function(finishedDemand, context, entry, reason)
+    eq(entry.demand, finishedDemand, "completion demand identity")
+    eq(context.marker, "CTX", "completion context")
+    yes(entry.released, "completion must run after selection release")
+    notifications[#notifications+1]={demandId=finishedDemand.demandId,reason=reason}
+  end,
 })
 
 local demand={demandId="D|ARTY|1",supportType="ARTY",siteId="COP_HONAKER"}
@@ -71,6 +78,11 @@ arty:OnAfterCeaseFire(nil,nil,nil,nil,{name=runtime:GetState(demand.demandId).ta
 yes(runtime:GetState(demand.demandId).completed,"fire completed")
 no(asset.isReserved,"selection released after cease fire")
 eq(releases,1,"one release after cease fire")
+eq(#notifications,1,"one completion callback after cease fire")
+eq(notifications[1].demandId,demand.demandId,"completion callback demandId")
+eq(notifications[1].reason,"CEASE_FIRE","completion callback reason")
+arty:OnAfterCeaseFire(nil,nil,nil,nil,{name=runtime:GetState(demand.demandId).targetName})
+eq(#notifications,1,"repeated MOOSE CeaseFire must not duplicate callback")
 no(handle:Cancel("LATE"),"completed handle not cancellable")
 
 commander.can=false
@@ -100,11 +112,15 @@ eq(missingReason,"SELECTED_ARTY_NOT_MATERIALIZED","missing owner reason")
 no(asset.isReserved,"missing owner releases selection")
 eq(releases,2,"missing owner release")
 
+local cancelledNotifications={}
 local runtimeCancel=Runtime.New({
   commander=commander,
   artyMissionFactory=factory,
   resolveFunctionalArty=function() return {arty=arty} end,
   releaseAssets=releaseAssets,
+  onFireMissionFinished=function(_,_,_,why)
+    cancelledNotifications[#cancelledNotifications+1]=why
+  end,
 })
 local cancelHandle,cancelCreated=runtimeCancel:Dispatch({demandId="D|ARTY|5",supportType="ARTY"},{marker="CTX"})
 yes(cancelCreated,"cancel fixture dispatched")
@@ -113,6 +129,8 @@ yes(cancelHandle:Cancel("INCIDENT_CLOSED"),"queued cancel accepted")
 eq(#arty.removeCalls,1,"functional target removed")
 no(asset.isReserved,"queued cancel releases selection")
 eq(releases,3,"queued cancel release")
+eq(#cancelledNotifications,1,"queued cancel callback")
+eq(cancelledNotifications[1],"CANCELLED_BEFORE_FIRE_START","queued cancel reason")
 no(cancelHandle:Cancel("DUP"),"cancel idempotent")
 
 
