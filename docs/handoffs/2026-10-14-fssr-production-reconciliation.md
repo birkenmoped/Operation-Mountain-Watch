@@ -324,3 +324,26 @@ Die groessere historische Source `mission/tests/stage3-honaker-wright-full-respo
 - Wie wird unabhaengige `EVENTS.Shot`-Evidenz je Functional-ARTY-Target abgebildet und ein FALSE-PASS bei Fortress verhindert?
 
 Der bestehende Abschluss-Callback ist jetzt ein moeglicher **Reuse-Hook**. Alle Fragen beduerfen einer konkreten Quellen-/MOOSE- und Acceptance-Pruefung vor Production-Aktivierung; keine zusaetzliche Owner-Entscheidung ueber bereits gebilligte Grundsaetze wird unterstellt.
+
+
+## 10. Base-Bundle-Readback und korrigierte Builder-Diagnostik (14.10.2026)
+
+Der Projektinhaber hat fuer Source-HEAD `128ee20c19e418a9773f560e1df06db9f4fae6ab` beide Bundles lokal erfolgreich gebaut. Reale Konsole:
+
+```text
+Base Builder 34
+Base Bundle SHA-256:
+DCD4C788C8DBED6029383C45DA9F0ABB36ED77E71AA849ABD79324751F1D3B7F
+
+Production Bootstrap Builder 5
+Production Bundle SHA-256:
+3DE95321470D48FDB7AB25C1169C6D7EFE32CFB8E2F642FF7317F839EC8D4BB4
+
+MizMutation: false
+```
+
+Der Base-Builder 34 verlangte korrekt `ARTY-SELECTION-RUNTIME-2` und `EXTERNAL-SUPPORT-RUNTIME-4` als Source-/Bundle-Marker. Die Zeile `ArtySelectionRuntimeSchema: ...-1` war dagegen ein **statisch veralteter Diagnose-String**, kein Nachweis eines tatsaechlich eingebundenen alten Runtime-Moduls.
+
+Der anschliessende Base-Builder 35 extrahiert die tatsächlichen `Runtime.SchemaVersion`-Werte aus den gebuendelten ARTY-Selection- und External-Support-Quellen und gibt beide aus. Die neue ARTY-Completion-Unit-Test-Suite behandelt `OnAfterCeaseFire`, fruehen Cancel, `OnAfterDead`, doppelte terminale Events und fehlerhafte externe C2-Listener. Diese Tests wurden als Source-Tests erweitert, aber noch **nicht lokal ausgefuehrt**.
+
+**Ausstehend:** Build-35-Readback, Testausfuehrung und spaeter DCS. Der zuvor bestaetigte Build-34-Hash ist nicht fuer Builder 35 wiederzuverwenden. Keine neue `.miz`-Mutation, kein neuer DCS-PASS.
