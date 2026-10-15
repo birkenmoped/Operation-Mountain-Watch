@@ -344,3 +344,44 @@ Regressionsnachweis: mehr als eine CAS-Mission, AO-Ueberlappung, anschliessender
 **DCS-Gates:** Fortress-False-Positive (CeaseFire ohne Shot), Wright/Honaker echte physische Shot-Events, zwei getrennte Auftraege und jeweils exakte Demand-/Target-Korrelation, no-double-count nach Release, andere Batterie als Negativtest. Pruefe End-to-End nachher M1083-Rearm und physisch neues Target; hier noch **keine** neue C2-Continuation.
 
 **Status:** Source und Unit-Test aktualisiert; Unit-Testausfuehrung, Builder-38-Hash und DCS-PASS ausstehend.
+
+
+## 16. Full Fire-Support Response – neue Production-Komposition
+
+**Gemeinsamer Build-Gate:** Production Base **39**, Production Bootstrap **7**,
+beide mit **demselben Git-HEAD** und gesonderten realen SHA-256-Hashes. Die
+normalen zwei Mission-Editor-Lua-Dateien bleiben erforderlich; die Builder
+aendern die `.miz` nicht.
+
+**DCS-End-to-End-Anforderungen:**
+
+1. Honaker/Wright/Fortress: erste C2-Eskalation und physisch bestaetigte
+   Functional-ARTY-Salve (vier Schuss je begrenzter Mission), echte
+   `ARTY:OnEventShot`-Provenienz und einmalige Selection-Reservierungsfreigabe
+2. C2-Fortsetzung bei weiteren lebenden RED-Ground-Teilnehmern:
+   mindestens zwei physische Fire Missions, unterschiedliche Demand-/Cycle-Keys
+   und erneute MOOSE COMMANDER/LEGION-Auswahl; kein zweiter Fire-Control-Owner
+3. Mehrere RED-Ziele: C2-Rotation nur durch
+   `sourceIncidentCoordinator:GetParticipants(true)`; keine eigene Target-Scan-Schleife
+4. CAS physisch im gemeinsamen AO und CAS-Position unknown:
+   keine neue ARTY-Mission; Egress/Recovery erst nach physischer AO-Freigabe,
+   bereits aktive Salven **nicht** abbrechen
+5. `OnAfterCeaseFire` ohne `ARTY:OnEventShot` (Fortress-False-Positive):
+   `NO_PHYSICAL_SHOT_EVIDENCE`, keine unkontrollierte Wiederholung
+6. Security-Perimeter clear/Incident closed, bekannte lebende C2-Ziele:
+   ausschliesslich streng qualifizierte externe ARTY-Continuation;
+   keine neuen CAS-, GUARD-, QRF- oder initialen ARTY-Demands
+7. Nach Ammo-Mangel: vorhandenes A10-M1083 aus Warehouse,
+   physisches `ARTY:Rearm()`, einmalige CampaignState-Buchung,
+   `OnAfterRearmed`, M1083-Return-to-stock und spaetere C2-Fortsetzung
+8. Fuer alle vier Sites ME-Template `TPL_BLUE_GND_SUP_M1083`,
+   Zonen `ZON_BLUE_GND_*_RESUPPLY` im **aktuellen** Missionsbestand nachweisen.
+   Fehlende Objekte sind FAIL; `MizMutation:false` ist kein ME-Existenzbeweis.
+9. Keine Regression Guard/QRF, CAS zwei gleichzeitig engagierte AH-64-Two-Ships,
+   dynamische Korridore, Flugzeugverluste und Resource-Reconciliation.
+
+**CI-Tests:** `tests/mission-demand/test_fire_support_strategic_resupply_fire_continuation.lua`,
+`test_fire_support_strategic_resupply_closed_arty_continuation.lua`,
+`test_fire_support_strategic_resupply_production_bootstrap.lua`.
+CI ersetzt keine Missionslaufzeit. `validation_status: DCS_PENDING`;
+keine neue Acceptance-Behauptung.
