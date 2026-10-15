@@ -4,7 +4,7 @@
 local Base = {}
 local Instance = {}
 Instance.__index = Instance
-Base.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-4"
+Base.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-5"
 
 local TAG = "[OMW][FireSupStratResupply.Base]"
 
@@ -135,7 +135,17 @@ function Instance:RequestIncidentSupport(incidentId, supportType, spec)
   needTable(spec, "spec")
   local incident = self.incidents[incidentId]
   if not incident then return nil, false, "INCIDENT_NOT_FOUND" end
-  if incident.closed then return nil, false, "INCIDENT_CLOSED" end
+  -- Perimeter/incident closure is not itself target exhaustion. A surviving
+  -- C2-qualified ARTY continuation may proceed with its own live target, while
+  -- initial support requests and Guard/QRF/CAS remain closed to new demands.
+  local closedArtyContinuation = supportType == "ARTY"
+    and spec.continuationAfterIncidentClose == true
+    and spec.cancelWhenIncidentClosed == false
+    and type(spec.context) == "table"
+    and spec.context.sourceTargetGroup ~= nil
+  if incident.closed and not closedArtyContinuation then
+    return nil, false, "INCIDENT_CLOSED"
+  end
   local site, profile, contextReason = self:_contextForSite(incident.siteId)
   if not site then return nil, false, contextReason end
   local configured = supportEntry(profile, supportType)
