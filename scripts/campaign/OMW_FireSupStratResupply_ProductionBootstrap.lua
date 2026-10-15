@@ -807,6 +807,7 @@ local function startInternal(config)
         requestKey = requestKey,
         priority = priorDemand.priority,
         cancelWhenIncidentClosed = false,
+        continuationAfterIncidentClose = true,
         context = {
           activation = "C2_CONTINUATION",
           source = "INSTALLATION_ATTACK_INCIDENT",
