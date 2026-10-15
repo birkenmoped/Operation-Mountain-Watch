@@ -5,7 +5,7 @@
 local Continuation = {}
 local Instance = {}
 Instance.__index = Instance
-Continuation.SchemaVersion = "OMW-FSSR-FIRE-CONTINUATION-1"
+Continuation.SchemaVersion = "OMW-FSSR-FIRE-CONTINUATION-2"
 
 local function requireFunction(spec, key)
   if type(spec[key]) ~= "function" then
@@ -43,6 +43,7 @@ function Continuation.New(spec)
     seen = {},
     queued = {},
     serial = {},
+    lastTargetByIncident = {},
   }, Instance)
 end
 
@@ -100,6 +101,10 @@ function Instance:_evaluate(incidentId)
     return
   end
   if ammo < pending.requiredShots then
+    if pending.rearmCompleted then
+      self.log("C2_FIRE_AMMO_STILL_LOW_AFTER_REARM incidentId=" .. tostring(incidentId))
+      return
+    end
     if not pending.rearmRequested then
       local accepted, reason = self.requestRearm(pending.entry, pending.demand)
       if accepted then
@@ -122,6 +127,7 @@ function Instance:_evaluate(incidentId)
   )
   if created == true and demand and demand.status == "DISPATCHED" then
     self.serial[incidentId] = nextSerial
+    self.lastTargetByIncident[incidentId] = target:GetName()
     self.waiting[incidentId] = nil
     self.log("C2_FIRE_CONTINUED incidentId=" .. tostring(incidentId)
       .. " demandId=" .. tostring(demand.demandId)
@@ -158,8 +164,9 @@ function Instance:OnFinished(demand, context, entry, reason)
     context = context,
     entry = entry,
     requiredShots = shots,
-    lastTargetName = nil,
+    lastTargetName = self.lastTargetByIncident[demand.incidentId],
     rearmRequested = false,
+    rearmCompleted = false,
   }
   self:_defer(demand.incidentId)
 end
@@ -169,6 +176,7 @@ function Instance:OnRearmed(assetId)
     if pending.rearmRequested and pending.entry.owner
       and pending.entry.owner.realAssetId == assetId then
       pending.rearmRequested = false
+      pending.rearmCompleted = true
       self:_defer(incidentId)
     end
   end
