@@ -577,3 +577,36 @@ git status --short:
 **Verifikations-Gate:** Projektinhaber zieht den neuen Remote-HEAD und fuehrt **nur den Base-37-Builder** mit `powershell.exe -NoProfile -ExecutionPolicy Bypass -File` aus. Bei Build-Exitcode ungleich Null sofort Stop; keine Marker- oder Hash-Pruefung alter `dist`-Dateien als PASS interpretieren. Nach Erfolg: `CAS-LIFECYCLE-RUNTIME-2`, `IsOnStationAt`, `CAS_PHYSICALLY_IN_SHARED_AO`, `CAS_AO_PRESENCE_UNRESOLVED` im Bundle suchen und `Get-FileHash -Algorithm SHA256` neu aufzeichnen. Die lokal vorhandene untracked `mission/fire-support-strategic-resupply/`-Struktur **nicht bereinigen**.
 
 **Unveraendert ausstehend:** Lua-Unit-Tests und DCS-Acceptance fuer CAS-On-Station, ARTY-Continuation, M1083-Rearm und strategische Ground-/Air-Resupply. Dokumentations- und Source-Hotfix ist nicht gleich DCS-VALIDATED. Der naechste neue Chat muss **Abschnitt 12, 13 und 14** lesen; nach jedem weiteren Lauf die reale SHA-256-Provenienz und eventuelle Fehlversuche hier anfuegen.
+
+
+## 15. Production Base 37 – durch Projektinhaber lokal verifizierter Build (15.10.2026)
+
+**Reale Nutzerkonsole:** `git pull --ff-only` aus `P:\DCS-DEV\Operation-Mountain-Watch-fssr-production-bootstrap` holte den Hotfix per Fast-Forward von `884d8e70` auf `9e7e54a7`. `ExpectedCommit` und `ActualCommit` waren identisch:
+
+```text
+GitCommit:
+9e7e54a7e65ab1d91630a751c4fe2a0e0ecaf793
+BuilderVersion:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-37
+BuilderSHA256:
+C2BE8BF4801BD0A65BBC4E274DA9D24F1D946D7B068BFE811A8F27B1C7C3376C
+BundleSHA256:
+4D58402067C95E116A76EEFCFC437FA92278D03000FAA111D6F73F7FE4D38EF4
+HandoffSHA256 (lokales Dokument vor diesem neuen Anhang):
+B4E4859C43F541CB14CB4F2BFB869F368AC462FD524E056B8780F62411A2281F
+MizMutation: false
+```
+
+Der Builder lief diesmal erfolgreich durch. `ArtySelectionRuntimeSchema: ...-2`, `ExternalSupportRuntimeSchema: ...-4` und `CasLifecycleRuntimeSchema: ...-2` wurden ausgegeben. Der anschliessende gebuendelte Markercheck fuer `CAS-LIFECYCLE-RUNTIME-2`, `IsOnStationAt`, `CAS_PHYSICALLY_IN_SHARED_AO` und `CAS_AO_PRESENCE_UNRESOLVED` meldete:
+
+```text
+PASS: Production Base 37 CAS occupancy markers verified
+```
+
+Ein **separates** `Get-FileHash -Algorithm SHA256` bestaetigte den identischen Bundle-Hash `4D58402067C95E116A76EEFCFC437FA92278D03000FAA111D6F73F7FE4D38EF4`. Das alte Base-35-Artefakt ist dadurch fuer diese lokale Build-Pruefung ersetzt. `git status --short` zeigte ausschliesslich das untracked generierte Verzeichnis `mission/fire-support-strategic-resupply/`, das unveraendert erhalten bleiben muss.
+
+**Praezise Beweisgrenze:** Die lokalen Builds, Schemata und Marker sind jetzt `BUILD_VERIFIED` fuer diesen **exakten** Commit. Der Produktions-Callback `onArtyFireMissionFinished`, die CAS-AO-Methode und M1083-Rearm sind damit noch **nicht** im DCS-Verhalten validiert. Die geaenderten Lua-Unit-Tests sind aus dieser Konsolenausgabe ebenfalls **nicht** ausgefuehrt. Eine physische `EVENTS.Shot`-Evidenz, autoritative C2-Continuation, CAS-Deconfliction als aktive Feuerfreigabe sowie Rearm/Transport-Settlement bleiben offen.
+
+**Naechste Arbeit:** Quellengepruefte Verbindung zwischen `GetParticipants(true)`, belegter physischer Schusszahl, `CasLifecycleRuntime:IsOnStationAt` und den bestehenden MOOSE-ARTY-Selection-/Rearm-Lifecycles. Vor Umsetzung die Event-/FSM-Signaturen und die fehlenden Release-/Retarget-Invarianten gegen die gepinnte MOOSE-Source und die akzeptierten Stage-3-Quellen nachweisen; keine zweite Zielerfassung, kein pauschales `CeaseFire -> neue Salve`, kein Scheduler-Ersatz. Die Dokumentation weiterhin nach **jedem** technischen Schritt mit Branch, Commit, Source, Testergebnissen, echten lokalen Hashes und naechstem Gate fortschreiben.
+
+**Neuer Chat:** Vor jeglicher Arbeit insbesondere Abschnitte 12 bis 15 dieser Datei lesen; lokaler Buildstand Base 37 ist real, DCS-PASS ist es nicht.
