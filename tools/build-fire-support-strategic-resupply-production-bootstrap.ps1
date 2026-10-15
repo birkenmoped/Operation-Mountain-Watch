@@ -24,7 +24,7 @@ foreach ($file in @($source, $fireContinuation, $resourceDemandPolicy, $material
 
 $bootstrap = Get-Content -LiteralPath $source -Raw -Encoding UTF8
 $fireContinuationSource = Get-Content -LiteralPath $fireContinuation -Raw -Encoding UTF8
-if (-not $fireContinuationSource.Contains('OMW-FSSR-FIRE-CONTINUATION-1')) { throw 'Fire continuation schema marker missing.' }
+if (-not $fireContinuationSource.Contains('OMW-FSSR-FIRE-CONTINUATION-2')) { throw 'Fire continuation schema marker missing.' }
 $policy = Get-Content -LiteralPath $resourceDemandPolicy -Raw -Encoding UTF8
 $materializerSource = Get-Content -LiteralPath $materializer -Raw -Encoding UTF8
 $ammoSupportSource = Get-Content -LiteralPath $ammoSupport -Raw -Encoding UTF8
@@ -88,7 +88,7 @@ foreach ($forbidden in @(
 }
 
 if (-not $policy.Contains('OMW-RESOURCE-DEMAND-POLICY-1',
-  'OMW-FSSR-FIRE-CONTINUATION-1')) {
+  'OMW-FSSR-FIRE-CONTINUATION-2')) {
   throw 'ResourceDemandPolicy schema marker missing.'
 }
 
@@ -159,7 +159,7 @@ Write-Host "ResupplyReadyFlag: OMW_FSSR_RESUPPLY_READY"
 Write-Host "StrategicResupplyDefault: disabled/fail-closed until production physical transport descriptor is injected"
 Write-Host "BuilderSHA256: $((Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "BootstrapSourceSHA256: $((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToUpperInvariant())"
-Write-Host "FireContinuationSchema: OMW-FSSR-FIRE-CONTINUATION-1"
+Write-Host "FireContinuationSchema: OMW-FSSR-FIRE-CONTINUATION-2"
 Write-Host "LocalRearmModules: MOOSE GroundSupportMaterializer / FixedFireSupportAmmoSupport / GroundAmmoRearmAdapter / FixedFireSupportAmmoRearmService"
 Write-Host "FireContinuationSourceSHA256: $((Get-FileHash -LiteralPath $fireContinuation -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "ResourceDemandPolicySHA256: $((Get-FileHash -LiteralPath $resourceDemandPolicy -Algorithm SHA256).Hash.ToUpperInvariant())"
