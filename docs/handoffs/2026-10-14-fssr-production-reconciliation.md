@@ -855,3 +855,76 @@ Beide Windows-Builder liefen ohne Fehler durch und meldeten denselben Git-Commit
 **Arbeitsrhythmus:** Nicht nach diesem Dokumentationscommit gesondert zu pullen/bauen auffordern; der naechste lokale Arbeitsblock soll die vollstaendige DCS-Acceptance-Vorbereitung bzw. eine spaetere wirklich notwendige Source-Gesamtveraenderung zusammenfassen.
 
 **Chatwechsel:** Ab jetzt Abschnitte 12–19 und Governance/Accepted-Lifecycle-Matrix lesen. Das letzte exakt real verifizierte Bundlepaar stammt aus Git-Commit `2382e962...` (Hashes oben), waehrend der jeweils aktuelle GitHub-Dokumentations-HEAD neuer sein kann. Keine alten Hashes einem neueren Source-Build zuschreiben. Kein CODEX, keine `.miz`-Mutation ohne Genehmigung.
+
+
+## 20. Direkte v26-MIZ-Bestandsaufnahme vor DCS-Full-Response-Acceptance (15.10.2026)
+
+**Vom Owner hochgeladenes unveraendertes DCS-Archiv** `OMW_Template_v26_GroundWorks_Ready(2).miz`. Es wurde in der aktiven Runtime unter dem explizit bereitgestellten Upload-Pfad als ZIP/DCS-MIZ direkt gelesen. Kein OCR, keine MIZ-Aenderung, kein DCS-Start.
+
+```text
+Mission filename: OMW_Template_v26_GroundWorks_Ready(2).miz
+ZIP members: 19
+Mission member: mission (3,827,221 bytes uncompressed)
+Warehouses member: warehouses (3,319,588 bytes uncompressed)
+MIZ SHA-256:
+562A4F63899100ADABE47C15E3A6B0B1E52D62445B6CBC6EA5D48812A5731629
+Embedded Moose.lua SHA-256:
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+### 20.1 Verifiziertes Mission-Editor-Inventar aus `mission`
+
+| ARTY-Standort | Feste Gruppe (exakter ME-Gruppenname) | Warehouse-Marker | RESUPPLY-Triggerzone |
+|---|---|---|---|
+| Bostick | `TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2` | `WH_BLUE_GND_BOSTICK` | `ZON_BLUE_GND_BOSTICK_RESUPPLY` |
+| Wright | `TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2` | `WH_BLUE_GND_WRIGHT` | `ZON_BLUE_GND_WRIGHT_RESUPPLY` |
+| Fortress | `TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1` | `WH_BLUE_GND_FORTRESS` | `ZON_BLUE_GND_FORTRESS_RESUPPLY` |
+| Honaker | `TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2` | `WH_BLUE_GND_HONAKER` | `ZON_BLUE_GND_HONAKER_RESUPPLY` |
+
+Jeder der vier ARTY-Gruppennamen ist im `mission`-Member genau einmal als Gruppenname enthalten. Das Rearm-Template `TPL_BLUE_GND_SUP_M1083` ist als Gruppe (eine `CHAP_M1083`-Unit, `lateActivation = true`) vorhanden; seine Units tragen `TPL_BLUE_GND_SUP_M1083_01`. Die vier RESUPPLY-Zonen sind als benannte Mission-Triggerzones mit eindeutiger Position vorhanden. Bostick, Wright und Fortress: Radius 15.24 m; Honaker: 30.48 m. Die Zonen sind **nicht erst zu erstellen**. Der vorhandene physische Abstand, Terrain-Freiheit, MOOSE-Materialisierung, M1083-Bewegung/Return und DCS-/CampaignState-Buchung sind **nur in DCS** zu validieren.
+
+### 20.2 Nachgewiesene Mission-Trigger-/Load-Order
+
+`l10n/DEFAULT/mapResource` enthaelt die erforderlichen Scriptdateien:
+```text
+ResKey_Action_6   -> Moose.lua
+ResKey_Action_238 -> OMW_AirOps_Warehouse_Base.lua
+ResKey_Action_239 -> OMW_Ground_Base.lua
+ResKey_Action_246 -> OMW_FireSupStratResupply_Base.lua
+ResKey_Action_247 -> OMW_FireSupStratResupply_Production.lua
+```
+
+Die Mission hat `trigrules[12]` mit Namen `LOAD_FIRESUPSTRATRESUPPLY_BASE`; ihre Bedingungen sind `OMW_WAREHOUSE_READY = 1`, `OMW_GROUND_READY = 1` und `TIME MORE 30 s`. Die beiden Aktionen laden `ResKey_Action_246` **vor** `ResKey_Action_247` im **selben Trigger**. MOOSE wird bereits in `trigrules[1]` geladen, Warehouse und Ground in frueheren Triggern. Load-Order ist deshalb **im MIZ-Source-Snapshot korrekt**; tatsaechliche Run-Time-Readiness bleibt im DCS-Log nachzuweisen.
+
+### 20.3 Entscheidender Befund: Eingebettete Bundles sind veraltet
+
+Das hochgeladene v26-Missionsarchiv enthaelt:
+
+```text
+l10n/DEFAULT/OMW_FireSupStratResupply_Base.lua
+  BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-34
+  GitCommit: a01b163a0db13b772db1d30aee4c38741f0b010a
+
+l10n/DEFAULT/OMW_FireSupStratResupply_Production.lua
+  BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-4
+  GitCommit: a01b163a0db13b772db1d30aee4c38741f0b010a
+```
+
+Die **letzten wirklich lokal gebauten** Source-Artefakte dagegen stammen beide aus `2382e962623e5c0591f608812cad05cf172d22e2` (Abschnitt 19):
+
+```text
+Base 39 SHA-256:
+4C5C8AFAC3F0D492B445ED48AE4B5C88670C559769BB21F8B73CA412B4C104F6
+Bootstrap 7 SHA-256:
+3AD1C0B70086D6E7A0E574C03D69C6D0344684BDFB2643BBF734DA2306E52B5D
+```
+
+**Folgerung:** Das unveraenderte hochgeladene v26-Archiv ist als **Mission-Editor-Ausgangsbasis** geeignet, aber **noch nicht als ARTY-/CAS-/M1083-Acceptance-Build**. Dazu muessen exakt die beiden vorhandenen Skript-Ressourcen im Archiv durch den oben hashverifizierten Bundle-Satz ersetzt und die daraus erzeugte Acceptance-`.miz` separat gehasht werden. Die Triggerstruktur muss dazu **nicht neu angelegt** werden. Keine neue Zone, kein neues Template, keine anderen Missionsobjekte. Das Paar darf niemals nur teilweise aktualisiert werden.
+
+**Entscheidungs-/Genehmigungsgrenze:** Nach Governance ohne explizite Freigabe keine eigene `.miz`-Mutation. Die hochgeladene Datei wurde nicht veraendert; auch keine gepatchte Acceptance-Kopie erzeugt. Freigabe fuer die Erstellung einer separaten, eindeutig benannten Acceptance-`.miz` mit **nur** diesen beiden Bundle-Resource-Replacements beim Owner einholen, falls ChatGPT diese Mutation uebernehmen soll. Alternativ fuehrt der Owner den bestehenden Mission-Editor-Tausch beider Do-Script-File-Ressourcen lokal durch und liefert den realen Missions-Hash.
+
+### 20.4 Uebergabe-/DCS-Gate
+
+- Bereits bewiesen: vier reale ARTY-Gruppen, vier Warehouse-Marker, vier RESUPPLY-Zonen, M1083-Late-Activation-Gruppe, MOOSE-SHA, Load-Order und Readiness-Bedingungen.
+- Noch **nicht** bewiesen: die generierten Base-39-/Bootstrap-7-Bundles sind in einer neuen Missionsdatei gespeichert; deren Missions-Hash; DCS-Start/Initialisierung, C2-Zielautoritaet, CAS/ARTY-Deconfliction, physischer `EVENTS.Shot`-Nachweis, M1083-Rearm/CampaignState-Settlement und multi-cycle Fire.
+- **Unmittelbarer naechster Schritt:** Eine separate v26-Full-Response-Acceptance-`.miz` mit ausschliesslich den beiden eingebetteten verifizierten Bundles erstellen (Owner-Genehmigung erforderlich), dann Hash/Archiv-Diff und reale DCS-Acceptance mit Logs/Debrief pruefen. Dokumentations-HEAD nach diesem Eintrag nicht mit dem Source-Bundle-Commit verwechseln. Kein isolierter Dokumentations-Pull verlangen. Kein CODEX.
