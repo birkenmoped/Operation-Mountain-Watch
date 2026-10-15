@@ -335,3 +335,12 @@ Zu pruefen: exakte Demand-ID und Site-Korrelation, nur ein Callback pro Fire-Mis
 Regressionsnachweis: mehr als eine CAS-Mission, AO-Ueberlappung, anschliessender Egress, Return-to-Legion, fehlende Koordinate, laufender ARTY-Salvenabschluss ohne vorzeitigen Abbruch. Keine Aenderung der bisherigen CAS-Corridor-/PATROLZONE-/Targeting-FSM.
 
 **Status:** Source implementiert, Unit-Test erweitert, lokal noch nicht ausgefuehrt, **DCS_PENDING**. Es wird noch keine automatische ARTY-Continuation getriggert.
+
+
+## 15. Physisches ARTY-Shot-Evidence-Gate – Base 38
+
+`ArtySelectionRuntime` Schema 3 beobachtet `ARTY:OnEventShot` am bereits laufenden MOOSE-Owner. Events muessen gegen `ARTY.groupname` und `ARTY.currentTarget.name` korreliert werden. `OnAfterCeaseFire` meldet `NO_PHYSICAL_SHOT_EVIDENCE`, falls kein korrelierter Shot existiert; dies darf **niemals** als erfolgreiche Feuermission gelten. Abbruch-/Dead-Reasons und MOOSE-Recruitment-/Release-Semantik unveraendert.
+
+**DCS-Gates:** Fortress-False-Positive (CeaseFire ohne Shot), Wright/Honaker echte physische Shot-Events, zwei getrennte Auftraege und jeweils exakte Demand-/Target-Korrelation, no-double-count nach Release, andere Batterie als Negativtest. Pruefe End-to-End nachher M1083-Rearm und physisch neues Target; hier noch **keine** neue C2-Continuation.
+
+**Status:** Source und Unit-Test aktualisiert; Unit-Testausfuehrung, Builder-38-Hash und DCS-PASS ausstehend.
