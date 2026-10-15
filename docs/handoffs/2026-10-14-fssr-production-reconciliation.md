@@ -508,3 +508,42 @@ Vor jedem weiteren Chatwechsel hier eintragen: Source-Branch, Remote-HEAD, geaen
 **Sofortiger Fortsetzungssatz fuer einen neuen Chat (mit Scope):**
 
 > Arbeite auf `agent/fire-support-strategic-resupply-production-bootstrap`. Lies vollstaendig `AGENTS.md`, `docs/00-project-governance.md`, `docs/26-moose-first-development-policy.md`, `docs/moose/ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md`, `docs/moose/FIRE-SUPPORT-ACCEPTED-IMPLEMENTATION-MATRIX.md` und `docs/handoffs/2026-10-14-fssr-production-reconciliation.md` (insbesondere Abschnitt 12). Gleiche aktuellen Remote-HEAD und Source gegen das Handoff ab. Setze die ARTY-/Moerser-Continuation und lokale M1083-/Ground-/Air-Resupply-Reconciliation MOOSE-first fort. Baue keinen parallelen Targeting-/Transport-/Rearm-Lifecycle; implementiere nur mit nachgewiesenem C2-/CAS-/Shot-/Ammo-Vertrag. Dokumentiere Entscheidungen, Aenderungen, Tests und reale Hashes nach jedem Schritt in derselben fortlaufenden Uebergabedatei. Aendere keine `.miz` ohne erforderliche Owner-Freigabe; keine DCS-PASS-Behauptung ohne realen Test; kein CODEX.
+
+
+## 13. Source-Schritt: physische CAS-AO-Belegung als read-only C2-Adapter (15.10.2026)
+
+**Auftrag und Anlass:** Der Projektinhaber bestaetigte am 15.10.2026 den vorigen Handoff-Commit `94f6a6bf8d2892ab39de582c6c165d7f477ccf2a` durch einen realen `git pull --ff-only`, korrekten HEAD-Readback sowie den SHA-256-Hash
+`5E7FE52AE41A2D9C619553AFB3BE8474A83E21A403751CDF1386D02108488E8D`. Das untracked Verzeichnis `mission/fire-support-strategic-resupply/` wurde unveraendert beibehalten.
+
+**Ziel dieser Source-Aenderung:** Ein bereits existierendes CAS-Flight im fuer eine ARTY-Zielkoordinate relevanten MOOSE-AO nachweisen, ohne die bisherige CAS-FSM, Missionsbelegung, PATROLZONE, taktische Korridore, Release, RTB oder Ressourcenhoheit zu veraendern.
+
+**Produktive Source:** `scripts/campaign/OMW_FireSupStratResupply_CasLifecycleRuntime.lua`, Schema 2. Neue **read-only** Methode `Instance:IsOnStationAt(coordinate)`:
+- durchsucht ausschliesslich bereits im CAS-Lifecycle registrierte Missions-`entry`-Objekte;
+- verwendet die existierende MOOSE-`_omwFssrCasGeometry.zone:IsCoordinateInZone(...)` fuer **Zielkoordinate und physische Flight-Koordinate**; keine selbstgeschriebene Zonen-/Geometrielogik;
+- liefert `true, "CAS_PHYSICALLY_IN_SHARED_AO", demandId` fuer physisch im relevanten Einsatzraum befindliche CAS-Flights;
+- liefert `nil, "CAS_AO_PRESENCE_UNRESOLVED"`, wenn fuer einen potentiell relevanten aktiven Flight der physische Ort bzw. die Zone nicht eindeutig abfragbar ist;
+- liefert `false, "NO_CAS_PHYSICALLY_ON_STATION"`, wenn keine aktive und physisch dort bestaetigte CAS-Belegung festgestellt wird;
+- ignoriert `releaseRequested` **nicht**, solange der Flight physisch noch im AO sein kann: ein angeforderter RTB-/Release ist kein physischer Egress oder Return;
+- beruehrt keinen ARTY-Dispatch. Es gibt keinen neuen Scheduler, keine Kuenstliche `CAS_ON_STATION`-Flag-Autoritaet und keine Aenderung am CAS-Lifecycle.
+
+**MOOSE-First / Lifecycle-Inheritance-Map:**
+
+| Feld | Nachweis |
+|---|---|
+| inherited_contract | bereits verwendete `CasLifecycleRuntime`-MissionEntry und `MOOSE ZONE:IsCoordinateInZone`, `FLIGHTGROUP:GetCoordinate`; MOOSE uebernimmt Flugbetrieb und FSM |
+| accepted_source_paths | `OMW_FireSupStratResupply_CasLifecycleRuntime.lua`, `OMW_HelicopterCasTacticalCorridor.lua`, Binding-Abschnitt im CAS-Lifecycle |
+| evidence | bisherige CAS-Route-/Recovery-Acceptances gelten nur fuer urspruengliche Provenienz; neuer Occupancy-Adapter **DCS_PENDING** |
+| invariants | OnAfterOpsOnMission/Flight-Binding, Route, Detektion, taktischer Release, Landung und LegionReturn unveraendert |
+| reuse_mode | MINIMAL_ADAPTER: lesender Accessor der bestehenden Mission- und Flight-Referenzen |
+| harness_role | nur False/True/Unknown-Beobachtung, keine eigene Dispatch-/Recovery-FSM |
+| changed_boundary | physisch belegter gemeinsamer CAS-AO als getrenntes C2-Lesesignal |
+| owner_approval | keine neue Non-MOOSE-/DCS-Abweichung, keine taktische Semantikaenderung |
+| revalidation_scope | Unit-Test des CAS-AO-Belegungs-Accessors; DCS-Test mit zwei Fluegen ueber benachbarten AOs, Egress, Positionsunbekannt und Retour |
+
+**Builder:** `tools/build-fire-support-strategic-resupply-production-base.ps1` Version 36 erfordert `CAS-LIFECYCLE-RUNTIME-2` und gibt das Quellen-Schema anstelle einer hartkodierten Diagnose aus. Die Tests in `tests/mission-demand/test_fire_support_strategic_resupply_cas_lifecycle_runtime.lua` ergaenzen physische AO-Belegung, unbekannte Flight-Koordinate und den Zeitraum zwischen Release und wirklicher Rueckkehr. **Source implementiert; Tests/Build/Hashes/DCS erst durch reale Ausgaben nachweisen.**
+
+**Ausdruecklich noch offen:** Der neue Accessor wird von der ARTY-Continuation noch **nicht** aktiv verwendet. Insbesondere muessen physische Schuss-Evidenz, autorisierte Zielauswahl, MissionDemand-Cycle-Key, Reentranzschutz und M1083-Rearm-Completion vor automatischem Folgefeuer verbunden werden. Die dreiwertige CAS-Antwort `nil` darf spaeter **niemals** als Freigabe zum Schiessen interpretiert werden. Die Methode ist ein abgrenzbarer Teil der Integration, kein Full-Response-/Fire-Continuation-PASS.
+
+### 13.1 Unmittelbare Uebergabeanweisung fuer den naechsten Chat
+
+Arbeite auf `agent/fire-support-strategic-resupply-production-bootstrap`, lies Abschnitt 12 **und Abschnitt 13** dieser Datei sowie Governance und Accepted Lifecycle Law. Ermittle den aktuellen Remote-HEAD vor jeder Aenderung. Fuehre die Completion-Reconciliation nach der realen Builder-/Testausgabe fuer Base 36 fort, indem du zuerst den bereits genehmigten C2-Target- und `EVENTS.Shot`-Quellenvertrag mit dem neuen read-only CAS-AO-Belegungssignal kombinierst. Kein direktes `CeaseFire -> neuer ARTY-Dispatch` ohne Shot- und CAS-Beweis; vorhandene M1083-Rearm-Services weiterverwenden. Dokumentiere jeden Schritt hier mit Commit, Source, Tests, Hashes, Risiken, offenem Schritt und ggf. DCS-Provenienz. Kein CODEX, kein eigenmaechtiges `.miz`-Edit, keine erfundenen Tests.
