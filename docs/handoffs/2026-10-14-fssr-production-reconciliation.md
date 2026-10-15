@@ -661,3 +661,36 @@ Das zugehoerige Testmodul `tests/mission-demand/test_fire_support_strategic_resu
 ### 16.5 Status fuer den naechsten Chat
 
 Branch `agent/fire-support-strategic-resupply-production-bootstrap`. Vollstaendig lesen: Governance/AGENTS/MOOSE-First, Accepted-Lifecycle-Matrix, dieses Handoff Abschnitte **12 bis 16**. Letzter verifizierter lokaler Base-Build ist 37, nicht 38. Die realen neuen Builder-38-Hashes stehen **noch aus**. Vor einer technischen Weiterentwicklung die geloesten Event-Vertraege und die noch nicht verbundene C2-Fire-Continuation nachvollziehen; als naechstes reentranzsichere C2-/CAS-/Munition-/Rearm-Kette mit den vorhandenen Ownern bauen und im selben Dokument fortschreiben.
+
+
+## 17. Owner-Readback: Production Base 38 erfolgreich gebaut (15.10.2026)
+
+**Verifizierte Quelle:** Original-PowerShell-Ausgabe des Projektinhabers im Arbeitsverzeichnis `P:\DCS-DEV\Operation-Mountain-Watch-fssr-production-bootstrap`. `git pull --ff-only` uebernahm `1759ada4..6b24e42c` per Fast-Forward; `ExpectedCommit` und `ActualCommit` stimmten exakt ueberein.
+
+```text
+GitCommit:
+6b24e42c257d783c2bcb9ae68e4564b08ecb7340
+BuilderVersion:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-38
+ArtySelectionRuntimeSchema:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-3
+ExternalSupportRuntimeSchema:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-4
+CasLifecycleRuntimeSchema:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-2
+BuilderSHA256:
+8F61CA5334CC2B8CDFDDF80D196A69745DAD808486E8CA1265C8D159410AC809
+BundleSHA256:
+786A37491F1D21EC7763162DB691E7F25116B8308EE9C8A0192EB86204207019
+HandoffSHA256 (vor diesem Anhang):
+6992D82FFF702DEFE36A215463A1FA3DF69F04AA89DC97554B15CE506E779EC5
+MizMutation: false
+```
+
+Der Builder endete erfolgreich. Der nachgelagerte Markercheck `ARTY-SELECTION-RUNTIME-3`, `NO_PHYSICAL_SHOT_EVIDENCE`, `functional ARTY physical shot` und `CAS_PHYSICALLY_IN_SHARED_AO` meldete `PASS: Production Base 38 markers verified`. Der unabhaengig ausgefuehrte `Get-FileHash -Algorithm SHA256` bestaetigte exakt den Bundle-Hash `786A37491F1D21EC7763162DB691E7F25116B8308EE9C8A0192EB86204207019`. `git status --short` zeigte ausschliesslich das vorhandene untracked `mission/fire-support-strategic-resupply/` (generierte Artefakte; nicht entfernen).
+
+**Abnahmegrenze:** `BUILD_VERIFIED` ausschliesslich fuer diese Revision und diesen lokalen Base-38-Build. **Kein** belegter Lua-Unit-Test-Lauf, **kein** DCS-/MOOSE-Runtime-PASS und **keine** bereits aktivierte C2-gesteuerte ARTY-Continuation. Insbesondere ist physischer `ARTY:OnEventShot` im Bundle erkennbar, seine tatsaechliche Korrelation mit MOOSE-`OnAfterCeaseFire` im Missionslauf aber noch nicht bestaetigt. Der reale DCS-False-Positive bei Fortress ist nicht damit als geloest validiert.
+
+**Naechster fachlicher Auftrag:** Mit dem vorhandenen `onArtyFireMissionFinished`-Hook, dem neuen Shot-Evidence-Entry `physicalShots`, `sourceIncidentCoordinator:GetParticipants(true)` und `CasLifecycleRuntime:IsOnStationAt` eine reentranzsichere, deduplizierte C2-Fire-Continuation anhand des bestehenden MissionDemand-/Functional-ARTY-Owners entwickeln. Vor neuem Dispatch Zielberechtigung, Munition, CAS-AO-Status und vorhandene M1083-Rearm-Reservierung pruefen; bei `NO_PHYSICAL_SHOT_EVIDENCE` nicht blind wiederholen. Anschliessend den bestehenden M1083-Rearm-/CampaignState- und Ground-/Air-Transportpfad anschliessen. Die dokumentierten akzeptierten Stage-3-A2-Lifecycles bleiben Reuse-Baseline, nicht zur Produktion zu kopierende Testfixtures.
+
+**Chatwechsel:** Zuerst `AGENTS.md`, `docs/00-project-governance.md`, `docs/26-moose-first-development-policy.md`, die `BINDING`-Implementierungsmatrix und dieses Handoff (insb. Abschnitte 12–17) lesen. Aktuellen GitHub-HEAD vor jeder Arbeit erneut abfragen; neue Commits, Tests und **nur reale** Hashes hier fortschreiben. Kein CODEX, keine eigenmaechtige `.miz`-Mutation.
