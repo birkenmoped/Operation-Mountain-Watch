@@ -137,18 +137,17 @@ runDeferred()
 eq(#fireCalls,5,"retry only after external event")
 eq(fireCalls[5].key,"INSTALLATION_ATTACK_C2_ARTY_CYCLE_5","failed request key not recycled")
 
--- Closed incident and extinguished target picture are terminal until a new
--- authorized incident, not a reason for a self-owned world scan.
+-- Perimeter closure alone does not invalidate living C2 participants;
+-- the Base adapter independently checks the strictly scoped ARTY exception.
 local demand6={incidentId=incident.incidentId,demandId="CYCLE-5",supportType="ARTY"}
 incident.closed=true
 runtime:OnFinished(demand6,context,entry,"CEASE_FIRE")
 runDeferred()
-eq(runtime:GetWaiting(incident.incidentId),nil,"closed incident removed")
-eq(#fireCalls,5,"closed incident does not create fire")
-incident.closed=false
+eq(runtime:GetWaiting(incident.incidentId),nil,"closed incident with living target continues")
+eq(#fireCalls,6,"closed incident still has C2-qualified live target")
 targets={}
 runtime:OnFinished({incidentId=incident.incidentId,demandId="NO_TARGET",supportType="ARTY"},context,entry,"CEASE_FIRE")
 runDeferred()
-eq(#fireCalls,5,"no C2 participants means no fire")
+eq(#fireCalls,6,"no C2 participants means no fire")
 
 print("PASS test_fire_support_strategic_resupply_fire_continuation")
