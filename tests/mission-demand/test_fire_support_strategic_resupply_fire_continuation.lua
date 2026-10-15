@@ -65,6 +65,7 @@ local runtime = Continuation.New({
   log = function(message) logged[#logged + 1]=message end,
 })
 
+incident.context={physicalTargetGroup=targets[1]}
 local context = {incident=incident}
 local entry = {
   released=true, physicalShots=4,
@@ -79,6 +80,7 @@ eq(#fireCalls,0,"no synchronous reentrant fire")
 runDeferred()
 eq(#fireCalls,1,"fire mission continued after callback unwind")
 eq(fireCalls[1].key,"INSTALLATION_ATTACK_C2_ARTY_CYCLE_1","unique cycle key")
+eq(fireCalls[1].target,"RED-B","initial engaged source group is rotated out")
 eq(runtime:GetWaiting(incident.incidentId),nil,"successful dispatch clears pending")
 
 local demand2={incidentId=incident.incidentId,demandId="CYCLE-1",supportType="ARTY"}
@@ -96,7 +98,7 @@ runtime:OnCasEvidence()
 runDeferred()
 eq(#fireCalls,2,"CAS egress permits next cycle")
 eq(fireCalls[2].key,"INSTALLATION_ATTACK_C2_ARTY_CYCLE_2","cycle increments")
-eq(fireCalls[2].target,"RED-B","C2 target alternates among live participants")
+eq(fireCalls[2].target,"RED-A","C2 target alternates among live participants")
 eq(fireCalls[3] and fireCalls[3].target,nil,"no third cycle before rearm")
 
 -- With physical ammo insufficient, the existing M1083 service is requested
@@ -115,7 +117,7 @@ runtime:OnRearmed("HONAKER")
 runDeferred()
 eq(#fireCalls,3,"fire resumes after confirmed rearm")
 eq(fireCalls[3].key,"INSTALLATION_ATTACK_C2_ARTY_CYCLE_3","rearm continuation key")
-eq(fireCalls[3].target,"RED-A","next C2 source target after rearm")
+eq(fireCalls[3].target,"RED-B","next C2 source target after rearm")
 
 local demand4={incidentId=incident.incidentId,demandId="NO_SHOT",supportType="ARTY"}
 runtime:OnFinished(demand4,context,{released=true,physicalShots=0,owner=entry.owner},"NO_PHYSICAL_SHOT_EVIDENCE")
