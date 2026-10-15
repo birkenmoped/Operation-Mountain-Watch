@@ -778,3 +778,25 @@ Die GitHub-`MissionDemand validation` wurde fuer den zusammengefuehrten C2-Conti
 **Dieses Paket nicht als DCS VALIDATED interpretieren.** Zuerst finalen CI-Status und ein gemeinsames lokales Base39/Bootstrap7-Build-Readback sichern. Dann genau **einen** DCS-End-to-End-Lauf mit mindestens zwei ARTY-Fire-Missions, CAS-On-Station-Sperre und M1083-Rearm an Wright/Honaker/Fortress validieren; Fehler mit akzeptierter A10-/Stage3-Historie vergleichen und nicht parallel neue MOOSE-FSMs erfinden. Fuer Strategic Resupply verbleibt `OMW_FSSR_RESUPPLY_READY=0` ohne authentische Transport-/STORAGE-Deskriptoren; diese bilden das nachfolgende **separate grosse Arbeitspaket**.
 
 Ein neuer Chat liest zuerst Governance, Accepted Implementation Matrix und die Abschnitte **12 bis 18** dieser Datei, synchronisiert den aktuellen Remote-HEAD und erhaelt damit die vollstaendige Source-/Provenienz-, Entscheidungs-, Test- und To-do-Historie. Das untracked `mission/fire-support-strategic-resupply/` niemals bereinigen; keine CODEX-Anweisungen.
+
+
+### 18.8 Finaler GitHub-CI- und Source-Review-Readback
+
+**GitHub Actions ist fuer die neu integrierte Produktionsgrenze GRUEN.** Die GitHub-App meldete zum Source-/CI-Commit `e5c53460a13b307a27f8f728e9722ac3bc7f9fcd`:
+- `MissionDemand validation` = **success**, Run-ID `38799969972`.
+- `Documentation validation` = **success**, Run-ID `38799969921`.
+- Die MissionDemand-Suite enthaelt inzwischen auch die neuen Tests fuer C2-Fire-Continuation sowie den bewusst engen ARTY-Closed-Incident-Vertrag.
+- Die CI-Workflow-Datei `.github/workflows/mission-demand-validation.yml` wurde so ergaenzt, dass `OMW_FireSupStratResupply_ArtySelectionRuntime.lua`, `OMW_FireSupStratResupply_FireContinuation.lua` und `OMW_FireSupStratResupply_ProductionBootstrap.lua` ausdruecklich mit `luac5.4 -p` auf Syntax geprueft werden.
+- Die bereits zuvor beobachtete CI-Regression durch den stale Bootstrap-Schema-4-String ist auf Schema 7 korrigiert.
+
+**Abschliessende Regression-Massnahmen innerhalb desselben grossen Pakets:**
+- Die C2-Rotation behandelt neben spaeteren Fire-Missions auch die urspruengliche physische Initiatorgruppe als vorheriges Ziel; bei mehreren lebenden Zielen wird nicht ohne Grund stets dieselbe Gruppe erneut ausgewählt.
+- Eine erfolgreich als `OnAfterRearmed` bestaetigte, aber weiterhin unzureichende physische Munition loest nicht ungeprueft eine zweite M1083-Transaktion aus.
+- Die Revaluation aus CAS-Evidence beschraenkt sich auf bedeutungsvolle `CAS_CONTROLLED_RELEASE`, `CAS_HOME_LANDED`, `CAS_LEGION_ASSET_RETURNED`, `CAS_LIFECYCLE_COMPLETE` und `CAS_LIFECYCLE_FAILED`-Events; **keine** sensorbedingte 5-Sekunden-ARTY-Retry-Queue.
+- Ein freigegebenes MOOSE-ARTY-Asset kann wartende andere Incidents einmalig erneut bewerten lassen. Kein globales Polling.
+- Der Bootstrap-7-PowerShell-Builder wurde nach Source-Review repariert: `$policy.Contains(...)` erhaelt exakt **einen** Ressourcen-Policy-Marker; `FIRE-CONTINUATION-2` wird separat im Bundle geprueft.
+- Beide gebuendelten Files und beide Builder wurden gegen die aktuell finalen Source-Schemata abglichen: `Production Base 39` erwartet `BASE-5`, `Production Bootstrap 7` bundelt `FireContinuation-2` mit `Bootstrap-7`.
+
+**Verbleibende, aus der CI NICHT ableitbare Evidenz:** die zwei realen Windows-PowerShell-Builds und Hashes auf identischem aktuellen Source-Commit; Existenz der vier A10-M1083-Zonen und des Templates in der aktuell gespeicherten Production-`.miz`; realer MOOSE-Dispatch, Ziel-/CAS-/Shot-/Rearm-Verlauf und Return-to-Stock in DCS. Nichts davon als `VALIDATED` behaupten. Strategic Ground-/Air-Resupply verbleibt anschliessendes grosses Paket, keine neue Mock-STORAGE-Policy.
+
+**Fortsetzungssatz fuer einen neuen Chat:** Lies Governance, Accepted-Lifecycle-Matrix und dieses Handoff Abschnitte 12–18 vollstaendig. Das Source-Paket ist mit GitHub-CI `success` fuer oben genannten Commit abgesichert; fordere nur einen gemeinsamen Base-39/Bootstrap-7-Windows-Build/Hash-Readback an, vergleiche dessen reale Ausgabe, bereite dann die qualifizierte Full-Response-DCS-Acceptance vor. Keine einzelnen Zwischen-Builds oder Dokumentations-Pulls pro Callback; Dokumentation weiterhin bei jedem fachlich zusammenhaengenden Schritt im selben Handoff fortfuehren.
