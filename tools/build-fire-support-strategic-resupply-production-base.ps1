@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-35'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-36'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -76,7 +76,7 @@ foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-REAL-ASSET-REGISTRY-1',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-4',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-5',
@@ -201,7 +201,9 @@ if (-not $externalSupportSchema.Success) { throw 'ExternalSupportRuntime source 
 Write-Host "ExternalSupportRuntimeSchema: $($externalSupportSchema.Groups[1].Value)"
 Write-Host 'ArtyRealAssetRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-REAL-ASSET-REGISTRY-1'
 Write-Host 'CasMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3'
-Write-Host 'CasLifecycleRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1'
+$casLifecycleSchema = [regex]::Match($sources.CasLifecycleRuntime, 'Runtime\.SchemaVersion\s*=\s*"([^"]+)"')
+if (-not $casLifecycleSchema.Success) { throw 'CasLifecycleRuntime source schema not readable.' }
+Write-Host "CasLifecycleRuntimeSchema: $($casLifecycleSchema.Groups[1].Value)"
 Write-Host 'CasReleasePolicySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1'
 Write-Host 'StorageTransportFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-STORAGE-TRANSPORT-FACTORY-2'
 Write-Host 'TransportSettlementSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-SETTLEMENT-3'
