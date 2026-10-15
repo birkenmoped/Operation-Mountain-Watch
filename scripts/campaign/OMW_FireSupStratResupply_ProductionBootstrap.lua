@@ -8,7 +8,7 @@
 
 local Bootstrap = {}
 
-Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-5"
+Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-6"
 
 local TAG = "[OMW][FireSupStratResupply.Production]"
 local QRF_TEMPLATE = "TPL_BLUE_GND_QRF_MIXED_6"
@@ -72,6 +72,7 @@ local state = {
   artyOwners = {},
   localRearmServices = {},
   localRearmConfig = nil,
+  fireContinuation = nil,
   campaignContext = nil,
   siteRegistry = nil,
   airwingCount = 0,
@@ -348,6 +349,7 @@ local function createLocalRearmService(definition, group, arty)
     onRearmed = function(context)
       log("LOCAL_ARTY_REARMED assetId=" .. definition.id
         .. " transactionId=" .. tostring(context and context.transactionId))
+      if state.fireContinuation then state.fireContinuation:OnRearmed(definition.id) end
     end,
     onSupportReturned = function(context)
       log("LOCAL_ARTY_M1083_RETURNED assetId=" .. definition.id
@@ -400,9 +402,51 @@ local function resolvePhysicalTarget(context, label)
   return coordinate, nil
 end
 
+local function qualifiedParticipants(context)
+  local incident = context and context.incident or nil
+  local incidentContext = incident and incident.context or nil
+  local coordinator = incidentContext and incidentContext.sourceIncidentCoordinator or nil
+  if not coordinator or type(coordinator.GetParticipants) ~= "function" then return {} end
+  local candidates = {}
+  for _, group in ipairs(coordinator:GetParticipants(true) or {}) do
+    if group and type(group.IsAlive) == "function" and group:IsAlive() == true
+      and type(group.GetCoalition) == "function" and group:GetCoalition() == coalition.side.RED
+      and type(group.GetCoordinate) == "function"
+      and type(group.GetName) == "function"
+      and type(group.HasAttribute) == "function"
+      and group:HasAttribute("Ground Units", false) then
+      candidates[#candidates + 1] = group
+    end
+  end
+  table.sort(candidates, function(a, b) return a:GetName() < b:GetName() end)
+  return candidates
+end
+
+local function physicalCasPresence(coordinate)
+  local external = state.runtime and state.runtime.externalSupportRuntime or nil
+  local casLifecycle = external and external.casLifecycle or nil
+  if not casLifecycle or type(casLifecycle.IsOnStationAt) ~= "function" then
+    return nil, "CAS_OCCUPANCY_RUNTIME_UNAVAILABLE"
+  end
+  return casLifecycle:IsOnStationAt(coordinate)
+end
+
 local function resolveArtyTarget(_, context)
-  local coordinate, reason = resolvePhysicalTarget(context, "ARTY")
-  if not coordinate then return nil, reason end
+  local candidate = context and context.requestContext and context.requestContext.sourceTargetGroup
+  local coordinate = nil
+  if candidate then
+    local allowed = false
+    for _, group in ipairs(qualifiedParticipants(context)) do
+      if group == candidate then allowed = true; break end
+    end
+    if not allowed then return nil, "ARTY_C2_TARGET_NO_LONGER_AUTHORIZED" end
+    coordinate = candidate:GetCoordinate()
+  else
+    coordinate = resolvePhysicalTarget(context, "ARTY")
+  end
+  if not coordinate then return nil, "ARTY_TARGET_COORDINATE_UNAVAILABLE" end
+  local occupied, reason = physicalCasPresence(coordinate)
+  if occupied ~= false then return nil, reason or "CAS_AO_NOT_CLEARED_FOR_ARTY" end
   return { coordinate = coordinate, shots = 4, radiusM = 50 }, nil
 end
 
@@ -433,6 +477,7 @@ local function resolveCasGeometry(demand, context)
 end
 
 local function onCasEvidence(fields)
+  if state.fireContinuation then state.fireContinuation:OnCasEvidence(fields) end
   log(
     "CAS_EVIDENCE event=" .. tostring(fields and fields.event)
       .. " demandId=" .. tostring(fields and fields.demandId)
@@ -654,7 +699,16 @@ local function startInternal(config)
       artyRequiredAssetsMax = 1,
       artyFunctionalSelection = {
         resolveFunctionalArty = registry:GetResolver(),
-        onFireMissionFinished = config.onArtyFireMissionFinished,
+        onFireMissionFinished = function(demand, context, entry, reason)
+          if config.onArtyFireMissionFinished then
+            local ok, err = pcall(config.onArtyFireMissionFinished, demand, context, entry, reason)
+            if not ok then log("C2_EXTERNAL_CALLBACK_FAILED demandId=" .. tostring(demand and demand.demandId)
+              .. " reason=" .. tostring(err)) end
+          end
+          if state.fireContinuation then
+            state.fireContinuation:OnFinished(demand, context, entry, reason)
+          end
+        end,
       },
       casRequiredAssetsMin = 1,
       casRequiredAssetsMax = 1,
@@ -678,6 +732,49 @@ local function startInternal(config)
   state.artyRegistry = registry
   state.airwingCount = airwingCount
   state.resupplyConfigured = resupplyConfigured
+
+  state.fireContinuation = FireContinuation.New({
+    getIncident = function(incidentId)
+      return state.base and state.base.incidents[incidentId] or nil
+    end,
+    getCandidates = qualifiedParticipants,
+    resolveCasPresence = physicalCasPresence,
+    getPhysicalAmmo = function(entry)
+      local arty = entry.owner and entry.owner.arty
+      if not arty or type(arty.GetAmmo) ~= "function" then return nil end
+      return arty:GetAmmo(false)
+    end,
+    requestFire = function(incident, oldContext, targetGroup, requestKey, priorDemand)
+      return state.base:RequestIncidentSupport(incident.incidentId, "ARTY", {
+        requestKey = requestKey,
+        priority = priorDemand.priority,
+        cancelWhenIncidentClosed = false,
+        context = {
+          activation = "C2_CONTINUATION",
+          source = "INSTALLATION_ATTACK_INCIDENT",
+          sourceTargetGroup = targetGroup,
+        },
+      })
+    end,
+    requestRearm = function(entry, demand)
+      local assetId = entry.owner and entry.owner.realAssetId
+      local row = assetId and state.localRearmConfig and state.localRearmConfig[assetId]
+      if not row or type(row.quantity) ~= "number" or row.quantity <= 0 then
+        return false, "LOCAL_REARM_RESOURCE_QUANTITY_NOT_CONFIGURED"
+      end
+      local request, created, reason = Bootstrap.RequestLocalArtyRearm(assetId, {
+        transactionId = "FSSR:LOCAL_REARM:" .. assetId .. ":" .. demand.demandId,
+        missionDemandId = demand.demandId,
+        quantity = row.quantity,
+        alias = row.alias,
+        onRoad = row.onRoad == true,
+        rearmingDistance = row.rearmingDistance or 100,
+        supportReturnRadiusM = row.supportReturnRadiusM or 100,
+      })
+      return request ~= nil and (created == true or created == false), reason
+    end,
+    log = log,
+  })
   state.commanderStarted = false
   state.perimetersStarted = false
 
