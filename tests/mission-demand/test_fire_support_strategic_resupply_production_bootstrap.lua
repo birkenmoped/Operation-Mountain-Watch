@@ -12,7 +12,7 @@ end
 local source=read("scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua")
 
 local required={
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-6',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-7',
   'OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED',
   'requireUserFlag("OMW_WAREHOUSE_READY", 1)',
   'requireUserFlag("OMW_GROUND_READY", 1)',
