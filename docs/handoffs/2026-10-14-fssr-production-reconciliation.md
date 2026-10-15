@@ -694,3 +694,87 @@ Der Builder endete erfolgreich. Der nachgelagerte Markercheck `ARTY-SELECTION-RU
 **Naechster fachlicher Auftrag:** Mit dem vorhandenen `onArtyFireMissionFinished`-Hook, dem neuen Shot-Evidence-Entry `physicalShots`, `sourceIncidentCoordinator:GetParticipants(true)` und `CasLifecycleRuntime:IsOnStationAt` eine reentranzsichere, deduplizierte C2-Fire-Continuation anhand des bestehenden MissionDemand-/Functional-ARTY-Owners entwickeln. Vor neuem Dispatch Zielberechtigung, Munition, CAS-AO-Status und vorhandene M1083-Rearm-Reservierung pruefen; bei `NO_PHYSICAL_SHOT_EVIDENCE` nicht blind wiederholen. Anschliessend den bestehenden M1083-Rearm-/CampaignState- und Ground-/Air-Transportpfad anschliessen. Die dokumentierten akzeptierten Stage-3-A2-Lifecycles bleiben Reuse-Baseline, nicht zur Produktion zu kopierende Testfixtures.
 
 **Chatwechsel:** Zuerst `AGENTS.md`, `docs/00-project-governance.md`, `docs/26-moose-first-development-policy.md`, die `BINDING`-Implementierungsmatrix und dieses Handoff (insb. Abschnitte 12–17) lesen. Aktuellen GitHub-HEAD vor jeder Arbeit erneut abfragen; neue Commits, Tests und **nur reale** Hashes hier fortschreiben. Kein CODEX, keine eigenmaechtige `.miz`-Mutation.
+
+
+## 18. Groesseres Arbeitspaket: Full Fire-Support Response / C2-Continuation + M1083 (15.10.2026)
+
+### 18.1 Arbeitsauftrag, Scope und vorherige reale Evidenz
+
+Der Projektinhaber hat nach den kleinteiligen Base-35/37/38-Zyklen ausdruecklich die **zusammenhaengende Implementierung groesserer Funktionspakete** angeordnet. Dieser Abschnitt dokumentiert das komplette neue Fire-Support-Paket. Zwischenkommits dienen der GitHub-Entwicklung und verlangen **keinen** einzelnen Owner-Build; danach werden beide Production-Bundles **einmal zusammen** mit identischem Git-HEAD gebaut und gehasht. Die Uebergabeakte ist wie angeordnet jederzeit fortzufuehren und vollstaendig.
+
+Die letzte vom Projektinhaber lokal bestaetigte Dokumentations-Synchronisierung vor diesem Paket war `b8b77292443e96c22c9186c8c61f3457eb135d05` mit Handoff-SHA-256 `A8F5F40FE90BBBAD88E22C1DBE13FA57D0B1C669A649EC2F2C04BCDCB5CB07EF`. Letzter physischer **Base**-Build war Base 38 aus Source-Commit `6b24e42c257d783c2bcb9ae68e4564b08ecb7340`, Bundle-SHA-256 `786A37491F1D21EC7763162DB691E7F25116B8308EE9C8A0192EB86204207019`. Diese sind **historisch** und duerfen nicht als Ergebnisse der neuen Base 39 / Bootstrap 7 verwendet werden.
+
+### 18.2 End-to-End-Source-Design – Bestandserhaltung statt Neuentwicklung
+
+```text
+GroundInstallationAttackIncident / OPSZONE
+  -> sourceIncidentCoordinator:GetParticipants(true)
+  -> Incident C2 CAS + ARTY als unabhaengige Requirements
+  -> MOOSE COMMANDER:CanMission/RecruitAssetsForMission
+  -> bestehender einziger ARTY:AssignTargetCoord / OnAfterOpenFire
+  -> MOOSE ARTY:OnEventShot / OnAfterCeaseFire
+  -> bestätigtes physicalShots > 0, selection already released
+  -> eventgebundene einmalige MOOSE SCHEDULER-Deferral (1 s)
+  -> lebende autorisierte RED-Ground-Gruppen, neuer Request-Key
+  -> CasLifecycleRuntime:IsOnStationAt(targetCoordinate) == false
+  -> ARTY:GetAmmo(false) >= acceptedShots
+  -> Base:RequestIncidentSupport(incidentId, "ARTY", C2 continuation)
+  -> MOOSE erneute Providerwahl, bestehender Functional ARTY
+  -> weitere kurze begrenzte Salve
+ODER
+  -> physische Ammo unter acceptedShots
+  -> bestehender FixedFireSupportAmmoRearmService:Request
+  -> MOOSE ARTY:Rearm (startArty=false)
+  -> CampaignState GROUND_AMMO_PACKAGE qty=1
+  -> OnAfterRearmed, ReturnToStock
+  -> erneute C2-Entscheidung bei lebendem Ziel und freiem CAS-AO
+```
+
+Keine eigene RED-World-Erkennung, keine neue operative Asset-Preselection, kein zweiter Functional ARTY, kein AUFTRAG-FireAtPoint-Owner, kein neuer Warehouse-/CampaignState-Settlementpfad, kein eigener periodischer Scheduler. Bereits laufende ARTY-Feuerauftraege werden bei CAS-Ankunft **nicht** kuenstlich abgebrochen.
+
+### 18.3 Dateien und Produktivgrenzen
+
+- **NEU:** `scripts/campaign/OMW_FireSupStratResupply_FireContinuation.lua`, Schema `OMW-FSSR-FIRE-CONTINUATION-2`. Reine C2-Composition, kein neuer Fire-Control-Owner. Nimmt nur `CEASE_FIRE` mit `entry.physicalShots > 0` und nachweisbar freigegebener MOOSE-Selection an. Dedupliziert nach Demand-ID, stellt den Folgeschritt mit **einem** gepinnten MOOSE `SCHEDULER:New(nil,callback,{},1)`-One-Shot hinter den Original-`OnAfterCeaseFire`-Callback. Bewertet bekannte lebende C2-Ground-Teilnehmer, CAS-Occupancy (false/true/unknown), physische Ammo, bestehenden Rearm-Service und neue Request-Keys. Keine spin-/polling-/frame-loop; Reevaluation nur bei nachfolgenden CAS-/Rearm-Events. Bei No-Shot/Dead/Cancel kein automatisches Retarget.
+- **GEAENDERT:** `scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua`, Schema 7. Verbindet `onArtyFireMissionFinished` mit der neuen Continuation, leitet CAS-Evidence und `onRearmed` weiter, nutzt `sourceIncidentCoordinator:GetParticipants(true)` als **einzige** taktische Zielquelle, validiert C2-Targets im selektierten `resolveArtyTarget` und verweigert jede **neue** ARTY-Targetvergabe bei `CAS:IsOnStationAt(coordinate) ~= false`. Die externe `config.onArtyFireMissionFinished` bleibt ein gekapselter Beobachter; technische Callbackfehler werden geloggt und unterbrechen nicht den neuen C2-Listener.
+- **GEAENDERT:** `scripts/campaign/OMW_FireSupStratResupply_Base.lua`, Schema 5. Nach `incident.closed` bleibt **ausschliesslich** ein explizit qualifizierter ARTY-Folgeauftrag moeglich: `continuationAfterIncidentClose=true`, `cancelWhenIncidentClosed=false` sowie `context.sourceTargetGroup` verpflichtend. Die eigentliche Lebend-/Feind-/Koordinatenvalidierung liegt weiterhin beim source-autoritativen `resolveArtyTarget`; initiales ARTY, CAS, Guard/QRF bleiben bei geschlossenem Incident gesperrt. Somit beendet allein ein freier Security-Perimeter keine weiterhin C2-autorisierte Fire-Unterstuetzung. Kein generisches Wiedereroeffnen des Incidents.
+- **GEAENDERT:** `tools/build-fire-support-strategic-resupply-production-base.ps1` Version 39; verlangt `BASE-5`. `tools/build-fire-support-strategic-resupply-production-bootstrap.ps1` Version 7; bundelt neu `FireContinuation` vor `ProductionBootstrap` und verlangt `FIRE-CONTINUATION-2`.
+- **NEU:** `tests/mission-demand/test_fire_support_strategic_resupply_fire_continuation.lua` sowie `test_fire_support_strategic_resupply_closed_arty_continuation.lua`; registriert in `tests/mission-demand/run.lua`. `test_fire_support_strategic_resupply_production_bootstrap.lua` prueft die neue Schema-/Integrationsgrenze und den A10-Default.
+
+### 18.4 A10-Rearm-Konfiguration produktiv wiederverwendet
+
+Die Produktion verwendet jetzt, solange `config.localArtyRearm` **nicht explizit anders** konfiguriert ist, die vorgefundene in DCS A10 verwendete M1083-Grundlage fuer alle vier Batterien:
+
+| ARTY-ID | Standort und CampaignState-Knoten | vorhandene MOOSE RESUPPLY-Zone |
+|---|---|---|
+| `BOSTICK` | `FOB_BOSTICK`, `GROUND_NODE_BOSTICK` | `ZON_BLUE_GND_BOSTICK_RESUPPLY` |
+| `WRIGHT` | `FOB_WRIGHT`, `GROUND_NODE_WRIGHT` | `ZON_BLUE_GND_WRIGHT_RESUPPLY` |
+| `FORTRESS` | `COP_FORTRESS`, `GROUND_NODE_FORTRESS` | `ZON_BLUE_GND_FORTRESS_RESUPPLY` |
+| `HONAKER` | `COP_HONAKER`, `GROUND_NODE_HONAKER` | `ZON_BLUE_GND_HONAKER_RESUPPLY` |
+
+Je Standort: bestaetigtes A10-Template `TPL_BLUE_GND_SUP_M1083`, ein Support-Asset, `GROUND_AMMO_PACKAGE` Menge **1** pro Rearm, `500 m` Spawnzonengrenze, `100 m` Rearm-/Return-Grenze, `onRoad=false`; dedizierte MOOSE-PLATOON-/BRIGADE-IDs pro Standort. Die existierenden `FixedFireSupportAmmoSupport`, `GroundSupportMaterializer`, `GroundAmmoRearmAdapter`, `FixedFireSupportAmmoRearmService` bleiben **unveraendert** und besitzen Warehouse-Materialisierung, ARTY:Rearm, CampaignState Settlement und Return-to-stock.
+
+**Fail-closed ME-Gate:** Die im konkreten Production-`.miz` erwarteten vier Zonen und das M1083-Late-Activation-Template werden beim Start in der jeweiligen MOOSE-Missionsumgebung nachgewiesen. Fehlt ein Objekt, faellt `ProductionBootstrap.Start` mit einem **konkreten** Fehler zurueck; keine unsichtbaren Spawns oder neue `.miz`-Objekte. Die historische A10-`.miz`-Evidenz beweist noch nicht, dass alle Objekte in der zuletzt gespeicherten Production-`.miz` enthalten sind. `config.localArtyRearm=false` ist als ausdrueckliches Disable/Notfall-Fail-Closed moeglich; ein explizites Table ersetzt die Defaults und muss vollstaendig spezifiziert sein. Keine auto-konstruierte strategische Ground-/Air-Resupply-STORAGE-Fixture.
+
+### 18.5 Source-/MOOSE-Recherche und Acceptance-Invarianten
+
+**Bindende Vorlagen:** `AGENTS.md`, `docs/00-project-governance.md`, `docs/26-moose-first-development-policy.md`, `docs/moose/ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md`, `docs/moose/FIRE-SUPPORT-ACCEPTED-IMPLEMENTATION-MATRIX.md`, `mission/tests/fire-support-strategic-resupply-production-base-runtime/src/10-production-real-arty-selection-rearm-acceptance.lua` sowie `mission/tests/stage3-honaker-wright-full-response/src/a2/04-fire-support.lua`.
+
+**Source-confirmed gepinnte `Moose.lua` 2.9.18:**
+- `SCHEDULER:New(MasterObject, SchedulerFunction, SchedulerArguments, Start, Repeat, RandomizeFactor, Stop)` um Zeile 13174: Einmaliges Start=1, kein Repeat; benutzte Hook-Initialisierung bestaetigt.
+- `ARTY:OnEventShot(EventData)` um Zeile 97517; bestehender Functional ARTY zaehlt `IniGroupName` und `currentTarget`.
+- `ARTY:GetAmmo(display)` um Zeile 99163: reale physische MOOSE-Munitionsabfrage, keine CampaignState-Simulation.
+- `ZONE_BASE:IsCoordinateInZone`, `FLIGHTGROUP/OPSGROUP:GetCoordinate`: CAS-AO-Abfrage ist aus Abschnitt 13 source-reviewed.
+
+**Offene Risiken / DCS-Gates:** unbestaetigtes ME-Objektinventar der Production-Mission (vier Zonen + Template); MOOSE-Fire-CeasFire-Callback-Reihenfolge; physische ammo-Grenzwerte, M1083 Materialisierung und Rueckkehr fuer jede Batterie; C2-Target-/Range-Abweisung und parallele MOOSE-Provider-Bindungen; Interaktion mehrerer gleichzeitiger CAS-AOs; Kampagnenrestart- und Asset-Verlust. Insbesondere prueft die Fortsetzung vor erneuter Rekrutierung konservativ den physischen Ammo-Stand der **zuletzt feuernden** Batterie; sie wahlt **keine** andere Batterie, wenn diese Ammo fehlt. Dies bewahrt MOOSE-Auswahlautoritaet, kann aber die volle dynamische Provider-Ausnutzung bis zur Rearm-Reconciliation einschraenken. Kein falscher Full-DCS-PASS.
+
+### 18.6 CI und gemeinsame Owner-Verifikation
+
+Die GitHub-`MissionDemand validation` wurde fuer den zusammengefuehrten C2-Continuation-Test in `tests/mission-demand/run.lua` aktiviert. Ein vorgefundenes **altes** Failure `production bootstrap missing ...BOOTSTRAP-4` entstand durch einen nicht nachgefuehrten Contract-Test und wurde auf das neue Schema aktualisiert. Fuer einen vorlaeufigen Source-Stand der Paketentwicklung meldete die GitHub-CI **PASS** fuer die gesamte MissionDemand-Suite, einschliesslich `test_fire_support_strategic_resupply_fire_continuation`; die finalen End-Commits und ihr jeweiliger Workflow-Status sind separat zu lesen. Es werden **nur** konkret angezeigte erfolgreiche Runs als CI-PASS bezeichnet; CI ersetzt keinen DCS-Test.
+
+**Naechster lokaler Owner-Schritt, erst nach finalem Remote-Commit:** ein einziger zusammenhaengender PowerShell-Block `git pull --ff-only` -> HEAD-Pruefung -> **beide** Builder (Base 39 + Bootstrap 7) -> Markerchecks -> SHA-256 **beider** erzeugten Bundles -> SHA-256 dieses Handoffs -> `git status --short`. Keine lokale `.miz`-Mutation durch die Builder. Output samt Hashes aus der wirklichen Konsole zurueckgeben. Vorbereitete DCS-Acceptance erst danach, mit korrigiertem Missionseditor-Skript-Paar und exaktem `.miz`-Hash.
+
+### 18.7 Naechster unmittelbarer Auftrag / Chatwechsel
+
+**Dieses Paket nicht als DCS VALIDATED interpretieren.** Zuerst finalen CI-Status und ein gemeinsames lokales Base39/Bootstrap7-Build-Readback sichern. Dann genau **einen** DCS-End-to-End-Lauf mit mindestens zwei ARTY-Fire-Missions, CAS-On-Station-Sperre und M1083-Rearm an Wright/Honaker/Fortress validieren; Fehler mit akzeptierter A10-/Stage3-Historie vergleichen und nicht parallel neue MOOSE-FSMs erfinden. Fuer Strategic Resupply verbleibt `OMW_FSSR_RESUPPLY_READY=0` ohne authentische Transport-/STORAGE-Deskriptoren; diese bilden das nachfolgende **separate grosse Arbeitspaket**.
+
+Ein neuer Chat liest zuerst Governance, Accepted Implementation Matrix und die Abschnitte **12 bis 18** dieser Datei, synchronisiert den aktuellen Remote-HEAD und erhaelt damit die vollstaendige Source-/Provenienz-, Entscheidungs-, Test- und To-do-Historie. Das untracked `mission/fire-support-strategic-resupply/` niemals bereinigen; keine CODEX-Anweisungen.
