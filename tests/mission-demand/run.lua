@@ -43,6 +43,7 @@ dofile("tests/mission-demand/test_fire_support_strategic_resupply_cas_lifecycle_
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_cas_harness_boundary.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_external_support_runtime.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_fire_continuation.lua")
+dofile("tests/mission-demand/test_fire_support_strategic_resupply_closed_arty_continuation.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_production_bootstrap.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_storage_transport_factory.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_transport_runtime.lua")
