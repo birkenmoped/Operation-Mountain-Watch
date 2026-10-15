@@ -20,7 +20,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-2"
 
 local TAG = "[OMW][FireSupStratResupply.CasLifecycleRuntime]"
 
@@ -704,6 +704,43 @@ function Instance:Dispatch(demand, context)
   })
 
   return handle, created, reason
+end
+
+-- Read-only physical CAS presence query for external C2 deconfliction.
+-- An unknown flight position is NOT a clearance to start an ARTY mission.
+-- This neither selects targets nor changes MOOSE missions or aircraft routes.
+function Instance:IsOnStationAt(coordinate)
+  if type(coordinate) ~= "table" then fail("coordinate is required") end
+  local unknown = false
+  for _, entry in pairs(self.entries) do
+    if not entry.completed and not entry.releaseRequested and not entry.blocked then
+      local geometry = entry.mission and entry.mission._omwFssrCasGeometry
+      local zone = geometry and geometry.zone or nil
+      if not zone or type(zone.IsCoordinateInZone) ~= "function" then
+        unknown = true
+      elseif zone:IsCoordinateInZone(coordinate) then
+        if entry.flight then
+          if type(entry.flight.GetCoordinate) ~= "function" then
+            unknown = true
+          else
+            local flightCoordinate = entry.flight:GetCoordinate()
+            if not flightCoordinate then
+              unknown = true
+            elseif zone:IsCoordinateInZone(flightCoordinate) then
+              return true, "CAS_PHYSICALLY_IN_SHARED_AO", entry.demand.demandId
+            elseif entry.executing then
+              -- The selected flight is still airborne but not inside this AO.
+              -- Entry state alone is not physical ON STATION evidence.
+            end
+          end
+        elseif entry.executing then
+          unknown = true
+        end
+      end
+    end
+  end
+  if unknown then return nil, "CAS_AO_PRESENCE_UNRESOLVED" end
+  return false, "NO_CAS_PHYSICALLY_ON_STATION"
 end
 
 function Instance:GetState(demandId)
