@@ -547,3 +547,33 @@ Vor jedem weiteren Chatwechsel hier eintragen: Source-Branch, Remote-HEAD, geaen
 ### 13.1 Unmittelbare Uebergabeanweisung fuer den naechsten Chat
 
 Arbeite auf `agent/fire-support-strategic-resupply-production-bootstrap`, lies Abschnitt 12 **und Abschnitt 13** dieser Datei sowie Governance und Accepted Lifecycle Law. Ermittle den aktuellen Remote-HEAD vor jeder Aenderung. Fuehre die Completion-Reconciliation nach der realen Builder-/Testausgabe fuer Base 36 fort, indem du zuerst den bereits genehmigten C2-Target- und `EVENTS.Shot`-Quellenvertrag mit dem neuen read-only CAS-AO-Belegungssignal kombinierst. Kein direktes `CeaseFire -> neuer ARTY-Dispatch` ohne Shot- und CAS-Beweis; vorhandene M1083-Rearm-Services weiterverwenden. Dokumentiere jeden Schritt hier mit Commit, Source, Tests, Hashes, Risiken, offenem Schritt und ggf. DCS-Provenienz. Kein CODEX, kein eigenmaechtiges `.miz`-Edit, keine erfundenen Tests.
+
+
+## 14. Base-36-Build-Fehler: reproduzierbarer Marker-Mismatch und Hotfix (15.10.2026)
+
+**Originalbefund aus der realen PowerShell des Projektinhabers** nach `git pull --ff-only` auf Remote-HEAD `884d8e7012c34558c6bd62df8f2dba66fe1591b9`:
+
+```text
+ExpectedCommit / ActualCommit:
+884d8e7012c34558c6bd62df8f2dba66fe1591b9
+
+BuilderVersion: geplant Production Base 36
+Bundle marker missing: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1
+PowerShell: FSSR Production Base build failed
+Post-error marker check:
+Missing Production Base marker: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-2
+Post-error Get-FileHash:
+0CB17F45D44870F58D944EAE8B8F68A95BEF55845F2083FA0B65240236467909
+Handoff SHA-256:
+BD2D9E593CE9BF88C7F5A87BF7FDC5088ED7608A12BB8F5CD26DDE165236184D
+git status --short:
+?? mission/fire-support-strategic-resupply/
+```
+
+**Einordnung:** Der Base-36-Builder akzeptierte in seinem **Source-Contract-Marker-Set** bereits `...CAS-LIFECYCLE-RUNTIME-2`, verlangte aber **weiter hinten im separaten Bundle-Marker-Set** weiterhin `...-1`. Das fuehrte nach Assembly und vor der finalen Ausgabe zu einem absichtlichen `throw`; kein neues Bundle wurde geschrieben. Der danach abgefragte SHA-256 war exakt der bereits bekannte **Base-35-Bundle-Hash**, also ein Altartefakt, **kein** fehlgeschlagener/teilweise erfolgreicher Base-36-Build. Das ausgegebene `PASS: CAS occupancy integration present in Base bundle` wurde vom Nutzer trotz vorheriger `throw`-Anweisungen manuell erreicht und ist in diesem Fehlerlauf **kein gueltiger PASS**. Die Source-Schemata selbst blieben `CAS-LIFECYCLE-RUNTIME-2`.
+
+**Korrektur:** `tools/build-fire-support-strategic-resupply-production-base.ps1` verlangt nun in **beiden** Marker-Listen `CAS-LIFECYCLE-RUNTIME-2`; der Builder wurde auf **Production Base 37** erhoeht. Kein CAS-Lifecycle-/ARTY-/M1083-Lua-Verhalten ist durch diesen Hotfix geaendert worden. Die Vollstaendigkeit der Build-Diagnostik wird weiterhin nach realem lokalen Durchlauf belegt, nicht vorab behauptet.
+
+**Verifikations-Gate:** Projektinhaber zieht den neuen Remote-HEAD und fuehrt **nur den Base-37-Builder** mit `powershell.exe -NoProfile -ExecutionPolicy Bypass -File` aus. Bei Build-Exitcode ungleich Null sofort Stop; keine Marker- oder Hash-Pruefung alter `dist`-Dateien als PASS interpretieren. Nach Erfolg: `CAS-LIFECYCLE-RUNTIME-2`, `IsOnStationAt`, `CAS_PHYSICALLY_IN_SHARED_AO`, `CAS_AO_PRESENCE_UNRESOLVED` im Bundle suchen und `Get-FileHash -Algorithm SHA256` neu aufzeichnen. Die lokal vorhandene untracked `mission/fire-support-strategic-resupply/`-Struktur **nicht bereinigen**.
+
+**Unveraendert ausstehend:** Lua-Unit-Tests und DCS-Acceptance fuer CAS-On-Station, ARTY-Continuation, M1083-Rearm und strategische Ground-/Air-Resupply. Dokumentations- und Source-Hotfix ist nicht gleich DCS-VALIDATED. Der naechste neue Chat muss **Abschnitt 12, 13 und 14** lesen; nach jedem weiteren Lauf die reale SHA-256-Provenienz und eventuelle Fehlversuche hier anfuegen.
