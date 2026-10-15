@@ -687,3 +687,18 @@ BRIGADE/WAREHOUSE materialization
 ~~~
 
 Diese Barriere ist eventgetrieben und verwendet keinen zusaetzlichen Scheduler.
+
+
+## Production Base 36 – read-only CAS-AO-Belegung (15.10.2026)
+
+Die `CasLifecycleRuntime` ergaenzt den lesenden Zugriff
+`IsOnStationAt(targetCoordinate)` zur spaeteren ARTY-C2-Deconfliction.
+Die Methode liest nur bereits vorhandene CAS-Missionen, die autoritative
+MOOSE-`ZONE`-Geometrie und die physische MOOSE-FLIGHGROUP-Koordinate.
+Sie erzeugt keine weiteren Ziele, Missionsauftraege, SCHEDULER oder
+einen parallelen CAS/ARTY-Lifecycle. `nil` bedeutet *CAS-Position
+unaufgeloest* und darf nicht als `false` interpretiert werden.
+Auch ein bereits eingeleiteter CAS-Release beweist keinen physischen
+Egress. Tests sowie DCS-Validation stehen aus. Der Base-Builder 36
+erwartet `CAS-LIFECYCLE-RUNTIME-2`; diese Schicht aktiviert noch
+keine automatische Folgefeuer- oder Rearm-Logik.
