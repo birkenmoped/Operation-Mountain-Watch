@@ -61,6 +61,44 @@ local FIXED_ASSETS = {
   },
 }
 
+-- Adopt the A10 DCS-accepted M1083 baseline; no new ME zones or stock policy.
+local LOCAL_REARM_A10 = {
+  BOSTICK = { zone = "ZON_BLUE_GND_BOSTICK_RESUPPLY", alias = "Bostick L118" },
+  WRIGHT = { zone = "ZON_BLUE_GND_WRIGHT_RESUPPLY", alias = "Wright L118" },
+  FORTRESS = { zone = "ZON_BLUE_GND_FORTRESS_RESUPPLY", alias = "Fortress L118" },
+  HONAKER = { zone = "ZON_BLUE_GND_HONAKER_RESUPPLY", alias = "Honaker 2B11" },
+}
+
+local function acceptedLocalRearmConfig(siteRegistry)
+  local result = {}
+  for _, definition in ipairs(FIXED_ASSETS) do
+    local accepted = LOCAL_REARM_A10[definition.id]
+    local site = siteRegistry.Sites[definition.siteId]
+    if not accepted or not site or type(site.campaignNodeId) ~= "string" then
+      fail("A10 local rearm site contract missing assetId=" .. definition.id)
+    end
+    result[definition.id] = {
+      nodeId = site.campaignNodeId,
+      supportZoneName = accepted.zone,
+      supportTemplateName = "TPL_BLUE_GND_SUP_M1083",
+      platoonName = "PLT_FSSR_PRODUCTION_REARM_" .. definition.id,
+      assignment = "OMW:PRODUCTION:" .. definition.id .. ":AMMO-SUPPORT",
+      carrierEntityId = "FSSR-PRODUCTION-" .. definition.id .. "-M1083",
+      alias = accepted.alias .. " FSSR",
+      quantity = 1,
+      stockCount = 1,
+      spawnZoneMaxDistanceM = 500,
+      priority = 20,
+      rearmingDistance = 100,
+      supportReturnRadiusM = 100,
+      onRoad = false,
+      returnCheckIntervalSec = 5,
+      returnTimeoutSec = 300,
+    }
+  end
+  return result
+end
+
 local state = {
   status = "LOADED",
   runtime = nil,
@@ -627,12 +665,27 @@ local function startInternal(config)
   if config.onArtyFireMissionFinished ~= nil and type(config.onArtyFireMissionFinished) ~= "function" then
     fail("config.onArtyFireMissionFinished must be a function when provided")
   end
-  if config.localArtyRearm ~= nil and type(config.localArtyRearm) ~= "table" then
-    fail("config.localArtyRearm must be a table when configured")
+  if config.localArtyRearm ~= nil and config.localArtyRearm ~= false
+    and type(config.localArtyRearm) ~= "table" then
+    fail("config.localArtyRearm must be a table, false or nil")
   end
-  state.localRearmConfig = config.localArtyRearm
+  state.localRearmConfig = config.localArtyRearm == false and nil
+    or (config.localArtyRearm or acceptedLocalRearmConfig(p.SiteRegistry))
   state.campaignContext = context
   state.siteRegistry = p.SiteRegistry
+  if state.localRearmConfig then
+    for assetId, row in pairs(state.localRearmConfig) do
+      if type(row) ~= "table" then fail("local rearm config must be a row assetId=" .. tostring(assetId)) end
+      if type(row.quantity) ~= "number" or row.quantity <= 0 then
+        fail("local rearm CampaignState quantity must be positive assetId=" .. tostring(assetId))
+      end
+      ensureTemplate(row.supportTemplateName, true)
+      if not ZONE:FindByName(row.supportZoneName) then
+        fail("local rearm A10 zone missing assetId=" .. tostring(assetId)
+          .. " name=" .. tostring(row.supportZoneName))
+      end
+    end
+  end
 
   if type(_DATABASE) ~= "table" or type(_DATABASE.PATHLINES) ~= "table" then
     fail("MOOSE PATHLINE registry is unavailable")
