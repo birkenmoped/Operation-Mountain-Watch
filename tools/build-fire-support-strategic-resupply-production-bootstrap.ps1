@@ -87,8 +87,7 @@ foreach ($forbidden in @(
   }
 }
 
-if (-not $policy.Contains('OMW-RESOURCE-DEMAND-POLICY-1',
-  'OMW-FSSR-FIRE-CONTINUATION-2')) {
+if (-not $policy.Contains('OMW-RESOURCE-DEMAND-POLICY-1')) {
   throw 'ResourceDemandPolicy schema marker missing.'
 }
 
