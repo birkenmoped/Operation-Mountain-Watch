@@ -12,7 +12,7 @@ end
 local source=read("scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua")
 
 local required={
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-4',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-6',
   'OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED',
   'requireUserFlag("OMW_WAREHOUSE_READY", 1)',
   'requireUserFlag("OMW_GROUND_READY", 1)',
@@ -33,6 +33,9 @@ local required={
   'WAITING_FOR_FIXED_FIRE_ASSETS',
   'FIXED_FIRE_READINESS_EVENT',
   'fixedFireMaterialized=true',
+  'FireContinuation.New',
+  'sourceTargetGroup',
+  'LOCAL_REARM_RESOURCE_QUANTITY_NOT_CONFIGURED',
 }
 for _,marker in ipairs(required) do
   if not contains(source,marker) then
