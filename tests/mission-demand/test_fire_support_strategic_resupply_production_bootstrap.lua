@@ -36,6 +36,14 @@ local required={
   'FireContinuation.New',
   'sourceTargetGroup',
   'LOCAL_REARM_RESOURCE_QUANTITY_NOT_CONFIGURED',
+  'LOCAL_REARM_A10',
+  'acceptedLocalRearmConfig',
+  'TPL_BLUE_GND_SUP_M1083',
+  'ZON_BLUE_GND_BOSTICK_RESUPPLY',
+  'ZON_BLUE_GND_WRIGHT_RESUPPLY',
+  'ZON_BLUE_GND_FORTRESS_RESUPPLY',
+  'ZON_BLUE_GND_HONAKER_RESUPPLY',
+  'continuationAfterIncidentClose = true',
 }
 for _,marker in ipairs(required) do
   if not contains(source,marker) then
