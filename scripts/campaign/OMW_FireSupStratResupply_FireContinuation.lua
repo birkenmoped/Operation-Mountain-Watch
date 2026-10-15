@@ -145,6 +145,15 @@ function Instance:OnFinished(demand, context, entry, reason)
   if type(demand) ~= "table" or type(demand.demandId) ~= "string" then return end
   if self.seen[demand.demandId] then return end
   self.seen[demand.demandId] = true
+  -- Selection release may free a real MOOSE provider for another incident.
+  -- Wake only waiting incidents on this terminal event; no retry poller.
+  if entry and entry.released then
+    for otherId, pending in pairs(self.waiting) do
+      if otherId ~= demand.incidentId and not pending.rearmRequested then
+        self:_defer(otherId)
+      end
+    end
+  end
   if reason ~= "CEASE_FIRE" or not entry or (entry.physicalShots or 0) < 1 then
     self.log("C2_FIRE_NOT_CONTINUED demandId=" .. demand.demandId
       .. " reason=" .. tostring(reason))
