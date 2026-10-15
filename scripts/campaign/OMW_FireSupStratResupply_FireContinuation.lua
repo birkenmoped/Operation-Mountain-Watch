@@ -159,6 +159,15 @@ function Instance:OnFinished(demand, context, entry, reason)
     self.log("C2_FIRE_SHOT_REQUIREMENT_UNKNOWN demandId=" .. demand.demandId)
     return
   end
+  local priorSource = context and context.requestContext and context.requestContext.sourceTargetGroup
+  if not priorSource then
+    priorSource = context and context.incident and context.incident.context
+      and context.incident.context.physicalTargetGroup
+  end
+  if not self.lastTargetByIncident[demand.incidentId] and priorSource
+    and type(priorSource.GetName) == "function" then
+    self.lastTargetByIncident[demand.incidentId] = priorSource:GetName()
+  end
   self.waiting[demand.incidentId] = {
     demand = demand,
     context = context,
