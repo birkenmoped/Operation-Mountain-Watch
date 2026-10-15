@@ -515,7 +515,19 @@ local function resolveCasGeometry(demand, context)
 end
 
 local function onCasEvidence(fields)
-  if state.fireContinuation then state.fireContinuation:OnCasEvidence(fields) end
+  -- Only terminal/physical CAS lifecycle transitions may awaken a waiting
+  -- fire requirement; periodic CAS sensor telemetry must never drive retries.
+  local event = fields and fields.event
+  local relevant = {
+    CAS_CONTROLLED_RELEASE = true,
+    CAS_HOME_LANDED = true,
+    CAS_LEGION_ASSET_RETURNED = true,
+    CAS_LIFECYCLE_COMPLETE = true,
+    CAS_LIFECYCLE_FAILED = true,
+  }
+  if relevant[event] and state.fireContinuation then
+    state.fireContinuation:OnCasEvidence(fields)
+  end
   log(
     "CAS_EVIDENCE event=" .. tostring(fields and fields.event)
       .. " demandId=" .. tostring(fields and fields.demandId)
