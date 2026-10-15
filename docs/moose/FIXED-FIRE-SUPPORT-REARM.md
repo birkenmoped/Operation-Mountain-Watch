@@ -396,3 +396,17 @@ nachfolgende Ziel- und CAS-Deconfliction-Entscheidungen bleiben Aufgabe der
 autoritativen C2-Laufzeit. Das Signal ersetzt keinen physischen
 `EVENTS.Shot`-Nachweis und wurde im neuen Production-Bundle noch nicht in
 DCS bestaetigt.
+
+
+## Production Base 38 – physisches Fire-Evidence-Gate (15.10.2026)
+
+Die bestehende `ArtySelectionRuntime` verkettet ab Schema 3 den vorhandenen
+MOOSE-`ARTY:OnEventShot(EventData)` des einzigen ARTY-Owners und zaehlt
+pro selektierter Fire-Mission nur Ereignisse fuer `IniGroupName == arty.groupname`
+und `arty.currentTarget.name`. Das Feld `entry.physicalShots` ist
+**keine** CampaignState-Ressourcenbuchung. Bei `OnAfterCeaseFire` ohne
+korrelierten Schuss wird `NO_PHYSICAL_SHOT_EVIDENCE` signalisiert statt
+eines erfolgreichen `CEASE_FIRE`. Dieser Rueckgabegrund ist ein Gate
+fuer die spaetere C2-Continuation und verhindert den historischen
+Fortress-False-Positive; kein neuer Feuer-, Rearm- oder Scheduler-Owner.
+DCS-Validierung und Unit-Testausfuehrung stehen noch aus.
