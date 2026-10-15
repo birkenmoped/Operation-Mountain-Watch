@@ -702,3 +702,25 @@ Auch ein bereits eingeleiteter CAS-Release beweist keinen physischen
 Egress. Tests sowie DCS-Validation stehen aus. Der Base-Builder 36
 erwartet `CAS-LIFECYCLE-RUNTIME-2`; diese Schicht aktiviert noch
 keine automatische Folgefeuer- oder Rearm-Logik.
+
+
+## Fire Support / Strategic Resupply – Full Fire Response (15.10.2026)
+
+Die Production Base Schema 5 (Builder 39) ergaenzt **ausschliesslich**
+fuer C2-qualifizierte ARTY-Continuation den engen geschlossenen-Incident-
+Fall; alle anderen Support-Typen werden nach `CloseIncident` weiterhin
+blockiert. Production Bootstrap Schema 7 (Builder 7) bundelt
+`OMW_FireSupStratResupply_FireContinuation.lua` Schema 2 und den
+A10-Local-Rearm-Default fuer vier Fixed-Fire-Standorte. Die MissionDemand-
+/MOOSE-/CampaignState-Eigentuemer bleiben unveraendert: neue Demand-IDs
+durch Base, Providerwahl durch MOOSE, physisches Fire und M1083-Rearm
+durch dieselbe Functional-ARTY-Instanz, strategischer Verbrauch ausschliesslich
+durch den bestehenden GroundAmmoRearmAdapter.
+
+Die C2-Continuation wird ausschliesslich aus `CEASE_FIRE` mit
+`physicalShots > 0` und freigegebenem Asset evaluiert, mit einem
+einmaligen MOOSE-SCHEDULER-Deferred-Event zum Schutz vor Callback-
+Reentranz. CAS-AO-Ungewissheit sperrt neues Feuer. Der produktive
+Ground-/Air-Strategic-Resupply-Descriptor wird dadurch **nicht**
+ersetzt; `OMW_FSSR_RESUPPLY_READY=0` bleibt ohne echte Konfiguration.
+Unit-/CI-Tests und anschliessende DCS-Acceptance sind gesondert zu werten.
