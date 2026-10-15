@@ -987,3 +987,22 @@ OMW_FireSupStratResupply_ProductionBootstrap
 Keine neue MOOSE-Methode und kein neuer nativer DCS-Bypass werden eingefuehrt. Der Bootstrap verwendet ausschliesslich bereits im FSSR-/Ground-/AirOps-Stack source-gepruefte MOOSE-Vertraege.
 
 Strategic Resupply bleibt im Bootstrap fail-closed, bis ein produktiver physischer STORAGE-/Transport-Descriptor injiziert wird. A11-Fixture-STORAGE wird nicht uebernommen.
+
+## FSSR CAS-AO-Deconfliction – Source-Review 15.10.2026
+
+Fuer die produktive read-only CAS-Belegungsabfrage
+`OMW_FireSupStratResupply_CasLifecycleRuntime.lua` (Schema 2,
+`IsOnStationAt(coordinate)`) wurden die folgenden **bereits im Projekt
+verwendeten** MOOSE-Methoden gegen die im Projekt bereitgestellte
+`Moose.lua` geprueft:
+
+- `ZONE_BASE:IsCoordinateInZone(Coordinate)` – gepinnter Source, Methode
+  um Zeile 17876. Rueckgabe: boolean, Verwendung nur mit echten MOOSE
+  `COORDINATE`-Objekten.
+- `OPSGROUP:GetCoordinate(NewObject, UnitName)` – gepinnter Source,
+  Methode um Zeile 220804. `FLIGHTGROUP` besitzt die OPSGROUP-Basis;
+  der im CAS-Lifecycle bereits gebundene Flight liefert die Position.
+
+Es wird keine neue MOOSE-Klasse oder Dispatch-/Routing-Funktion
+eingefuehrt. Dieser Source-Review ist **kein DCS-Laufzeitnachweis**;
+Unit-Test und DCS-Acceptance fuer die neue Belegungsabfrage stehen aus.
