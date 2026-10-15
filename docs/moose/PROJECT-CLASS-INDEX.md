@@ -1006,3 +1006,18 @@ verwendeten** MOOSE-Methoden gegen die im Projekt bereitgestellte
 Es wird keine neue MOOSE-Klasse oder Dispatch-/Routing-Funktion
 eingefuehrt. Dieser Source-Review ist **kein DCS-Laufzeitnachweis**;
 Unit-Test und DCS-Acceptance fuer die neue Belegungsabfrage stehen aus.
+
+
+## FSSR Production Full Fire Response – One-shot C2 deferral (15.10.2026)
+
+Die neue `OMW_FireSupStratResupply_FireContinuation.lua` nutzt ausschliesslich
+die bereits im Projekt verwendete MOOSE-Klasse `SCHEDULER`:
+`SCHEDULER:New(MasterObject, SchedulerFunction, SchedulerArguments, Start, Repeat, RandomizeFactor, Stop)`.
+Gepinnte `Moose.lua` 2.9.18, Commit
+`73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`, Quellzeile etwa
+`13174`. Der konkrete Vertrag `SCHEDULER:New(nil, callback, {}, 1)`
+ist **eine einmalige Verschiebung** aus dem bereits akzeptierten
+Functional-`ARTY:OnAfterCeaseFire`-Callback, **kein** Repeat-/World-Scan.
+`ARTY:GetAmmo(false)` (Source etwa 99163) bleibt MOOSE-physische Ammo-Autoritaet;
+CampaignState-Settlement erfolgt nur im bereits akzeptierten
+`GroundAmmoRearmAdapter`. Source-reviewed und CI-Test, DCS-PENDING.
