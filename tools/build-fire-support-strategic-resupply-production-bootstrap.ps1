@@ -14,7 +14,7 @@ $ammoAdapter = Join-Path $repoRoot 'scripts\ground\OMW_GroundAmmoRearmAdapter.lu
 $rearmService = Join-Path $repoRoot 'scripts\ground\OMW_FixedFireSupportAmmoRearmService.lua'
 $outputDir = Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $output = Join-Path $outputDir 'OMW_FireSupStratResupply_Production.lua'
-$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-6'
+$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-7'
 
 foreach ($file in @($source, $fireContinuation, $resourceDemandPolicy, $materializer, $ammoSupport, $ammoAdapter, $rearmService)) {
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
@@ -35,7 +35,7 @@ foreach ($module in @($materializerSource, $ammoSupportSource, $ammoAdapterSourc
 }
 
 foreach ($marker in @(
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-6',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-7',
   'FireContinuation.New',
   'C2_CONTINUATION',
   'sourceTargetGroup',
@@ -140,7 +140,8 @@ foreach ($marker in @(
   'ProductionBootstrap.Start(config)',
   'OMW_FSSR_READY',
   'OMW_FSSR_RESUPPLY_READY',
-  'OMW-RESOURCE-DEMAND-POLICY-1'
+  'OMW-RESOURCE-DEMAND-POLICY-1',
+  'OMW-FSSR-FIRE-CONTINUATION-2'
 )) {
   if (-not $bundle.Contains($marker)) {
     throw "Production bundle marker missing: $marker"
@@ -152,10 +153,11 @@ foreach ($marker in @(
 Write-Host "Built: $output"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "GitCommit: $commit"
-Write-Host "BootstrapSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-6"
+Write-Host "BootstrapSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-7"
 Write-Host "BaseDependency: OMW_FireSupStratResupply_Base.lua loaded first"
 Write-Host "ReadyFlag: OMW_FSSR_READY"
 Write-Host "ResupplyReadyFlag: OMW_FSSR_RESUPPLY_READY"
+Write-Host "LocalRearmDefault: four fixed sites reuse A10 M1083 template and existing MOOSE RESUPPLY zones; configurable false opt-out"
 Write-Host "StrategicResupplyDefault: disabled/fail-closed until production physical transport descriptor is injected"
 Write-Host "BuilderSHA256: $((Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "BootstrapSourceSHA256: $((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToUpperInvariant())"
