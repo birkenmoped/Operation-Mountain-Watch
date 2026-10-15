@@ -322,3 +322,16 @@ Die Production enthaelt einen **optionalen** Completion-Listener `onArtyFireMiss
 Zu pruefen: exakte Demand-ID und Site-Korrelation, nur ein Callback pro Fire-Mission, Ursache `CEASE_FIRE` / `FUNCTIONAL_ARTY_DEAD` / `CANCELLED_BEFORE_FIRE_START`, Release vor Callback, Listenerfehler ohne MOOSE-FSM-Ausfall. `CeaseFire` ohne physische `EVENTS.Shot`-Evidenz zaehlt weiterhin **nicht** als nachgewiesenes Feuer; neue Fire-Mission nach CeaseFire und Wiederaufnahme nach Rearm bleiben eigene ausstehende DCS-Gates.
 
 **Status:** SOURCE_IMPLEMENTED / TEST_NOT_RUN / DCS_PENDING.
+
+
+## 14. CAS-AO-Deconfliction-Signal – Base 36
+
+`CasLifecycleRuntime:IsOnStationAt(coordinate)` ist ein read-only Adapter auf die vorhandene MOOSE-CAS-Flight-Position und die bereits vorhandene Mission-AO-`ZONE`. Fuer ein geeignetes Target gilt:
+- belegte physische CAS-Position innerhalb des gemeinsamen Ziel-AO: **true**;
+- relevante aktive Mission, deren physischer Flight nicht aufloesbar ist: **nil/unknown**, keinesfalls ARTY-Dispatch-Freigabe;
+- kein bekannter physisch anwesender Flight: **false** (noch kein gesamtes taktisches Fire-Clearance-Gate).
+- physisches CAS-Egress und Return sind separat von `releaseRequested` nachzuweisen.
+
+Regressionsnachweis: mehr als eine CAS-Mission, AO-Ueberlappung, anschliessender Egress, Return-to-Legion, fehlende Koordinate, laufender ARTY-Salvenabschluss ohne vorzeitigen Abbruch. Keine Aenderung der bisherigen CAS-Corridor-/PATROLZONE-/Targeting-FSM.
+
+**Status:** Source implementiert, Unit-Test erweitert, lokal noch nicht ausgefuehrt, **DCS_PENDING**. Es wird noch keine automatische ARTY-Continuation getriggert.
