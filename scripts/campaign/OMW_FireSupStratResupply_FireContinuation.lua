@@ -60,9 +60,9 @@ function Instance:_evaluate(incidentId)
   local pending = self.waiting[incidentId]
   if not pending then return end
   local incident = self.getIncident(incidentId)
-  if not incident or incident.closed then
+  if not incident then
     self.waiting[incidentId] = nil
-    self.log("C2_FIRE_CLOSED incidentId=" .. tostring(incidentId))
+    self.log("C2_FIRE_INCIDENT_NOT_FOUND incidentId=" .. tostring(incidentId))
     return
   end
 
