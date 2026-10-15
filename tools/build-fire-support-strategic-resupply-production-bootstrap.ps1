@@ -6,6 +6,7 @@ Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $source = Join-Path $repoRoot 'scripts\campaign\OMW_FireSupStratResupply_ProductionBootstrap.lua'
+$fireContinuation = Join-Path $repoRoot 'scripts\campaign\OMW_FireSupStratResupply_FireContinuation.lua'
 $resourceDemandPolicy = Join-Path $repoRoot 'scripts\campaign\OMW_ResourceDemandPolicy.lua'
 $materializer = Join-Path $repoRoot 'scripts\ground\OMW_GroundSupportMaterializer.lua'
 $ammoSupport = Join-Path $repoRoot 'scripts\ground\OMW_FixedFireSupportAmmoSupport.lua'
@@ -13,15 +14,17 @@ $ammoAdapter = Join-Path $repoRoot 'scripts\ground\OMW_GroundAmmoRearmAdapter.lu
 $rearmService = Join-Path $repoRoot 'scripts\ground\OMW_FixedFireSupportAmmoRearmService.lua'
 $outputDir = Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $output = Join-Path $outputDir 'OMW_FireSupStratResupply_Production.lua'
-$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-5'
+$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-6'
 
-foreach ($file in @($source, $resourceDemandPolicy, $materializer, $ammoSupport, $ammoAdapter, $rearmService)) {
+foreach ($file in @($source, $fireContinuation, $resourceDemandPolicy, $materializer, $ammoSupport, $ammoAdapter, $rearmService)) {
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
     throw "Required source not found: $file"
   }
 }
 
 $bootstrap = Get-Content -LiteralPath $source -Raw -Encoding UTF8
+$fireContinuationSource = Get-Content -LiteralPath $fireContinuation -Raw -Encoding UTF8
+if (-not $fireContinuationSource.Contains('OMW-FSSR-FIRE-CONTINUATION-1')) { throw 'Fire continuation schema marker missing.' }
 $policy = Get-Content -LiteralPath $resourceDemandPolicy -Raw -Encoding UTF8
 $materializerSource = Get-Content -LiteralPath $materializer -Raw -Encoding UTF8
 $ammoSupportSource = Get-Content -LiteralPath $ammoSupport -Raw -Encoding UTF8
@@ -32,7 +35,11 @@ foreach ($module in @($materializerSource, $ammoSupportSource, $ammoAdapterSourc
 }
 
 foreach ($marker in @(
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-5',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-6',
+  'FireContinuation.New',
+  'C2_CONTINUATION',
+  'sourceTargetGroup',
+  'OnRearmed',
   'createLocalRearmService',
   'RequestLocalArtyRearm',
   'LOCAL_REARM_NOT_CONFIGURED_OR_NOT_MATERIALIZED',
@@ -80,7 +87,8 @@ foreach ($forbidden in @(
   }
 }
 
-if (-not $policy.Contains('OMW-RESOURCE-DEMAND-POLICY-1')) {
+if (-not $policy.Contains('OMW-RESOURCE-DEMAND-POLICY-1',
+  'OMW-FSSR-FIRE-CONTINUATION-1')) {
   throw 'ResourceDemandPolicy schema marker missing.'
 }
 
@@ -112,6 +120,7 @@ $bundle += Embed 'GroundSupportMaterializer' $materializerSource
 $bundle += Embed 'FixedFireSupportAmmoSupport' $ammoSupportSource
 $bundle += Embed 'GroundAmmoRearmAdapter' $ammoAdapterSource
 $bundle += Embed 'FixedFireSupportAmmoRearmService' $rearmServiceSource
+$bundle += Embed 'FireContinuation' $fireContinuationSource
 $bundle += Embed 'ProductionBootstrap' $bootstrap
 $bundle += @"
 OMW = OMW or {}
@@ -143,14 +152,16 @@ foreach ($marker in @(
 Write-Host "Built: $output"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "GitCommit: $commit"
-Write-Host "BootstrapSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-5"
+Write-Host "BootstrapSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-6"
 Write-Host "BaseDependency: OMW_FireSupStratResupply_Base.lua loaded first"
 Write-Host "ReadyFlag: OMW_FSSR_READY"
 Write-Host "ResupplyReadyFlag: OMW_FSSR_RESUPPLY_READY"
 Write-Host "StrategicResupplyDefault: disabled/fail-closed until production physical transport descriptor is injected"
 Write-Host "BuilderSHA256: $((Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "BootstrapSourceSHA256: $((Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash.ToUpperInvariant())"
+Write-Host "FireContinuationSchema: OMW-FSSR-FIRE-CONTINUATION-1"
 Write-Host "LocalRearmModules: MOOSE GroundSupportMaterializer / FixedFireSupportAmmoSupport / GroundAmmoRearmAdapter / FixedFireSupportAmmoRearmService"
+Write-Host "FireContinuationSourceSHA256: $((Get-FileHash -LiteralPath $fireContinuation -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "ResourceDemandPolicySHA256: $((Get-FileHash -LiteralPath $resourceDemandPolicy -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "BundleSHA256: $((Get-FileHash -LiteralPath $output -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host 'MizMutation: false'
