@@ -800,3 +800,58 @@ Ein neuer Chat liest zuerst Governance, Accepted Implementation Matrix und die A
 **Verbleibende, aus der CI NICHT ableitbare Evidenz:** die zwei realen Windows-PowerShell-Builds und Hashes auf identischem aktuellen Source-Commit; Existenz der vier A10-M1083-Zonen und des Templates in der aktuell gespeicherten Production-`.miz`; realer MOOSE-Dispatch, Ziel-/CAS-/Shot-/Rearm-Verlauf und Return-to-Stock in DCS. Nichts davon als `VALIDATED` behaupten. Strategic Ground-/Air-Resupply verbleibt anschliessendes grosses Paket, keine neue Mock-STORAGE-Policy.
 
 **Fortsetzungssatz fuer einen neuen Chat:** Lies Governance, Accepted-Lifecycle-Matrix und dieses Handoff Abschnitte 12–18 vollstaendig. Das Source-Paket ist mit GitHub-CI `success` fuer oben genannten Commit abgesichert; fordere nur einen gemeinsamen Base-39/Bootstrap-7-Windows-Build/Hash-Readback an, vergleiche dessen reale Ausgabe, bereite dann die qualifizierte Full-Response-DCS-Acceptance vor. Keine einzelnen Zwischen-Builds oder Dokumentations-Pulls pro Callback; Dokumentation weiterhin bei jedem fachlich zusammenhaengenden Schritt im selben Handoff fortfuehren.
+
+
+## 19. Owner-verifizierter gemeinsamer Windows-Build – Base 39 + Bootstrap 7 (15.10.2026)
+
+**Reale Quelle:** vom Projektinhaber am 15.10.2026 zurueckgegebene vollstaendige PowerShell-Konsole aus `P:\DCS-DEV\Operation-Mountain-Watch-fssr-production-bootstrap` (Originalausgabe der beiden Builder, separater Markerpruefung, dreier Get-FileHash-Abfragen und git status). `git pull --ff-only` hat den Arbeitsbranch `agent/fire-support-strategic-resupply-production-bootstrap` von `b8b77292` auf `2382e962` per Fast-Forward aktualisiert. Erwarteter und tatsaechlicher HEAD waren identisch.
+
+```text
+GitCommit:
+2382e962623e5c0591f608812cad05cf172d22e2
+
+Production Base BuilderVersion:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-39
+BaseSchema:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-5
+ArtySelectionRuntimeSchema:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-3
+CasLifecycleRuntimeSchema:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-2
+Production Base BuilderSHA256:
+612DE7BD785A01EB7F41B979FC01E9D2E434D8A20590F4186D8653673596BC3F
+Production Base BundleSHA256:
+4C5C8AFAC3F0D492B445ED48AE4B5C88670C559769BB21F8B73CA412B4C104F6
+
+Production Bootstrap BuilderVersion:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-7
+BootstrapSchema:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-7
+FireContinuationSchema:
+OMW-FSSR-FIRE-CONTINUATION-2
+Production Bootstrap BuilderSHA256:
+C9A6298531E13B489FF445EF54BC9DF630FD82DC0A2FF30ED3F005E99880CBE3
+Production Bootstrap SourceSHA256:
+10DD5FEA8C7A7694335F8D6EF65C7F4F39B840B7C28176A8222E8C0368F45014
+FireContinuationSourceSHA256:
+D1BB0BEE151E412705BBB1CB0C216285E6C5123DF424E3BD1E36C7FC283D4DB5
+ResourceDemandPolicySHA256:
+76D449C711B308ECF22E87C5F30E16B896750EB3F98F632B10927691DBEEF332
+Production Bootstrap BundleSHA256:
+3AD1C0B70086D6E7A0E574C03D69C6D0344684BDFB2643BBF734DA2306E52B5D
+
+Handoff SHA256 before adding this section:
+956385611825B88B418331867322161651A649A8F6E0D73291888488FF59ABC3
+```
+
+Beide Windows-Builder liefen ohne Fehler durch und meldeten denselben Git-Commit. Anschliessend wurde der Markercheck `PASS: Base 39 and Bootstrap 7 integration markers verified` ausgegeben: `BASE-5`, `ARTY-SELECTION-RUNTIME-3`, `CAS-LIFECYCLE-RUNTIME-2`, `BOOTSTRAP-7`, `FIRE-CONTINUATION-2`, `C2_FIRE_CONTINUED`, `continuationAfterIncidentClose` und `TPL_BLUE_GND_SUP_M1083` waren im jeweils erwarteten Bundle vorhanden. Die separaten `Get-FileHash -Algorithm SHA256`-Ausgaben **stimmen exakt** mit den oben genannten Bundle-Hashes ueberein.
+
+`MizMutation: false` wurde von beiden Buildern protokolliert. `git status --short` zeigt ausschliesslich `?? mission/fire-support-strategic-resupply/` (untracked, generiertes Verzeichnis). Dieses Verzeichnis **nicht bereinigen oder in Git aufnehmen**, solange keine separate Freigabe vorliegt.
+
+**Abnahme-Status:** `BUILD_VERIFIED` fuer beide Bundles am exakt genannten Git-Commit, inklusive realer Hash-Readbacks. Der vorherige GitHub-CI-Run `38799969972` bestand mit MissionDemand/Lua-Syntax-Checks fuer die Source-Revision; `Documentation validation` Run `38799969921` ebenfalls erfolgreich. KEIN Production-DCS-PASS fuer die neuen C2-Rearm-/CAS-/ARTY-Lifecycles. Alle Aussagen zur physischen Funktionsfaehigkeit bleiben `DCS_PENDING`.
+
+**Naechster zusammenhaengender Gate:** ohne weitere kleinteilige Owner-Builds die reale aktuell verwendete Produktions-`.miz` mit der Mission-Editor-/Load-Order-/Object-Baseline abgleichen. Fuer die DCS-Acceptance muessen in der Mission das Base-39-Bundle **vor** Bootstrap-7 geladen und die vorhandenen vier M1083-Spawnzonen, die Support-Templategruppe sowie die Warehouse-/ARTY-Gruppen eindeutig identifiziert werden. Danach Full Response als **eine** End-to-End-Acceptance gegen die uebernommenen A10/Stage3-Owner pruefen, insbesondere 2+ ARTY-Fire-Cycles, CAS-Deconfliction bei belegtem/unklarem AO, keine No-Shot-Fortsetzung, OnAfterRearmed/physische Ammo und M1083-Return-to-Stock. DCS-Mission-/Log- und Hash-Provenienz erst nach tatsaechlichem Test erfassen.
+
+**Arbeitsrhythmus:** Nicht nach diesem Dokumentationscommit gesondert zu pullen/bauen auffordern; der naechste lokale Arbeitsblock soll die vollstaendige DCS-Acceptance-Vorbereitung bzw. eine spaetere wirklich notwendige Source-Gesamtveraenderung zusammenfassen.
+
+**Chatwechsel:** Ab jetzt Abschnitte 12–19 und Governance/Accepted-Lifecycle-Matrix lesen. Das letzte exakt real verifizierte Bundlepaar stammt aus Git-Commit `2382e962...` (Hashes oben), waehrend der jeweils aktuelle GitHub-Dokumentations-HEAD neuer sein kann. Keine alten Hashes einem neueren Source-Build zuschreiben. Kein CODEX, keine `.miz`-Mutation ohne Genehmigung.
