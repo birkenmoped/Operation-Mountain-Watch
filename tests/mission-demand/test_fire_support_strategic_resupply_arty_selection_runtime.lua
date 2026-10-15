@@ -32,7 +32,7 @@ local function releaseAssets(assets)
   releases=releases+1
 end
 
-local arty={assignCalls={},removeCalls={}}
+local arty={assignCalls={},removeCalls={},groupname="ARTY_BLUE_WRIGHT_L118_01"}
 function arty:AssignTargetCoord(coord,prio,radius,shots,maxengage,time,weapontype,name,unique)
   self.assignCalls[#self.assignCalls+1]={coord=coord,prio=prio,radius=radius,shots=shots,maxengage=maxengage,name=name,unique=unique}
   return name
@@ -74,6 +74,11 @@ eq(releases,0,"no early release")
 
 arty:OnAfterOpenFire(nil,nil,nil,nil,{name=runtime:GetState(demand.demandId).targetName})
 yes(runtime:GetState(demand.demandId).started,"fire started")
+arty.currentTarget={name=runtime:GetState(demand.demandId).targetName}
+arty:OnEventShot({IniGroupName="OTHER_BATTERY"})
+eq(runtime:GetState(demand.demandId).physicalShots,0,"foreign shots ignored")
+arty:OnEventShot({IniGroupName=arty.groupname})
+eq(runtime:GetState(demand.demandId).physicalShots,1,"physical shot correlated")
 arty:OnAfterCeaseFire(nil,nil,nil,nil,{name=runtime:GetState(demand.demandId).targetName})
 yes(runtime:GetState(demand.demandId).completed,"fire completed")
 no(asset.isReserved,"selection released after cease fire")
@@ -81,6 +86,7 @@ eq(releases,1,"one release after cease fire")
 eq(#notifications,1,"one completion callback after cease fire")
 eq(notifications[1].demandId,demand.demandId,"completion callback demandId")
 eq(notifications[1].reason,"CEASE_FIRE","completion callback reason")
+eq(runtime:GetState(demand.demandId).physicalShots,1,"cease fire shot evidence persists")
 arty:OnAfterCeaseFire(nil,nil,nil,nil,{name=runtime:GetState(demand.demandId).targetName})
 eq(#notifications,1,"repeated MOOSE CeaseFire must not duplicate callback")
 no(handle:Cancel("LATE"),"completed handle not cancellable")
@@ -111,6 +117,41 @@ no(missingCreated,"missing owner not dispatched")
 eq(missingReason,"SELECTED_ARTY_NOT_MATERIALIZED","missing owner reason")
 no(asset.isReserved,"missing owner releases selection")
 eq(releases,2,"missing owner release")
+
+-- A cease-fire callback without a physical shot must not be reported as a
+-- confirmed fire mission (Fortress false-positive regression).
+do
+  local fakeAsset={spawngroupname="NO_SHOT_ARTY"}
+  local fakeLegion={alias="NO_SHOT_LEGION"}
+  local fakeCommander={}
+  function fakeCommander:CanMission() return true end
+  function fakeCommander:RecruitAssetsForMission()
+    return true,{fakeAsset},{[fakeLegion.alias]=fakeLegion}
+  end
+  local fakeArty={groupname="NO_SHOT_ARTY"}
+  function fakeArty:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
+  function fakeArty:RemoveTarget() end
+  local callbackReason
+  local releaseCount=0
+  local noShotRuntime=Runtime.New({
+    commander=fakeCommander,
+    artyMissionFactory=factory,
+    resolveFunctionalArty=function() return {arty=fakeArty} end,
+    releaseAssets=function() releaseCount=releaseCount+1 end,
+    onFireMissionFinished=function(_,_,entry,reason)
+      eq(entry.physicalShots,0,"no shot recorded")
+      callbackReason=reason
+    end,
+  })
+  local demandArg={demandId="NO_SHOT_DEMAND",supportType="ARTY"}
+  local _,created=noShotRuntime:Dispatch(demandArg,{marker="CTX"})
+  yes(created,"no-shot fixture dispatched")
+  fakeArty:OnAfterOpenFire(nil,nil,nil,nil,{name=noShotRuntime:GetState(demandArg.demandId).targetName})
+  fakeArty.currentTarget={name=noShotRuntime:GetState(demandArg.demandId).targetName}
+  fakeArty:OnAfterCeaseFire(nil,nil,nil,nil,fakeArty.currentTarget)
+  eq(callbackReason,"NO_PHYSICAL_SHOT_EVIDENCE","no-shot terminal outcome")
+  eq(releaseCount,1,"no-shot selection released")
+end
 
 local cancelledNotifications={}
 local runtimeCancel=Runtime.New({
