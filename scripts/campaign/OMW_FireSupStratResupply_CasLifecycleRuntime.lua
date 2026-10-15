@@ -713,7 +713,7 @@ function Instance:IsOnStationAt(coordinate)
   if type(coordinate) ~= "table" then fail("coordinate is required") end
   local unknown = false
   for _, entry in pairs(self.entries) do
-    if not entry.completed and not entry.releaseRequested and not entry.blocked then
+    if not entry.completed then
       local geometry = entry.mission and entry.mission._omwFssrCasGeometry
       local zone = geometry and geometry.zone or nil
       if not zone or type(zone.IsCoordinateInZone) ~= "function" then
