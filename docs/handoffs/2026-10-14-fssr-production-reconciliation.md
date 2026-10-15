@@ -610,3 +610,54 @@ Ein **separates** `Get-FileHash -Algorithm SHA256` bestaetigte den identischen B
 **Naechste Arbeit:** Quellengepruefte Verbindung zwischen `GetParticipants(true)`, belegter physischer Schusszahl, `CasLifecycleRuntime:IsOnStationAt` und den bestehenden MOOSE-ARTY-Selection-/Rearm-Lifecycles. Vor Umsetzung die Event-/FSM-Signaturen und die fehlenden Release-/Retarget-Invarianten gegen die gepinnte MOOSE-Source und die akzeptierten Stage-3-Quellen nachweisen; keine zweite Zielerfassung, kein pauschales `CeaseFire -> neue Salve`, kein Scheduler-Ersatz. Die Dokumentation weiterhin nach **jedem** technischen Schritt mit Branch, Commit, Source, Testergebnissen, echten lokalen Hashes und naechstem Gate fortschreiben.
 
 **Neuer Chat:** Vor jeglicher Arbeit insbesondere Abschnitte 12 bis 15 dieser Datei lesen; lokaler Buildstand Base 37 ist real, DCS-PASS ist es nicht.
+
+
+## 16. ARTY-Events.Shot / CeaseFire-Reconciliation – Source-Schritt (15.10.2026)
+
+### 16.1 Ausgangslage und reale lokale Provenienz
+
+Der Projektinhaber hat die letzte dokumentarische Synchronisierung auf `1759ada43be0c78f4dc40836771931df1c0cb52f` real mit `git pull --ff-only` und Commit-Abgleich bestaetigt; SHA-256 des Handoffs nach diesem Pull:
+`A67FD58532F7B72A064858F11F02CC65BC433659000A0DDA021ADCF10FB5EA82`.
+Die letzte **real durch den Owner lokal buildverifizierte** FSSR-Base bleibt `Production Base 37` auf Commit `9e7e54a7e65ab1d91630a751c4fe2a0e0ecaf793`; Base-Bundle-SHA-256 `4D58402067C95E116A76EEFCFC437FA92278D03000FAA111D6F73F7FE4D38EF4`, Builder-SHA-256 `C2BE8BF4801BD0A65BBC4E274DA9D24F1D946D7B068BFE811A8F27B1C7C3376C`. Der Dokumentations-Commit `1759ada4...` erzeugte kein neues Bundle. `mission/fire-support-strategic-resupply/` bleibt untracked/erhaltenswert.
+
+### 16.2 Gepinnte MOOSE-API und akzeptierte historische Quelle
+
+Gepinnte `Moose.lua` 2.9.18, Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`, lokaler Source-Readback:
+- `ARTY:OnEventShot(EventData)` etwa Zeile **97517**: `EventData.IniGroupName`, `self.groupname`, `self.currentTarget` und `self.Nshots`; nur die eigene lebende Gruppe und das aktuelle MOOSE-Target zaehlen als ARTY-Schussereignis.
+- `ARTY:onafterOpenFire(..., target)` etwa Zeile **98307** setzt `self.currentTarget = target`.
+- `ARTY:onafterCeaseFire(..., target)` etwa Zeile **98387** bearbeitet den Abschluss, ohne eine physische Schusszahl als separate OMW-C2-Autoritaet zu beweisen.
+
+Die urspruengliche Stage-3-A2-Acceptance `mission/tests/stage3-honaker-wright-full-response/src/a2/04-fire-support.lua` hat diesen Guard bereits eingesetzt: sie verkettet `state.arty.OnEventShot`, filtert `IniGroupName` auf die Batterie und korreliert mit dem aktiven ARTY-Target. `verifyFireComplete` lehnt `NO_MOOSE_ARTY_EVENTS_SHOT` ab. Dies wurde als **Akzeptanzinvariante**, nicht als paralleles Fire-Control-Modul, uebernommen.
+
+### 16.3 Implementierung
+
+`scripts/campaign/OMW_FireSupStratResupply_ArtySelectionRuntime.lua`, jetzt **Schema 3**, registriert am existierenden Functional-ARTY-Owner ein **verkettetes** `OnEventShot`; die bestehende MOOSE-Hook-Verarbeitung laeuft weiterhin zuerst. Es wird **kein** separater `EVENTHANDLER` eingerichtet, keine neue `ARTY:New`-Instanz und kein Schuss-/Frame-Scheduler. Zaehlung erfolgt nur, wenn
+`eventData.IniGroupName == arty.groupname`, `arty.currentTarget.name` zum registrierten Target gehoert, die gleiche ARTY-Instanz Besitzautoritaet hat, ein `OpenFire` beobachtet wurde und die Mission nicht bereits freigegeben ist. Das Entry-Feld `physicalShots` beginnt bei 0. Es ist reine taktische Event-Evidenz, **kein** CampaignState-Stock-/Verbrauchszahler.
+
+Bei `OnAfterCeaseFire` meldet der vorhandene optionale Completion-Callback:
+- `CEASE_FIRE` nur mit `physicalShots > 0`;
+- `NO_PHYSICAL_SHOT_EVIDENCE` bei 0 korrelierten Shot-Events, sofern der Auftrag nicht storniert wurde;
+- `CANCELLED_AFTER_FIRE_START` unveraendert bei Cancel.
+`OnAfterDead`, frueher Cancel, Exactly-once-Callback und MOOSE-`LEGION.UnRecruitAssets`-Release bleiben in der bestehenden Verantwortung. **Ein erfolgreicher MOOSE-CeaseFire-Callback bedeutet weiterhin nicht automatisch eine neue C2-Fire-Mission oder die nachgewiesene Wirkung der Geschosse.**
+
+Das zugehoerige Testmodul `tests/mission-demand/test_fire_support_strategic_resupply_arty_selection_runtime.lua` testet eigene gegen fremde Schuesse, positive Shot-/CeaseFire-Korrelation und Fortress-artiges CeaseFire ohne Shot-Event. Base-Builder **38** verlangt `ARTY-SELECTION-RUNTIME-3` und die neuen No-Shot-/Event-Log-Marker im generierten Bundle.
+
+### 16.4 Lifecycle-Inheritance und Beweisgrenzen
+
+| Feld | Inhalt |
+|---|---|
+| inherited_contract | Sole MOOSE Functional ARTY, `ARTY:OnEventShot`, `ARTY:AssignTargetCoord`, `OnAfterOpenFire`/`OnAfterCeaseFire`, `LEGION.UnRecruitAssets` |
+| accepted_source_paths | `OMW_FobAttackFunctionalArtyDispatchAdapter.lua`; `stage3-honaker-wright-full-response/src/a2/04-fire-support.lua`; gepinnte `Moose.lua` |
+| evidence | Vorherige Stage-3-A2-Schussevidenz nur im damals getesteten Fixture; neuer Production-Einsatz noch ohne DCS-PASS |
+| invariants | Genau eine MOOSE-ARTY-FSM; Selection-only COMMMANDER; keine staendige Eigenerfassung von Zielen; MOOSE-Rearm am selben ARTY-Owner |
+| reuse_mode | Vorhandenen MOOSE-Eventhandler verkettet; minimale Eventbeobachtung |
+| harness_role | Source-Tests verifizieren Schusskorrelation und No-Shot-False-Positive; kein eigener ARTY-Lifecycle |
+| changed_boundary | Completion-Callback-Grund `NO_PHYSICAL_SHOT_EVIDENCE`; zusaetzliches Entry-Feld `physicalShots` |
+| owner_approval | Keine neue taktische Doktrin oder Non-MOOSE-Ausnahme; Verhalten entspricht bereits dokumentierter physischer Fire-Evidence-Anforderung |
+| revalidation_scope | Lua-Syntax/Unit-Test, Base-38-Builder und physischer DCS-Schussnachweis Honaker/Wright/Fortress, danach C2-Continuation |
+
+**Offen:** Die neue C2-Continuation muss die dreiwertige `CAS:IsOnStationAt`-Antwort, autoritative lebende Incident-Targets, eigene Batteriemunition, Rearm-Status und neue deduplizierte Cycle-Keys zusammenfuehren. Der Callback allein feuert **keine** Folgesalve. Nicht bei No-Shot blind erneut disponieren (sonst unendliche Fehlerspirale). Beim lokalen Build stets zusammenhaengenden PowerShell-Block verwenden und bei Builder-Fehler sofort stoppen, um Alt-Bundle-Hashes nicht als PASS auszugeben.
+
+### 16.5 Status fuer den naechsten Chat
+
+Branch `agent/fire-support-strategic-resupply-production-bootstrap`. Vollstaendig lesen: Governance/AGENTS/MOOSE-First, Accepted-Lifecycle-Matrix, dieses Handoff Abschnitte **12 bis 16**. Letzter verifizierter lokaler Base-Build ist 37, nicht 38. Die realen neuen Builder-38-Hashes stehen **noch aus**. Vor einer technischen Weiterentwicklung die geloesten Event-Vertraege und die noch nicht verbundene C2-Fire-Continuation nachvollziehen; als naechstes reentranzsichere C2-/CAS-/Munition-/Rearm-Kette mit den vorhandenen Ownern bauen und im selben Dokument fortschreiben.
