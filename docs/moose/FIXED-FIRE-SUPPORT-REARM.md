@@ -410,3 +410,30 @@ eines erfolgreichen `CEASE_FIRE`. Dieser Rueckgabegrund ist ein Gate
 fuer die spaetere C2-Continuation und verhindert den historischen
 Fortress-False-Positive; kein neuer Feuer-, Rearm- oder Scheduler-Owner.
 DCS-Validierung und Unit-Testausfuehrung stehen noch aus.
+
+
+## FSSR Production Bootstrap 7 – A10-vorgepruefte vier M1083-Rearm-Pfade
+
+Das neue Produktionspaket verdrahtet die **bereits vorhandenen** vier
+A10-Standortbereiche `ZON_BLUE_GND_{BOSTICK,WRIGHT,FORTRESS,HONAKER}_RESUPPLY`,
+das ME-Template `TPL_BLUE_GND_SUP_M1083` und die jeweils registrierten
+`GROUND_NODE_*`-CampaignState-Knoten. Der A10-Vertrag fuer einen
+`GROUND_AMMO_PACKAGE` pro M1083-Rearm und denselben MOOSE
+`ARTY:Rearm()`-Owner bleibt erhalten. Ein eigener Counter fuer strategische
+Munition entsteht nicht. Die MOOSE-BRIGADE wird ausschliesslich durch
+`FixedFireSupportAmmoSupport.New` nach Registrierung des Materializers
+gestartet; Bootstrap erzeugt keine zweite BRIGADE-Start-/Routenlogik.
+
+`FireContinuation` fordert den Rearm nach positiv belegter physischer
+ARTY-Salve nur bei `ARTY:GetAmmo(false) < acceptedShots` an,
+dedupliziert bis `OnAfterRearmed` und fuehrt nach der MOOSE-Rueckmeldung
+eine erneut autorisierte Ziel-/CAS-Pruefung durch. `config.localArtyRearm`
+ist optional: `nil` setzt die A10-Defaults fuer vier Sites, `false`
+deaktiviert den lokalen Rearm explizit und eine Tabelle ueberschreibt
+die konkrete Konfiguration (vollstaendige echte Daten notwendig).
+Fehlendes ME-Template oder fehlende Zonen werden **vor** der eigentlichen
+Feueranforderung beim Bootstrap-Start fail-closed gemeldet. Es werden
+keine neuen Mission-Editor-Objekte erzeugt. Die Werte stammen aus
+`mission/tests/fire-support-strategic-resupply-production-base-runtime/src/10-production-real-arty-selection-rearm-acceptance.lua`
+und sind nicht neu erfunden. DCS-Validierung gegen die **aktuelle**
+Production-`.miz` ausstehend.
