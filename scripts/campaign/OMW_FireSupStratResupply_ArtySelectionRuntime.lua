@@ -17,7 +17,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-2"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-3"
 
 local TAG = "[OMW][FireSupStratResupply.ArtySelectionRuntime]"
 
@@ -139,6 +139,22 @@ function Instance:_installArtyHooks(arty)
 
   local runtime = self
 
+  -- MOOSE ARTY:OnEventShot is already subscribed by the sole Functional ARTY
+  -- owner. Chain that handler; never create a second EVENTHANDLER or fire FSM.
+  local previousShot = arty.OnEventShot
+  arty.OnEventShot = function(selfArty, eventData)
+    if previousShot then previousShot(selfArty, eventData) end
+    if not eventData or eventData.IniGroupName ~= selfArty.groupname then return end
+    local target = selfArty.currentTarget
+    local targetName = target and target.name or nil
+    local entry = targetName and runtime.entriesByTargetName[targetName] or nil
+    if not entry or entry.arty ~= selfArty or not entry.started or entry.released then return end
+    entry.physicalShots = entry.physicalShots + 1
+    runtime:_log(string.format(
+      "functional ARTY physical shot demandId=%s target=%s count=%d",
+      tostring(entry.demand.demandId), tostring(targetName), entry.physicalShots))
+  end
+
   local previousOpenFire = arty.OnAfterOpenFire
   arty.OnAfterOpenFire = function(selfArty, Controllable, From, Event, To, target)
     if previousOpenFire then
@@ -162,7 +178,8 @@ function Instance:_installArtyHooks(arty)
     local entry = targetName and runtime.entriesByTargetName[targetName] or nil
     if not entry then return end
     entry.completed = true
-    entry.completedReason = entry.cancelRequested and "CANCELLED_AFTER_FIRE_START" or "CEASE_FIRE"
+    entry.completedReason = entry.cancelRequested and "CANCELLED_AFTER_FIRE_START"
+      or (entry.physicalShots > 0 and "CEASE_FIRE" or "NO_PHYSICAL_SHOT_EVIDENCE")
     runtime:_release(entry, entry.completedReason)
     runtime:_notifyFinished(entry, entry.completedReason)
     runtime:_log(string.format(
@@ -319,6 +336,7 @@ function Instance:Dispatch(demand, context)
     target = target,
     targetName = targetName,
     started = false,
+    physicalShots = 0,
     completed = false,
     failed = false,
     released = false,
