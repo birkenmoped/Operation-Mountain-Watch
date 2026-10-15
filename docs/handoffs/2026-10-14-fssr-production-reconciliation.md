@@ -881,7 +881,7 @@ E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 | Fortress | `TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1` | `WH_BLUE_GND_FORTRESS` | `ZON_BLUE_GND_FORTRESS_RESUPPLY` |
 | Honaker | `TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2` | `WH_BLUE_GND_HONAKER` | `ZON_BLUE_GND_HONAKER_RESUPPLY` |
 
-Jeder der vier ARTY-Gruppennamen ist im `mission`-Member genau einmal als Gruppenname enthalten. Das Rearm-Template `TPL_BLUE_GND_SUP_M1083` ist als Gruppe (eine `CHAP_M1083`-Unit, `lateActivation = true`) vorhanden; seine Units tragen `TPL_BLUE_GND_SUP_M1083_01`. Die vier RESUPPLY-Zonen sind als benannte Mission-Triggerzones mit eindeutiger Position vorhanden. Bostick, Wright und Fortress: Radius 15.24 m; Honaker: 30.48 m. Die Zonen sind **nicht erst zu erstellen**. Der vorhandene physische Abstand, Terrain-Freiheit, MOOSE-Materialisierung, M1083-Bewegung/Return und DCS-/CampaignState-Buchung sind **nur in DCS** zu validieren.
+Jeder der vier ARTY-Gruppennamen ist im `mission`-Member genau einmal als Gruppenname enthalten. Das Rearm-Template `TPL_BLUE_GND_SUP_M1083` ist als Gruppe (eine `CHAP_M1083`-Unit, `lateActivation = true`) vorhanden; seine Units tragen `TPL_BLUE_GND_SUP_M1083_01`. Die vier RESUPPLY-Zonen sind als benannte Mission-Triggerzones mit eindeutiger Position vorhanden. Alle vier RESUPPLY-Zonen: Radius 15.24 m (jeweils direkt vor dem Zonennamen im selben Triggerzonen-Eintrag nachgewiesen). Die Zonen sind **nicht erst zu erstellen**. Der vorhandene physische Abstand, Terrain-Freiheit, MOOSE-Materialisierung, M1083-Bewegung/Return und DCS-/CampaignState-Buchung sind **nur in DCS** zu validieren.
 
 ### 20.2 Nachgewiesene Mission-Trigger-/Load-Order
 
