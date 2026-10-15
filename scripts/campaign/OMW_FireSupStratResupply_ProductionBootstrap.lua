@@ -61,6 +61,35 @@ local FIXED_ASSETS = {
   },
 }
 
+local state = {
+  status = "LOADED",
+  runtime = nil,
+  base = nil,
+  commander = nil,
+  brigades = {},
+  perimeters = {},
+  artyRegistry = nil,
+  artyOwners = {},
+  localRearmServices = {},
+  localRearmConfig = nil,
+  fireContinuation = nil,
+  campaignContext = nil,
+  siteRegistry = nil,
+  airwingCount = 0,
+  resupplyConfigured = false,
+  commanderStarted = false,
+  perimetersStarted = false,
+  error = nil,
+}
+
+local function log(message)
+  env.info(TAG .. " " .. tostring(message), false)
+end
+
+local function fail(message)
+  error(TAG .. " " .. tostring(message), 2)
+end
+
 -- Adopt the A10 DCS-accepted M1083 baseline; no new ME zones or stock policy.
 local LOCAL_REARM_A10 = {
   BOSTICK = { zone = "ZON_BLUE_GND_BOSTICK_RESUPPLY", alias = "Bostick L118" },
@@ -97,35 +126,6 @@ local function acceptedLocalRearmConfig(siteRegistry)
     }
   end
   return result
-end
-
-local state = {
-  status = "LOADED",
-  runtime = nil,
-  base = nil,
-  commander = nil,
-  brigades = {},
-  perimeters = {},
-  artyRegistry = nil,
-  artyOwners = {},
-  localRearmServices = {},
-  localRearmConfig = nil,
-  fireContinuation = nil,
-  campaignContext = nil,
-  siteRegistry = nil,
-  airwingCount = 0,
-  resupplyConfigured = false,
-  commanderStarted = false,
-  perimetersStarted = false,
-  error = nil,
-}
-
-local function log(message)
-  env.info(TAG .. " " .. tostring(message), false)
-end
-
-local function fail(message)
-  error(TAG .. " " .. tostring(message), 2)
 end
 
 local function copy(value)
@@ -669,8 +669,13 @@ local function startInternal(config)
     and type(config.localArtyRearm) ~= "table" then
     fail("config.localArtyRearm must be a table, false or nil")
   end
-  state.localRearmConfig = config.localArtyRearm == false and nil
-    or (config.localArtyRearm or acceptedLocalRearmConfig(p.SiteRegistry))
+  if config.localArtyRearm == false then
+    state.localRearmConfig = nil
+  elseif config.localArtyRearm ~= nil then
+    state.localRearmConfig = config.localArtyRearm
+  else
+    state.localRearmConfig = acceptedLocalRearmConfig(p.SiteRegistry)
+  end
   state.campaignContext = context
   state.siteRegistry = p.SiteRegistry
   if state.localRearmConfig then
