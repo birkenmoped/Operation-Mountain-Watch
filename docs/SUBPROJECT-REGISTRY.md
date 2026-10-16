@@ -27,6 +27,9 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 
 ## 2. Aktuelle offene Unterprojekte
 
+Neuer Dokumentations-Branch (16.10.2026): `agent/fixed-wing-cas-coverage-ground-alert-decision`, Parent `main`, Dokument `docs/air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md`, Status `PLANNED / DCS_PENDING`. Owner-Beschluss zu H24 Bagram Ground Alert als 2-ship, zur A-10-CAS-Präferenz und zu zulässigen Airborne-CAS-Lücken wird separat als Draft-PR vorgeschlagen; noch keine Merge-Freigabe oder Runtime-Änderung.
+
+
 | PR | Branch | Parent/Base | Thema | Primäre Pfade | Governance-Status | Acceptance-Status | Nachfolger | Produktionsrelevanz |
 |---:|---|---|---|---|---|---|---|---|
 | 3 | `design/warehouses-and-concealment` | `main` | frühe Logistics-/Warehouse-/MOOSE-Baseline | `docs/`, `mission/tests/`, `vendor/moose/` | `DRAFT`; Altbestand | keine repositoryweite Acceptance | 4 | Grundlage vieler späterer Stacks; vor Integration neu bewerten |
