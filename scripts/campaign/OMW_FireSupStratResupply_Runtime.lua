@@ -52,6 +52,9 @@ function Runtime.New(spec)
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
   if spec.externalAdapters ~= nil and type(spec.externalAdapters) ~= "table" then fail("externalAdapters must be a table when provided") end
   if spec.incidentIdFactory ~= nil and type(spec.incidentIdFactory) ~= "function" then fail("incidentIdFactory must be a function when provided") end
+  if spec.onQrfDestroyed ~= nil and type(spec.onQrfDestroyed) ~= "function" then
+    fail("onQrfDestroyed must be a function when provided")
+  end
   if spec.onExternalSupportRequired ~= nil and type(spec.onExternalSupportRequired) ~= "function" then
     fail("onExternalSupportRequired must be a function when provided")
   end
@@ -187,6 +190,7 @@ function Runtime.New(spec)
     redCoalition = spec.redCoalition,
     incidentIdFactory = spec.incidentIdFactory,
     onExternalSupportRequired = spec.onExternalSupportRequired,
+    onQrfDestroyed = spec.onQrfDestroyed,
     resupply = spec.resupply,
     logger = spec.logger,
     prepared = false,
@@ -229,6 +233,7 @@ function Instance:Prepare()
     requiredAssetsMax = self.qrfRequiredAssetsMax,
     requiredAttributes = self.qrfRequiredAttributes,
     requiredProperties = self.qrfRequiredProperties,
+    onGroupDestroyed = self.onQrfDestroyed,
     logger = self.logger,
   })
 
