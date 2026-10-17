@@ -2,7 +2,7 @@
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-14"
 local TAG = "[OMW][FireSupStratResupply.QrfRuntime]"
 local QRF_TACTICAL_RADIUS_NM = 5
 local QRF_ENGAGE_SPEED_KNOTS = 20
