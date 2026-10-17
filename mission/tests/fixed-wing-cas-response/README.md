@@ -123,3 +123,8 @@ Auf den dokumentierten A1-DCS-Befund folgt [Acceptance 2](ACCEPTANCE-2.md): MOOS
 ## Acceptance 3 (Nachfolge; A1/A2 unveraendert)
 
 [Acceptance 3](ACCEPTANCE-3.md) erweitert A2 um MOOSE-`SetDefaultAltitude` auch fuer RTB, schnelleres Alarm-CAS-Transitprofil mit `SetDefaultSpeed`, A-10-Rekrutierungsreichweite (COHORT und AUFTRAG je 400 NM) und per-Aircraft Speed-/Fuel-/Hoehentelemetrie. **A1/A2/A3 duerfen nicht gemeinsam geladen werden.** Status DCS_PENDING.
+
+
+## Acceptance 4 (Entwicklungsstand, DCS_PENDING)
+
+[Acceptance 4](ACCEPTANCE-4.md) prueft MOOSE-Join fuer Kandahar-A-10, getrennte Transit-/CAS-Orbitgeschwindigkeiten und Tankerempfaenger-AAR ueber den vorhandenen OMW-AAR-Controller (`GetActive`) und MOOSE `Refuel`. **A1/A2/A3/A4 duerfen nicht parallel geladen werden.** Die 65%-A-10-Vor-AO-Schwelle ist ausschliesslich ein Testwert, keine Produktions-Fuel-Policy. Keine DCS-Validierung.
