@@ -152,4 +152,66 @@ runtime:OnFinished({incidentId=incident.incidentId,demandId="NO_TARGET",supportT
 runDeferred()
 eq(#fireCalls,6,"no C2 participants means no fire")
 
+-- Regression: an initial MOOSE recruitment failure must remain a real C2
+-- requirement until another provider is released; no polling or preselection.
+local incidents = {
+  ["INC-HONAKER"] = {incidentId="INC-HONAKER",closed=false},
+  ["INC-JOYCE"] = {incidentId="INC-JOYCE",closed=false},
+}
+local retries = {}
+local deferred = {}
+local cause = false
+local providerReleased = false
+local multi = Continuation.New({
+  getIncident = function(id) return incidents[id] end,
+  getCandidates = function() return { group("RED-HONAKER") } end,
+  resolveCasPresence = function() return false, "CAS_CLEAR" end,
+  getPhysicalAmmo = function()
+    error("No selected physical provider may be queried for pending initial recruitment")
+  end,
+  requestFire = function(incidentArg, _, target, key)
+    retries[#retries + 1] = {incident=incidentArg.incidentId,key=key,target=target:GetName()}
+    local ok = providerReleased
+    return {demandId="RETRY-"..#retries,status=ok and "DISPATCHED" or "NOT_DISPATCHED"},true,ok and nil or "NO_AVAILABLE_ARTY_PROVIDER"
+  end,
+  requestRearm = function() error("No battery was assigned for rearm") end,
+  schedule = function(cb) deferred[#deferred+1] = cb end,
+  log = function() end,
+})
+local unsatisfied = {
+  incidentId = "INC-HONAKER", demandId = "INIT-HONAKER",
+  status="NOT_DISPATCHED",dispatchReason="NO_AVAILABLE_ARTY_PROVIDER",
+}
+eq(multi:OnUnserved(unsatisfied,{incident=incidents["INC-HONAKER"]}),true,
+  "initial failed recruitment retains need")
+eq(multi:OnUnserved(unsatisfied,{incident=incidents["INC-HONAKER"]}),false,
+  "duplicate initial need is ignored")
+eq(#deferred,0,"no polling scheduled for unavailable provider")
+-- A real MOOSE ARTY owner release for an unrelated site wakes the Honaker need.
+multi:OnFinished({incidentId="INC-JOYCE",demandId="JOYCE-TERMINAL"},
+  {incident=incidents["INC-JOYCE"]},
+  {released=true,physicalShots=0},"NO_PHYSICAL_SHOT_EVIDENCE")
+eq(#deferred,1,"released provider wakes waiting Honaker")
+cause = deferred
+deferred = {}
+cause[1]()
+eq(#retries,1,"exactly one renewed MOOSE recruitment")
+eq(multi:GetWaiting("INC-HONAKER")~=nil,true,"still waiting on provider rejection")
+eq(#deferred,0,"no automatic resubmission poller")
+providerReleased=true
+multi:OnFinished({incidentId="INC-JOYCE",demandId="JOYCE-TERMINAL-2"},
+  {incident=incidents["INC-JOYCE"]},
+  {released=true,physicalShots=0},"NO_PHYSICAL_SHOT_EVIDENCE")
+eq(#deferred,1,"second real release triggers next bounded evaluation")
+cause=deferred
+deferred={}
+cause[1]()
+eq(#retries,2,"provider re-evaluated on release")
+eq(retries[2].key,"INSTALLATION_ATTACK_C2_ARTY_CYCLE_2",
+  "never reuse failed selection demand key")
+eq(multi:GetWaiting("INC-HONAKER"),nil,"successful selection clears C2 wait")
+eq(multi:OnUnserved({incidentId="INC-HONAKER",demandId="DISPATCHED",
+  status="DISPATCHED"},{incident=incidents["INC-HONAKER"]}),false,
+  "do not queue already dispatched mission")
+
 print("PASS test_fire_support_strategic_resupply_fire_continuation")
