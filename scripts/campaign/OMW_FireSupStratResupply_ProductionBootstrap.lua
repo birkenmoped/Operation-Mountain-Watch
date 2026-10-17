@@ -8,7 +8,7 @@
 
 local Bootstrap = {}
 
-Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-8"
+Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-9"
 
 local TAG = "[OMW][FireSupStratResupply.Production]"
 local QRF_TEMPLATE = "TPL_BLUE_GND_QRF_MIXED_6"
