@@ -73,6 +73,7 @@ local state = {
   localRearmServices = {},
   localRearmConfig = nil,
   fireContinuation = nil,
+  qrfLossSerial = {},
   campaignContext = nil,
   siteRegistry = nil,
   airwingCount = 0,
@@ -754,9 +755,54 @@ local function startInternal(config)
     guardRequiredAttributes = GROUP.Attribute.GROUND_INFANTRY,
     resolveQrfCoordinate = function(_, runtimeContext)
       local incident = runtimeContext and runtimeContext.incident or nil
-      local physical = incident and incident.context and incident.context.physicalTargetGroup or nil
-      if not physical then return nil, "QRF_PHYSICAL_TARGET_UNAVAILABLE" end
+      local selected = runtimeContext and runtimeContext.requestContext
+        and runtimeContext.requestContext.sourceTargetGroup or nil
+      local physical = selected or (incident and incident.context
+        and incident.context.physicalTargetGroup or nil)
+      if not physical or type(physical.IsAlive) ~= "function"
+        or physical:IsAlive() ~= true then
+        return nil, "QRF_PHYSICAL_TARGET_UNAVAILABLE"
+      end
       return physical, nil
+    end,
+    onQrfDestroyed = function(demand, runtimeContext, armyGroup)
+      local incident = runtimeContext and runtimeContext.incident
+      local incidentId = incident and incident.incidentId
+      if not incidentId then return end
+      -- MOOSE OPSGROUP Destroyed signals the full physical group loss.
+      -- Defer one event turn so the original MOOSE destruction/warehouse
+      -- lifecycle can finish before attempting a replacement recruitment.
+      SCHEDULER:New(nil, function()
+        if not state.base or not state.base:GetIncident(incidentId) then return end
+        local live = qualifiedParticipants({incident=incident})
+        if #live == 0 then
+          log("QRF_REPLACEMENT_NOT_REQUIRED incidentId=" .. incidentId
+            .. " reason=NO_LIVE_INCIDENT_TARGET")
+          return
+        end
+        local serial = (state.qrfLossSerial[incidentId] or 0) + 1
+        state.qrfLossSerial[incidentId] = serial
+        local replacement, created, reason = state.base:RequestIncidentSupport(
+          incidentId, "QRF", {
+            requestKey = "INSTALLATION_ATTACK_QRF_REPLACEMENT_" .. tostring(serial),
+            priority = demand.priority,
+            cancelWhenIncidentClosed = false,
+            replacementAfterLoss = true,
+            context = {
+              activation = "QRF_LOSS_REPLACEMENT",
+              source = "INSTALLATION_ATTACK_INCIDENT",
+              sourceTargetGroup = live[1],
+            },
+          }
+        )
+        log("QRF_REPLACEMENT_REQUEST incidentId=" .. incidentId
+          .. " priorDemandId=" .. tostring(demand.demandId)
+          .. " destroyedGroup=" .. tostring(armyGroup and armyGroup.groupname)
+          .. " replacementDemandId=" .. tostring(replacement and replacement.demandId)
+          .. " status=" .. tostring(replacement and replacement.status)
+          .. " created=" .. tostring(created)
+          .. " reason=" .. tostring(reason))
+      end, {}, 1)
     end,
     qrfRequiredAttributes = GROUP.Attribute.GROUND_APC,
     blueCoalition = coalition.side.BLUE,
