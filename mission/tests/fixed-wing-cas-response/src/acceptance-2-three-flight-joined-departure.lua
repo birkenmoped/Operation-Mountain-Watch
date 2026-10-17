@@ -252,6 +252,7 @@ local function observe()
           log("ELEMENT_FUEL_OBSERVER", {
             "request=" .. requestId, "element=" .. unit:GetName(),
             "fuelFraction=" .. tostring(unit:GetFuel()),
+            "altitudeMslFt=" .. tostring(coordinate and UTILS.MetersToFeet(coordinate.y) or "unknown"),
           })
         end
       end
