@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-39'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-40'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -66,7 +66,7 @@ $combined=(($moduleSpecs|ForEach-Object{$sources[$_.Name]}) -join "`n")+"`n"+$ro
 foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-4',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-5',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-6',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-13',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-3',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3',
@@ -188,7 +188,7 @@ Write-Host 'StrategicResupplyRouteLifecycle: AIR_RESUPPLY corridor mandatory -> 
 Write-Host 'StrategicResupplyRecruitment: COMMANDER RecruitAssetsForTransport -> selected Assetitem(s) -> TransportAssign; no concrete OMW carrier selection'
 Write-Host 'SiteRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6'
 Write-Host 'SupportProfilesSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-4'
-Write-Host 'BaseSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-5'
+Write-Host 'BaseSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-6'
 Write-Host 'GuardRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-3'
 Write-Host 'GuardMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3'
 Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13'
