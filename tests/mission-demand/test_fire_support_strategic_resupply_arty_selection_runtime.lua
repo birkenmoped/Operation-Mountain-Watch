@@ -326,6 +326,7 @@ do
   local fireArty={}
   function fireArty:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
   function fireArty:RemoveTarget() end
+  function fireArty:GetAmmo() return 20 end
   local throwRuntime=Runtime.New({
     commander=throwCommander,
     artyMissionFactory=factory,
