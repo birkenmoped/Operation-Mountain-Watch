@@ -413,3 +413,16 @@ A-10C/F-16C/F-15E sind **noch nicht** auf der bestehenden Helikopter-
 CAS-Lifecycle-/Korridorimplementierung freigegeben. Diese Erweiterung
 ist erst nach eigenem festen AIRWING-/SQUADRON-/Routen-/Payload-/DCS-
 Nachweis umzusetzen. **Status: SOURCE_IMPLEMENTED_PARTIAL / DCS_PENDING.**
+
+
+### ARTY Cross-Site / Local-Rearm Regression (17.10.2026, SOURCE_ONLY)
+
+Fuer die spaetere gemeinsame Full-Response-Acceptance zusaetzlich testen:
+1. Honaker-Moerser feuern ihre verfuegbare Munition; M1083-Request/Rearm erhaelt korrekte CampaignState-/MOOSE-Evidenz.
+2. **Parallel** bleibt Honakers ARTY-C2-Bedarf offen und darf die externe MOOSE-Rekrutierung erreichen, auch wenn die zuvor zugewiesene lokale Batterie physisch leergeschossen ist.
+3. Wright arbeitet ggf. vorher Joyce ab; erst bei tatsaechlich aufgehobener Reservation darf Wright fuer Honaker erneut selektiert werden. Kein OMW-hardcodierter Wright-Provider; MOOSE entscheidet.
+4. Fuer jeden tatsaechlich selektierten Provider muss `ARTY:GetAmmo(false)` >= benoetigte physische Shots vor `AssignTargetCoord` belegt sein. Fehlende physische Munition -> MOOSE UnRecruit, kein Feuerauftrag und weiter offener Bedarf. Keine gefaelschte `Rearmed`-Completion.
+5. CAS physisch on station im konfliktbehafteten AO unterbindet neue ARTY-Missionen, ohne bestehende Salven abzubrechen. Kein lokaler/anderer Dispatcher darf dies umgehen.
+6. Nach physischem `Rearmed` lokale ARTY-Continuation/SupportReturn und Warehouse-Settlement separat pruefen; Truck-Naehe allein ist keine Completion.
+
+GitHub CI `MissionDemand validation` + `Documentation validation` erfolgreich am Source-Stand `2057ea45ef83a166866f1a50df5bff8fc94e6aed`, jedoch **keine** Windows-Bundle-SHA oder DCS-Acceptance. Neue geplante Builder-Ausgabe **Base 41 / Bootstrap 9**. Bis zur realen Owner-Build-/MIZ-/DCS-Hashkette: `DCS_PENDING`.
