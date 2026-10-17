@@ -1047,3 +1047,60 @@ Dies sind **Soll-Provideroptionen**, keine Behauptung, dass alle Muster/Staffeln
 ### 22.4 Gemeinsame Abnahme erst nach kompletter Reconciliation
 
 Erst nach Abschluss der noch offenen Kanten und finaler GitHub-CI gibt ChatGPT **eine** nummerierte lokale PowerShell-Anweisung aus: Remote-Pull, Base-40-/Bootstrap-8-Build (oder hoehere dann aktuelle Versionen), zwei reale Bundle-SHA-256-Checks, Handoff-Hash. Owner bindet beide Lua-Bundles im Mission Editor selbst ein und liefert neue MIZ-/Internals-/Moose-/Bundle-Hashes samt echten DCS-/Debrief-Logs. **Keine ChatGPT-.miz-Mutation**. Acceptance als ein gebuendelter Full-Response-Lauf, *nicht* vier isolierte Callback-Builds. Dokumentation weiterhin in dieser Datei; wenn naechster Chat, zuerst Abschnitte 21–22 plus `main`-Governance/Fachbaselines lesen.
+
+
+### 22.5 Verifizierter AirOps-/MIZ-Quellenabgleich und aktualisierte Source-Schemata
+
+Beim lesenden Vergleich der vom Owner bereitgestellten
+`OMW_Template_v26_GroundWorks_Ready(3).miz` gegen die aktive
+`main`-ORBAT wurden die drei Fixed-Wing-CAS-Template-Namen im
+`mission`-Member tatsaechlich gefunden:
+
+- `TPL_AIR_US_BGRM_F15E_CAS_2SHIP`: **3 Textvorkommen**; in
+  `l10n/DEFAULT/OMW_AirOps_Bagram.lua` registrierte
+  `SQ_US_BGRM_F15E_335_EFS`, CAS und STRIKE.
+- `TPL_AIR_US_BGRM_F16C_CAS_2SHIP`: **3 Textvorkommen**;
+  `SQ_US_BGRM_F16C_121_EFS` mit CAS-Capability in derselben
+  Bagram-Lua-Ressource.
+- `TPL_AIR_US_KAF_A10C_CAS_2SHIP`: **3 Textvorkommen**;
+  `SQ_US_KAF_A10C_74_EFS` mit CAS/CASENHANCED in der eingebetteten
+  `l10n/DEFAULT/OMW_AirOps_Kandahar.lua`.
+
+Die konkreten MOOSE-Airwing-Aliasse der eingebetteten Foundation lauten
+`AW_US_BGRM_455_AEW` (Bagram Fighter) und
+`AW_US_KAF_451_AEW` (Kandahar Fighter). Der alte gedankliche
+Single-Wing-Alias `AW_US_BAGRAM` ist keine Basis fuer einen neuen
+Provider-Adapter. Dies **beweist die vorhandenen Foundation-Strings**
+und bereits definierte CAS-Capabilities, **nicht** die Einsatzbereitschaft
+oder physische MOOSE-Rekrutierbarkeit zum Laufzeitpunkt.
+
+Die produktive `CasLifecycleRuntime:_prepareSelectedProvider` fordert
+`pathlineBase`/`pathlineNames` und verwendet
+`HelicopterCorridor.ResolveSequence` und
+`HelicopterCasTacticalCorridor.PlanRouteGated`.
+Es liegt **noch kein genehmigter und gegen die v26-MIZ gepruefter
+Fixed-Wing-Routing- und Return-Vertrag** fuer diese drei SQUADRONs vor.
+Eine beliebige Freigabe der Fighter `requiredAttributes` wuerde
+deshalb in die vorhandene Helikopterroute fuehren und ist verboten.
+Vor Fixed-Wing-Produktion muessen zustaendige AirOps-Fachbaseline,
+tatsaechliche vorhandene Routingelemente, CAS-Auftragsgeometrie,
+Nutzlast, Start-/Ressourcenautorisierung, Airspace-Deconfliction sowie
+RTB-/Recovery-/Asset-Level-Loss als eigener akzeptierter Pfad geprueft
+werden. F-15E bleibt `THIRD_PARTY_AT_RISK`.
+
+**Source-Vertrag nach QRF-Event-Interface-Versionierung:**
+`OMW_FireSupStratResupply_QrfMissionFactory.lua` = **QRF-MISSION-FACTORY-9**,
+`OMW_FireSupStratResupply_QrfRuntime.lua` = **QRF-RUNTIME-14**,
+`OMW_FireSupStratResupply_Runtime.lua` = **RUNTIME-14**.
+`tools/build-fire-support-strategic-resupply-production-base.ps1`
+erwartet diese Marker mit `BASE-6` und meldet **Production Base 40**.
+Bootstrap weiterhin **8** mit `FIRE-CONTINUATION-3`.
+Dies sind **Source-/Builder-Schemata, keine real lokal gebauten Hashes**.
+
+Die Source-Aenderungen am QRF-Verlust-Callback bleiben
+`SOURCE_IMPLEMENTED / DCS_PENDING`. Insbesondere ist das erneute
+Dispatching nach einem realen MOOSE-Gruppenverlust nicht identisch mit
+dem Nachweis eines neu verfuegbaren CampaignState-Warehouse-Bestands.
+Nicht disponierte Ersatz-QRF und die vollstaendige C2-Persistenz bei
+Wartezeiten auf freiwerdende Warehouse-Assets sind separat noch zu
+verifizieren und gegebenenfalls nachzufuehren.
