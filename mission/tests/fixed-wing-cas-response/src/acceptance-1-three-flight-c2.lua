@@ -53,6 +53,22 @@ local function markFlight(id, flight)
   })
 
   -- Public MOOSE extension hooks: preserve any pre-existing user callback.
+  local previousTaxi = flight.OnAfterElementTaxiing
+  flight.OnAfterElementTaxiing = function(self, from, event, to, element)
+    if previousTaxi then previousTaxi(self, from, event, to, element) end
+    report("ELEMENT_TAXIING", { "request=" .. id, "element=" .. tostring(element and element.name) })
+  end
+
+  local previousTakeoff = flight.OnAfterElementTakeoff
+  flight.OnAfterElementTakeoff = function(self, from, event, to, element, airbase)
+    if previousTakeoff then previousTakeoff(self, from, event, to, element, airbase) end
+    report("ELEMENT_TAKEOFF", {
+      "request=" .. id,
+      "element=" .. tostring(element and element.name),
+      "airbase=" .. tostring(airbase and airbase:GetName() or "unknown"),
+    })
+  end
+
   local previousAirborne = flight.OnAfterElementAirborne
   flight.OnAfterElementAirborne = function(self, from, event, to, element)
     if previousAirborne then previousAirborne(self, from, event, to, element) end
@@ -149,6 +165,15 @@ local function observe()
         "request=" .. id, "alive=" .. tostring(seen), "insideAo=" .. tostring(inside),
         "airborneEvents=" .. tostring(record.airborneCount),
       })
+      for _, unit in pairs(units) do
+        if unit and unit:IsAlive() then
+          report("ELEMENT_FUEL_OBSERVER", {
+            "request=" .. id,
+            "element=" .. tostring(unit:GetName()),
+            "fuelFraction=" .. tostring(unit:GetFuel()),
+          })
+        end
+      end
     end
   end
 end
