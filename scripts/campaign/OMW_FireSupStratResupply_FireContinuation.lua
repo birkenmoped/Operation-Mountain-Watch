@@ -5,7 +5,7 @@
 local Continuation = {}
 local Instance = {}
 Instance.__index = Instance
-Continuation.SchemaVersion = "OMW-FSSR-FIRE-CONTINUATION-2"
+Continuation.SchemaVersion = "OMW-FSSR-FIRE-CONTINUATION-3"
 
 local function requireFunction(spec, key)
   if type(spec[key]) ~= "function" then
@@ -95,7 +95,10 @@ function Instance:_evaluate(incidentId)
     return
   end
 
-  local ammo = self.getPhysicalAmmo(pending.entry)
+  -- An initially unavailable provider has no prior physical battery to
+  -- inspect. Re-present that sustained C2 requirement to MOOSE recruitment
+  -- when an actual release event arrives; do not bind it to another battery.
+  local ammo = pending.entry and self.getPhysicalAmmo(pending.entry) or pending.requiredShots
   if type(ammo) ~= "number" then
     self.log("C2_FIRE_AMMO_UNKNOWN incidentId=" .. tostring(incidentId))
     return
@@ -139,6 +142,31 @@ function Instance:_evaluate(incidentId)
     self.log("C2_FIRE_DISPATCH_PENDING incidentId=" .. tostring(incidentId)
       .. " reason=" .. tostring(reason))
   end
+end
+
+-- Retain the tactical requirement after an initial MOOSE selection failure.
+-- This is not a MOOSE operational mission queue: all retry recruitment still
+-- passes exclusively through the existing Base/COMMANDER adapter.
+function Instance:OnUnserved(demand, context)
+  if type(demand) ~= "table" or type(demand.demandId) ~= "string"
+    or type(demand.incidentId) ~= "string" then return false end
+  if demand.status == "DISPATCHED" or demand.status == "ALREADY_DISPATCHED" then
+    return false
+  end
+  if self.waiting[demand.incidentId] then return false end
+  self.waiting[demand.incidentId] = {
+    demand = demand,
+    context = context,
+    entry = nil,
+    requiredShots = 4,
+    lastTargetName = self.lastTargetByIncident[demand.incidentId],
+    rearmRequested = false,
+    rearmCompleted = false,
+  }
+  self.log("C2_FIRE_UNSERVED_RETAINED incidentId=" .. demand.incidentId
+    .. " demandId=" .. demand.demandId
+    .. " reason=" .. tostring(demand.dispatchReason))
+  return true
 end
 
 function Instance:OnFinished(demand, context, entry, reason)
