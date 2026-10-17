@@ -23,5 +23,7 @@ jobs:
       - name: Build acceptance bundle with PowerShell
         shell: pwsh
         run: ./tools/build-fixed-wing-cas-response-acceptance-1.ps1
+      - name: Preview generated bundle header
+        run: head -n 18 mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_1.lua
       - name: Validate generated Lua 5.1 bundle syntax
         run: luac5.1 -p mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_1.lua
