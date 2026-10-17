@@ -38,6 +38,7 @@ function arty:AssignTargetCoord(coord,prio,radius,shots,maxengage,time,weapontyp
   return name
 end
 function arty:RemoveTarget(name) self.removeCalls[#self.removeCalls+1]=name end
+function arty:GetAmmo() return self.physicalAmmo or 20 end
 
 local notifications={}
 local runtime=Runtime.New({
@@ -133,6 +134,7 @@ do
   local fakeArty={groupname="NO_SHOT_ARTY"}
   function fakeArty:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
   function fakeArty:RemoveTarget() end
+  function fakeArty:GetAmmo() return 20 end
   local callbackReason
   local releaseCount=0
   local noShotRuntime=Runtime.New({
@@ -193,6 +195,7 @@ eq(releases,4,"malformed owner release")
 local throwingArty={}
 function throwingArty:AssignTargetCoord() error("ASSIGN_FAILED") end
 function throwingArty:RemoveTarget() end
+function throwingArty:GetAmmo() return 20 end
 local assignRuntime=Runtime.New({
   commander=commander,
   artyMissionFactory=factory,
@@ -233,6 +236,7 @@ do
     local a={}
     function a:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
     function a:RemoveTarget() end
+    function a:GetAmmo() return 20 end
     return a
   end
   local artyA=newArty()
@@ -280,6 +284,7 @@ do
   local deadArty={}
   function deadArty:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
   function deadArty:RemoveTarget() end
+  function deadArty:GetAmmo() return 20 end
   local deadRuntime=Runtime.New({
     commander=deadCommander,
     artyMissionFactory=factory,
@@ -337,6 +342,23 @@ do
   yes(ok,"throwing listener contained")
   eq(releaseCount,1,"release survives throwing listener")
   yes(throwRuntime:GetState(demandArg.demandId).completed,"completion state retained")
+end
+
+-- A MOOSE-selected depleted battery must release its reservation and remain
+-- unable to fire; C2 can then consider another provider on the next event.
+do
+  local priorRelease = releases
+  local priorAssignments = #arty.assignCalls
+  arty.physicalAmmo = 2
+  local missing,created,reason=runtime:Dispatch(
+    {demandId="LOW_AMMO_SELECTED",supportType="ARTY"},{marker="CTX"})
+  eq(missing,nil,"depleted battery does not get a firing handle")
+  no(created,"depleted battery selection rejected")
+  eq(reason,"SELECTED_ARTY_AMMO_INSUFFICIENT","specific depleted reason")
+  no(asset.isReserved,"depleted provider unreserved")
+  eq(releases,priorRelease+1,"selected battery released exactly once")
+  eq(#arty.assignCalls,priorAssignments,"never task depleted battery")
+  arty.physicalAmmo = nil
 end
 
 print("PASS test_fire_support_strategic_resupply_arty_selection_runtime")
