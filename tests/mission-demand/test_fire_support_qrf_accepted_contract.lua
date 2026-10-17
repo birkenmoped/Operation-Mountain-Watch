@@ -21,7 +21,7 @@ local roadSpawnAdapter = read("scripts/ground/OMW_GroundRoadSpawnAdapter.lua")
 local acceptance = read("mission/tests/fire-support-strategic-resupply-production-base-runtime/src/03-production-base-six-site-physical-alarm-qrf-acceptance.lua")
 
 -- Honaker-reconciled QRF recruitment/materialization anchor remains MOOSE ONGUARD.
-contains(factory, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8", "QRF factory schema")
+contains(factory, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-9", "QRF factory schema")
 contains(factory, "AUFTRAG:NewONGUARD", "QRF factory recruitment anchor")
 contains(factory, "SetReturnToLegion(true)", "QRF factory return contract")
 contains(factory, "SetTeleport(false)", "QRF factory physical lifecycle")
