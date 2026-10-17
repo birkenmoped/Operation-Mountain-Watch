@@ -1021,3 +1021,27 @@ Functional-`ARTY:OnAfterCeaseFire`-Callback, **kein** Repeat-/World-Scan.
 `ARTY:GetAmmo(false)` (Source etwa 99163) bleibt MOOSE-physische Ammo-Autoritaet;
 CampaignState-Settlement erfolgt nur im bereits akzeptierten
 `GroundAmmoRearmAdapter`. Source-reviewed und CI-Test, DCS-PENDING.
+
+
+### FSSR-Reconciliation: OPSGROUP-Verlustereignis und Rearm-Observation (17.10.2026)
+
+Die gepinnte `Moose.lua` 2.9.18 / Commit
+`73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` wurde im Source auf
+`OPSGROUP:onbeforeDead` (ca. Zeile 226957), `OPSGROUP:onafterDestroyed`
+(ca. Zeile 226944), `OPSGROUP:onafterDead` und
+`ARTY:onafterRearm` (ca. Zeile 98490), `ARTY:onafterRearmed`
+(ca. Zeile 98582) und `ARTY:_CheckRearmed` (ca. Zeile 98617) geprueft.
+`OPSGROUP:OnAfterDestroyed` wird nun in
+`OMW_FireSupStratResupply_QrfMissionFactory.lua` nach dem bisherigen
+Handler einmalig an den autoritativen lokalen QRF-Verlust-Fachcallback
+weitergereicht. Dies wird nur nach dem MOOSE-Gruppenzerstoerungsereignis
+ausgeloest; einzelne Elementverluste sind dafuer kein Ersatz.
+
+`OMW_FireSupStratResupply_ProductionBootstrap.lua` verknuepft
+`ARTY.OnAfterRearm` ausschliesslich als lesenden Diagnostik-Observer
+mit physischem Ammo-Stand, `Nammo0`, M1083-zu-Batterie-Distanz und
+konfigurierter `RearmingDistance`; der bestehende
+`GroundAmmoRearmAdapter` besitzt weiter die Settlement- und
+`OnAfterRearmed`-Autoritaet. Das Re-arm-FSM-Verhalten wurde **nicht**
+ersetzt oder ueberschrieben. Aktueller Nachweis: Source/CI; fuer diesen
+neuen Beobachter und die QRF-Ersatzanforderung **DCS_PENDING**.
