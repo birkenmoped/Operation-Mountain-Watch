@@ -44,3 +44,20 @@ jobs:
         run: ./tools/build-fixed-wing-cas-response-acceptance-2.ps1
       - name: Validate Acceptance 2 generated Lua 5.1 bundle
         run: luac5.1 -p mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_2.lua
+
+  acceptance-3-static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Lua 5.1 syntax checker
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.1
+      - name: Validate Acceptance 3 Lua 5.1 source syntax
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/src/acceptance-3-three-flight-cruise-rtb.lua
+      - name: Build Acceptance 3 bundle with PowerShell
+        shell: pwsh
+        run: ./tools/build-fixed-wing-cas-response-acceptance-3.ps1
+      - name: Validate Acceptance 3 generated Lua 5.1 bundle
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_3.lua
