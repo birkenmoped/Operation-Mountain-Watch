@@ -12,7 +12,7 @@ end
 local source=read("scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua")
 
 local required={
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-7',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-8',
   'OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED',
   'requireUserFlag("OMW_WAREHOUSE_READY", 1)',
   'requireUserFlag("OMW_GROUND_READY", 1)',
@@ -34,6 +34,7 @@ local required={
   'FIXED_FIRE_READINESS_EVENT',
   'fixedFireMaterialized=true',
   'FireContinuation.New',
+  'state.fireContinuation:OnUnserved',
   'sourceTargetGroup',
   'LOCAL_REARM_RESOURCE_QUANTITY_NOT_CONFIGURED',
   'LOCAL_REARM_A10',
