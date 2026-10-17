@@ -426,3 +426,30 @@ Fuer die spaetere gemeinsame Full-Response-Acceptance zusaetzlich testen:
 6. Nach physischem `Rearmed` lokale ARTY-Continuation/SupportReturn und Warehouse-Settlement separat pruefen; Truck-Naehe allein ist keine Completion.
 
 GitHub CI `MissionDemand validation` + `Documentation validation` erfolgreich am Source-Stand `2057ea45ef83a166866f1a50df5bff8fc94e6aed`, jedoch **keine** Windows-Bundle-SHA oder DCS-Acceptance. Neue geplante Builder-Ausgabe **Base 41 / Bootstrap 9**. Bis zur realen Owner-Build-/MIZ-/DCS-Hashkette: `DCS_PENDING`.
+
+### QRF-Unserved-/Stock-Gate, Bootstrap 10 (17.10.2026, DCS_PENDING)
+
+Source: `OPSGROUP.OnAfterDestroyed` generiert einen taktischen
+QRF-Ersatzbedarf, der bei `NOT_DISPATCHED` **nicht** verloren geht.
+Rekrutierung wird nur bei `LEGION.OnAfterLegionAssetReturned` oder
+`LEGION.OnAfterNewAsset` derselben Site eventgetrieben wiederholt.
+Ein neuer Request-Key pro dokumentiertem Versuch; keine permanente
+MOOSE-Parallelqueue, kein Timeout-Spawn, kein fiktives Recredit.
+
+Pflichtpruefung in DCS: reale Gruppenzerstoerung, Gegenprobe
+`GetParticipants(true)`, CampaignState PERSONNEL/VEHICLE-Fortschreibung,
+MOOSE BRIGADE Warehouse-/PLATOON-Gruppenbestand, erfolgreicher
+zweiter QRF-Dispatch nur bei belegtem verfuegbarem Asset, keine
+doppelte Materialisierung, kein unberechtigter Return-Credit.
+
+**Nach Source-Review zusaetzliches Gate:** `createSiteBrigades()`
+registriert aktuell `PLATOON:New(QRF_TEMPLATE,1,...)`, also genau
+**eine** MOOSE-QRF-Gruppe pro Site. `GroundInitialStock` fuehrt
+zwar autoritative PERSONNEL-/VEHICLE-Bestaende (beispielsweise
+`GROUND_NODE_HONAKER` 120 PERSONNEL / 18 VEHICLE), die aktuell
+**nicht automatisch** 18 QRF-Fahrzeuge oder eine zweite komplette
+MOOSE-QRF-Gruppe darstellen. Es fehlt ein separat nachgewiesener
+CampaignState->QRF-Asset-Commitment-/Loss-/Restore-Vertrag. Vor einer
+behaupteten zweiten QRF darf keine beliebige PLATOON-Anzahl aus
+Gesamtfahrzeugen abgeleitet werden. Bis zum nachgewiesenen
+Foundation-/Kapazitaetsvertrag bleibt `QRF_REPLACEMENT_DCS_PENDING`.
