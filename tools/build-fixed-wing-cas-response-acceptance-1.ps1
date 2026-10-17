@@ -37,14 +37,14 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($commit)) {
 $nl = "`r`n"
 $header = @(
     '-- AUTO-GENERATED; do not edit directly.',
-    '-- BuilderVersion: ' + $builderVersion,
-    '-- GitCommit: ' + $commit,
-    '-- GeneratedUtc: ' + [DateTime]::UtcNow.ToString('o'),
+    "-- BuilderVersion: $builderVersion",
+    "-- GitCommit: $commit",
+    "-- GeneratedUtc: $([DateTime]::UtcNow.ToString('o'))",
     '-- Test: fixed-wing CAS response acceptance 1, three missions',
     '-- Scope: MOOSE C2 mission creation plus passive events/telemetry',
     '-- Exclusions: no MIZ mutation; no route, tanker, fuel, ATC or RTB overrides',
     '-- MooseCommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54',
-    '-- MooseSha256: ' + $expectedMooseSha256
+    "-- MooseSha256: $expectedMooseSha256"
 ) -join $nl
 
 $targetDir = Split-Path -Parent $destination
