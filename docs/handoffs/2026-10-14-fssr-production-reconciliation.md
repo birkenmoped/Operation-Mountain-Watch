@@ -1104,3 +1104,57 @@ dem Nachweis eines neu verfuegbaren CampaignState-Warehouse-Bestands.
 Nicht disponierte Ersatz-QRF und die vollstaendige C2-Persistenz bei
 Wartezeiten auf freiwerdende Warehouse-Assets sind separat noch zu
 verifizieren und gegebenenfalls nachzufuehren.
+
+
+## 23. Cross-Branch-Abgleich mit Draft PR #151 – Fixed-Wing CAS Coverage, Ground Alert und Three-Flight-MOOSE-Acceptance (17.10.2026)
+
+**Evidenz:** GitHub [PR #151](https://github.com/birkenmoped/Operation-Mountain-Watch/pull/151), Titel `Document fixed-wing CAS policy and prepare three-flight MOOSE C2 response acceptance`; Status bei Pruefung `OPEN / DRAFT`, Branch `agent/fixed-wing-cas-coverage-ground-alert-decision` -> `main`, neun geaenderte Dateien. Der PR ist **nicht gemergt**, der Dokumentstatus ist `PLANNED / DCS_PENDING`. Aussagen aus diesem Draft sind branch-lokale Design-/Owner-Entscheidungsevidenz, keine automatisch produktive `main`-Implementierung. Keine ungefragte PR-Aenderung durch FSSR; Schedules/ATO/CAS gemeinsam statt konkurrierend gestalten.
+
+### 23.1 Fachvertrag und Unterschied zur bisherigen FSSR-CAS-Annahme
+
+1. **CAS rund um die Uhr ANFORDERBAR, nicht lueckenlos AIRBORNE:** Verbindliches Ziel auf PR-Branch: mindestens ein **Two-Ship-Ground-Alert** aus Bagram H24 als Bereitschaftsplan, F-16C **oder** F-15E im Wechsel; tatsaechliche Verfuegbarkeit/Reservierung ueber CampaignState, nie Luftfahrzeuge erfinden. Nach Alarmstart kann mangels physischer Ablösung eine Alert-Luecke entstehen. **Keine** bestaetigte 15-Minuten-Startgarantie.
+2. Tagsueber bevorzugt eine A-10C-Airborne-On-Call-CAS-Praesenz aus Kandahar mit bedarfsgerechten AAR-Tracks; nachts ebenfalls CAS anforderbar, aber Airborne-Deckung nach tatsaechlichem ATO-Bedarf. **Airborne-CAS-Deckungsluecken sind ausdruecklich zulaessig.** A-10-Praferenz ist keine globale Prioritaet vor aktuell naheliegenden/sofort verfuegbaren F-16/F-15; tatsaechliche Reaktionszeiten erst messen.
+3. Rollen: `SQ_US_KAF_A10C_74_EFS` (16 A-10C), `SQ_US_BGRM_F16C_121_EFS` (13 F-16C historisch Block 30/DCS Block 50) und `SQ_US_BGRM_F15E_335_EFS` (13 F-15E; Third-Party-at-Risk). Bereitschafts-/Flight-Reservations nicht mit strategischem Gesamtbestand oder physischen Client-/AI-Gruppen verwechseln.
+4. **Bestaetigte vorhandene AAR-Planungsrollen laut PR-Dokument:** `PATTY` (A-10/RC East SLOW), `MILHOUSE` (A-10 Kandahar Return SLOW), `KRUSTY` (A-10 East/Southeast Recovery SLOW), `NELSON` (Fast Jet FAST), `LISA` und `MOE` (FAST RESERVE). AAR-Entscheidungen/Reiseprofile unterliegen weiterhin `main`-Dokument 29/89 und MOOSE, **keine** FSSR-eigene Refuel-/Taxi-/ATC-/Fuel-Overrides. FuelLow, Winchester, Damage/Emergency rechtzeitige sichere RTB- und ggf. `COVERAGE_GAP`-Evidence; keine fiktive Pflicht zum Loitern bis Bingo.
+5. Fachliche Trennung: `Scheduled/Airborne On-call CAS` vs. `Ground Alert CAS` vs. `CAS_IMMEDIATE` als Bedarf. Der in `main` `docs/88-air-tasking-plan-foundation.md` und `docs/54-air-tasking-airspace-control-cas-requests-and-mission-data.md` vorgezeichnete Vertrag lautet `CampaignState -> MissionDemand/AIR_SUPPORT_REQUEST -> AIR_TASKING_PLAN (Alertfenster/Reservierung/Mission-to-Support) -> MOOSE COMMANDER/AIRWING/SQUADRON/AUFTRAG -> FLIGHTGROUP/DCS -> Settlement`. Ein planmaessiger Orbit allein erteilt keine Angriffsfreigabe, ein Ground-Alert-Flight ist nicht `CAS_ON_STATION`.
+
+### 23.2 PR-151 Acceptance-1 – bereits programmierte, aber noch unvalidierte MOOSE-Probe
+
+Pfade:
+- `docs/air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md`
+- `mission/tests/fixed-wing-cas-response/README.md`
+- `mission/tests/fixed-wing-cas-response/src/acceptance-1-three-flight-c2.lua`
+- `tools/build-fixed-wing-cas-response-acceptance-1.ps1`
+- `.github/workflows/fixed-wing-cas-response-validation.yml`
+
+Quelle: vom Owner bereitgestellte `OMW_Template_v26_GroundWorks_Ready(4).miz`, eingebettetes `Moose.lua` SHA-256 `E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`. Testoutput `OMW_FixedWing_CAS_Response_Acceptance_1.lua` (separates **Testbundle**, keine FSSR-Production-Komponente); Owner fuegt im Mission Editor nach `Moose.lua`, `OMW_AirOps_Bagram.lua`, `OMW_AirOps_Kandahar.lua` eigenhaendig ein. Kein ChatGPT-MIZ-Umbau.
+
+Testablauf mit **eigenem** `COMMANDER:New` (nur testbezogen):
+- F-16C Bagram erstes `AUFTRAG:NewCAS(5NM-AO Honaker ACCESS)`;
+- A-10C Kandahar als separater Request **60 Sekunden spaeter**;
+- F-15E Bagram **erst nach beiden individuellen F-16-`OnAfterElementAirborne`-Signalen** und `GROUP:IsAirborne(true)`.
+- `AUFTRAG:AssignSquadrons({squadron})` selektiert bewusst die im Test untersuchte Staffel; `SetRequiredAssets(1,1)` bedeutet **eine Two-Ship-Gruppe**, nicht zwei Zwei-Schiff-Gruppen.
+- Observer-Logs: `FLIGHT_ASSIGNED`, `ELEMENT_TAXIING`, `ELEMENT_TAKEOFF`, `ELEMENT_AIRBORNE`, `MOOSE_MISSION_EXECUTE`, `ELEMENT_IN_AO`, `TWO_SHIP_IN_AO`, `ELEMENT_FUEL_OBSERVER`. 15-Sekunden-Positionsbeobachtung ist **Acceptance-Messtechnik, kein produktiver Provider-Scanner**.
+- Dieser Probe-Standalone-Commander ist bewusst **nicht** die produktive C2-/ATO-Tasking-Engine; keine aktuelle `AIR_TASKING_PLAN`-Reservierung/Status-/Settlement-Integration, keine Ground-Alert-Dauerruntime, keine Live-Reaktionszeit oder Tankerautonomie aus dem Script ableiten.
+
+### 23.3 Konstruktive Wiederverwendung fuer FSSR – Schnittstellen-/Merge-Gates
+
+**Kein zweites Fixed-Wing-CAS-Schedule in FSSR entwickeln.** Das PR-151-Dokument liefert fachliche Bereitschafts-/Airborne-Doktrin und einen relevanten Testnachweis fuer MOOSE-Jet-Recruitment/Two-Ship-Startzeit/Flugzeit. FSSR besitzt den **angriffsbezogenen Site-C2-Unterstuetzungsbedarf**; ATO/MissionDemand besitzt planmaessige Alert-/Sortie-/Availability-/Mission-to-Support-Daten. Die verbindliche Arbeitsteilung bei Integration:
+
+```text
+FSSR / installation attack incident
+  -> one persistent tactical CAS support requirement (priority, AO, requester, timing)
+  -> existing MissionDemand / AIR_SUPPORT_REQUEST
+  -> existing AIR_TASKING_PLAN (ground alert / airborne on-call / resource reservation)
+  -> MOOSE COMMANDER + AIRWING/SQUADRON/AUFTRAG
+  -> aircraft-specific routed FLIGHTGROUP/CAS/return and CampaignState settlement
+  -> remaining FSSR site support need evaluated on real lifecycle events
+```
+
+- Keine FSSR-Doppelreservierung, kein FSSR-eigener H24-CAS-Schedule und kein zweites FSSR-Dispatcher-/Controller-/Fuel-/AAR-/ATC-Subsystem. `AIR_TASKING_PLAN` ist eine `main`-Foundation, **noch keine behauptete produktiv fertige Runtime**.
+- Die PR-151-Test-AUFTRAG-Capability `NewCAS + AssignSquadrons + SetRequiredAssets` wird gegen gepinnte MOOSE weiterverwendet, aber `AssignSquadrons` pro Flugzeugtyp darf **nicht als allgemeine produktive Provider-Vorauswahl von FSSR** kopiert werden; der Test schraenkt sie fuer Vergleichbarkeit explizit ein, das finale C2 muss nach autorisierten Availability-/Role-Pools via MOOSE entscheiden.
+- Die akzeptierte Stage3-Rotary-CAS-Lifecycle-/Route-/Release-/Recovery-Law bleibt unangetastet. Fixed-Wing-Flugsicherheit, On-station/Weapons/Sensor-Reporting, dynamische Ingress/Egress-, Fuel-/AAR-/Bingo-/Winchester-/Recovery-Regeln benoetigen genehmigte profilabhaengige eigene DCS-Validierung; einen F-16/A-10/F-15 **nicht** einfach in `HelicopterFlightPathCorridor` legen.
+- Cross-Branch-Abhaengigkeit vor FSSR-Fixed-Wing-Aktivierung: **PR #151-Status/Head/Reconciliation erneut pruefen**, bereits MOOSE-Tests/Acceptance auswerten, dann geregelten Adapter zur freigegebenen ATO-Schnittstelle erstellen statt unabgesprochen zwei Scheduler zusammenzufuehren. Draft ist weder automatisch `BINDING` auf `main` noch eine selbststaendige Merge-Freigabe.
+- PR-151-Acceptance-1 ist ein **separater fachlicher Messlauf fuer Three-Flight-Response**, kein fertiger kombinierter Honaker-Full-Response-Lauf. Ergebnisse erst nach echten DCS-Logs/Hashes als evidence uebernehmen.
+
+**Gesamtstand 17.10.:** FSSR Source Base 40/Bootstrap 8 plus offene Provider-/Rearm-/CAS-Integrationskanten aus Abschnitt 22; PR #151 `PLANNED / DCS_PENDING`. Keine Code- oder Branch-Merge-Aktion zwischen PR #151 und FSSR und keine Veraenderung des PR-151-Test-Harness durch diese Analyse. Diese Information ist jetzt im FSSR-Handoff dokumentiert und beim Chatwechsel verbindlich mitzulesen.
