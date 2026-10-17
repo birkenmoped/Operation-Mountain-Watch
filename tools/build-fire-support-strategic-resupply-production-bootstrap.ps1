@@ -14,7 +14,7 @@ $ammoAdapter = Join-Path $repoRoot 'scripts\ground\OMW_GroundAmmoRearmAdapter.lu
 $rearmService = Join-Path $repoRoot 'scripts\ground\OMW_FixedFireSupportAmmoRearmService.lua'
 $outputDir = Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $output = Join-Path $outputDir 'OMW_FireSupStratResupply_Production.lua'
-$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-9'
+$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-10'
 
 foreach ($file in @($source, $fireContinuation, $resourceDemandPolicy, $materializer, $ammoSupport, $ammoAdapter, $rearmService)) {
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
@@ -35,7 +35,7 @@ foreach ($module in @($materializerSource, $ammoSupportSource, $ammoAdapterSourc
 }
 
 foreach ($marker in @(
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-9',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-10',
   'FireContinuation.New',
   'C2_CONTINUATION',
   'sourceTargetGroup',
@@ -152,7 +152,7 @@ foreach ($marker in @(
 Write-Host "Built: $output"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "GitCommit: $commit"
-Write-Host "BootstrapSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-9"
+Write-Host "BootstrapSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-10"
 Write-Host "BaseDependency: OMW_FireSupStratResupply_Base.lua loaded first"
 Write-Host "ReadyFlag: OMW_FSSR_READY"
 Write-Host "ResupplyReadyFlag: OMW_FSSR_RESUPPLY_READY"
