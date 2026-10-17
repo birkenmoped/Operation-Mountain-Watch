@@ -8,7 +8,7 @@
 
 local Bootstrap = {}
 
-Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-7"
+Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-8"
 
 local TAG = "[OMW][FireSupStratResupply.Production]"
 local QRF_TEMPLATE = "TPL_BLUE_GND_QRF_MIXED_6"
@@ -571,6 +571,10 @@ local function requestExternalSupport(base, incident, escalationContext)
       created = created,
       reason = reason,
     }
+    if supportType == "ARTY" and state.fireContinuation and demand
+      and demand.status == "NOT_DISPATCHED" then
+      state.fireContinuation:OnUnserved(demand, { incident = incident })
+    end
     log(
       "C2_EXTERNAL_SUPPORT_REQUEST"
         .. " siteId=" .. tostring(incident.siteId)
