@@ -62,3 +62,13 @@ mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance
 ```
 
 Quellen: `docs/moose/AWACS-FUEL-DRIVEN-AAR-LIFECYCLE.md`, `docs/29-isaf-2009-2013-air-to-air-refueling.md`, `scripts/air-operations/OMW_AAR_Controller.lua`, `scripts/air-operations/OMW_AWACS_Controller_FullLifecycle_V3.lua`, gepinnte `Moose.lua` 2.9.18 (siehe Source-Dokumentation).
+
+## DCS-Ergebnisnachtrag vom 17.10.2026: FAIL
+
+Dieser Abschnitt ergaenzt den **urspruenglichen Testvertrag**, ohne dessen damalige Planungsparameter nachtraeglich umzudeuten. Originaltest-Source `ae4961a46cbe2bd47dfbb1a67426e480798b2135`, Owner-Bundle-SHA-256 `284F001BD397DC171F4EB17B8676E75BAA37AC00D2588D59724804722E3C7FA8`, DCS `2.9.30.28738 MT`, User-Uploads `dcs(3).log` und `debrief(3).log`, eingesetzte MOOSE-Version projektseitig `2.9.18`. **MIZ- und embedded-MOOSE-SHA256 nicht abschliessend vorgelegt, daher keine komplette technische Akzeptanzprovenienz.**
+
+**Resultat:** Alle drei echten MOOSE-C2-Requests wurden zugewiesen und jeweils zwei Flugzeuge starteten. Alle drei Two-Ships erreichten `TWO_SHIP_JOINED`. A-10 wurden bei PATTY ueber MOOSE betankt (`AAR_SELECTED t=58191, fuelMin=64.89 %`; `AAR_REFUELED t=61295, fuelMin=98.04 %`), danach **kein** `MISSION_EXECUTE`/`ELEMENT_IN_AO` fuer die A-10 nachgewiesen. F-16-Wingman erreichte `fuelFraction=0` und crashte. Beide A-10 crashen deutlich **nach** ihren letzten Observer-Werten von ca. 86–87 % Fuel; unmittelbare Crashursache offen, weil danach Telemetrie fehlt. Beide F-15E landeten in Bagram und stellten die Triebwerke ab, bei geringer Restreserve. **Gesamt: drei sicher zurueck, drei verloren. Acceptance 4 FAIL.**
+
+`missionState=success` ist kein Beleg fuer vollendetes CAS im AO oder fuer physische sichere Rueckkehr. `Fuel=0` bei einer F-15E am Ende der Bodentelemetrie liegt **nach** Landung, darf nicht als Absturz gewertet werden. `AAR_NOT_AVAILABLE` bei den Fastjets meint Ablehnung der konkreten Test-Tankerauswahl, nicht generelle Nichtexistenz eines Tankers. Vordringliche Reconciliation: A-10 AAR -> MOOSE-Pause/Resume -> Mission-Abschluss ohne AO; Observer-Luecke vor beiden A-10-Crashs; F-16 Fuel- und Bagram-Landing-Recovery ohne akzeptablen Tanker. Die Testergebnisse uebertragen keine erfolgreiche AAR-/RTB-Policy auf Produktion.
+
+**Vollstaendige Evidenz-/Folgechat-Uebergabe:** [Handoff 2026-10-17](../../../docs/handoffs/2026-10-17-fixed-wing-cas-acceptance-1-to-4-handoff.md). A5 erst nach MOOSE-/AWACS-/AAR-Source-Abgleich und Architekturentscheidung.
