@@ -20,6 +20,12 @@ local function scheduleOnce(callback)
   return SCHEDULER:New(nil, callback, {}, 1)
 end
 
+-- One-shot MOOSE deferral shared with the local QRF-loss callback.
+-- Does not create an operational mission owner or a polling scheduler.
+function Continuation.DeferOnce(callback)
+  return scheduleOnce(callback)
+end
+
 function Continuation.New(spec)
   if type(spec) ~= "table" then error("FireContinuation spec table required", 2) end
   for _, key in ipairs({
