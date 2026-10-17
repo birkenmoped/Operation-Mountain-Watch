@@ -166,3 +166,48 @@ Vor Runtime-Implementierung:
 6. Lifecycle-Inheritance-Tabelle für zu berührende akzeptierte CAS- und AAR-Komponenten mit Source-Pfaden und exakter DCS-/MOOSE-Provenienz vor jeder Implementierung anlegen.
 
 **Status:** `OWNER_DECISION_RECORDED / PLANNED / DCS_PENDING`. Kein Lua, keine Mission, keine Parking-Pools und keine Tankergeometrie wurden mit dieser Entscheidung verändert.
+
+
+## 10. A4-Reconciliation: MOOSE AAR Resume / Departure Holding (17.10.2026)
+
+**Status: SOURCE_REVIEWED / DESIGN_PENDING / DCS_PENDING.** Diese Analyse aendert keine produktive Runtime, stellt keinen A4-PASS dar und autorisiert keine A5-Implementierung.
+
+### 10.1 Source-Provenienz und Fehlerbefund
+
+- A4 ausgefuehrte Testquelle: `ae4961a46cbe2bd47dfbb1a67426e480798b2135`; Bundle-SHA256 `284F001BD397DC171F4EB17B8676E75BAA37AC00D2588D59724804722E3C7FA8`.
+- Owner-Upload `OMW_Template_v26_GroundWorks_Ready(1).miz`: SHA256 `c2273ffdbd2ecdeb43f2a3bab722fa9b33ed9c5679a311f3f15c7c61f1033d21`; enthaltene `Moose.lua` SHA256 `e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915`. Die lokale DCS-Runtime-Zuordnung ist auf den dokumentierten A4-Log-Scope begrenzt.
+- A4-Konfiguration: `SetMissionHoldingCoord(kandahar, 12000, 210, 3600)` mit `AddConditionPush(joinedForMission)`; `SetDefaultAltitude(22000)`, `SetDefaultSpeed(260)` und `SetMissionSpeed(260)`.
+- AAR: MOOSE `FLIGHTGROUP:Refuel`; `Refueled` belegt. Danach kein belastbarer Honaker-AO-Eintritt. Lead und Wingman sinken **zeitversetzt** von rund 24.000 ft auf rund 11.300 ft MSL und fliegen spaeter beide etwa 210 kn TAS. Ein A-10-zu-A-10-Hit und die anschliessenden zwei Crash-/Pilot-dead-Ereignisse sind Debrief-Evidenz; exakte Kollisionsdynamik bleibt unbelegt.
+- `missionState=done/success` tritt in A4 erst **nach** den physischen A-10-Verlusten auf und ist kein CAS-Erfolg.
+
+### 10.2 Verifizierte gepinnte MOOSE-Signaturen / Mechanismen
+
+Quellcode: A4-eingebettete `Moose.lua` (SHA256 oben), Zeilennummern bezogen auf bereitgestellte identische `Moose.lua`:
+
+| Methode / Ort | Quellcodebefund | Bedeutung |
+|---|---|---|
+| `AUFTRAG:SetMissionHoldingCoord` (ca. 181172) | Speichert `missionHoldingCoord`, Altitude, Speed, Duration auf AUFTRAG | Holding bleibt Missions-Eigenschaft; Setter bietet kein dokumentiertes One-shot/clear |
+| `AUFTRAG:AddConditionPush` (ca. 179045) | Fuegt Push-Bedingung hinzu | Bedingung schliesst erneute Holding-Routenerzeugung nicht aus |
+| `FLIGHTGROUP:onafterRefuel` (ca. 206366) | `PauseMission`, Refueling-Route/Task | MOOSE besitzt Betankungs-Ausfuehrung |
+| `FLIGHTGROUP:onafterRefueled` (ca. 206404) | `_CheckGroupDone(1)` | MOOSE prueft Fortsetzung |
+| `OPSGROUP:_CheckGroupDone` (ca. 229879) | Wenn alle verbleibenden Missionen pausiert: `UnpauseMission()` | Resume erfolgt ueber vorhandenes MOOSE |
+| `OPSGROUP:onafterUnpauseMission` (ca. 224552) | `mission.unpaused=true`; `MissionStart(mission)` | MissionStart wird erneut ausgefuehrt |
+| `OPSGROUP:onafterMissionStart` (ca. 224426) | `RouteToMission(Mission, 3)` | Routenaufbau nach Resume |
+| `OPSGROUP:RouteToMission` (ca. 224853; Holding-Block ca. 225285) | Bei `GetMissionHoldingCoord()` wird unabhaengig von `mission.unpaused` wieder ein Holding-Wegpunkt samt Orbit-Task eingefuegt | **Source-belegter Reentry-Pfad** zum Kandahar-Departure-Holding |
+| `FLIGHTGROUP:SetFuelLowThreshold` (ca. 203814) | Prozentwert; Default 25 | 30 als CAS-FLIGHTGROUP-Scope moeglich; nicht global |
+
+**Ursachenbewertung:** Die Wiederanlage der Holding-Route beim Resume ist im Source reproduzierbar erkennbar. Dass exakt dieser Pfad in A4 den anschliessenden beobachteten DCS-Flug steuerte, ist eine starke, aber noch nicht durch aktive Waypoint-/FSM-Telemetrie vollstaendig verifizierte Schlussfolgerung. Keine generische MOOSE-Standardflughöhe von 11.000 ft nachgewiesen.
+
+### 10.3 Abgleich gegen externe MOOSE-Demos
+
+Geprueft: offizielles Repository `FlightControl-Master/MOOSE_MISSIONS_UNPACKED` (CAS-Fall `CAS-003 - CAS in a Zone by Airplane Group - Engage with Speed and Altitude`) sowie Verzeichnisstruktur CAS-/Formation-/Recovery-Tanker-Demos. `CAS-003` benutzt **`AI_CAS_ZONE`**, nicht den aktuellen `COMMANDER/AIRWING/AUFTRAG`-AAR-Resume-Pfad. **Keine** Uebernahme als Ersatzarchitektur und **kein** daraus abgeleiteter Nachweis fuer Two-Ship-Resume nach AAR.
+
+### 10.4 Korrekturoptionen / Freigabe-Gate
+
+1. **Prioritaet: MOOSE direkt.** Einmalige Departure-Formation-Qualifikation von langfristiger `AUFTRAG:NewCAS`-Mission trennen, soweit die gepinnte oeffentliche OPS-/Mission-API dies ohne zweiten Mission-Owner leisten kann. Separates MOOSE-Staging-Tasking ist ein **Kandidat**, aber Queue-Uebergang, Asset-Bindung, Join und Fuel/AAR-Resume sind vor Auswahl anhand gepinnter Methoden konkret zu belegen; kein voreiliges zweites `AUFTRAG` neben C2.
+2. **Alternative: kleinster MOOSE-Adapter nur nach dokumentierter Gap-Analyse und Owner-Entscheidung.** Direkte interne Mutation `mission.missionHoldingCoord=nil` nach Join ist keine belegte oeffentliche Remove-Holding-API und darf nicht stillschweigend implementiert werden. Kein `Moose.lua`-Patch, Native-DCS-Task oder eigener Flug-/Resume-Controller.
+3. A4-Frueh-AAR bei 65 %, deaktivierte `FuelLowRTB/Refuel`-Automatik und 500-NM-Tanker-Filter bleiben historische Testkonfiguration, **keine** Produktions-Fuel-Policy. Der genehmigte 30-%-FuelLow-Scope betrifft nur Fixed-Wing-CAS-Flights; MOOSE-FSM erhalten, produktive AWACS/AAR-Lifecycles nicht duplizieren.
+4. Vor neuem A5-Code: Lifecycle-Inheritance-Tabelle (produktive AWACS/AAR/CAS-Quellen, exakte MOOSE-Methoden, geaenderte Boundary, Regressionen), klare MOOSE-API-Loesung und danach Owner-Freigabe, soweit eine interne MOOSE-Override-/INTENTIONAL_CHANGE-Grenze betroffen ist.
+5. Neues Acceptance nur mit Diagnostik der `MissionStart/UnpauseMission/RouteToMission`-Reihenfolge, aktivem Routen-/Holding-Zustand, individueller Fuel-/Hoehen-/Geschwindigkeitstelemetrie und horizontalem/vertikalem Elementabstand sowie physischer CAS-/RTB-/Asset-Return-Evidenz; alte A1-A4-Artefakte nicht aendern.
+
+**Aktueller Gate-Status: BLOCKED_FOR_A5_IMPLEMENTATION** bis zur dokumentierten Entscheidung fuer einen versionsverifizierten MOOSE-First-Korrekturweg.
