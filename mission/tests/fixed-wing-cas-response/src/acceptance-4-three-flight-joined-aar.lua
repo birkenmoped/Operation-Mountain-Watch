@@ -94,7 +94,8 @@ local function tankerCandidate(requestId, flight)
     if runtime and runtime.onStationAt and not runtime.egressOrdered and not runtime.lossHandled
       and runtime.group and runtime.group:IsAlive() and flight.refueltype then
       local tankerUnit = runtime.group:GetUnit(1)
-      local isTanker, refuelSystem = tankerUnit and tankerUnit:IsTanker()
+      local isTanker, refuelSystem = nil, nil
+      if tankerUnit then isTanker, refuelSystem = tankerUnit:IsTanker() end
       local compatible = isTanker and refuelSystem == flight.refueltype
       if compatible then
         local coord = runtime.group:GetCoordinate()
