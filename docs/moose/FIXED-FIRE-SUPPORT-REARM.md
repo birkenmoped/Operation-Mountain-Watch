@@ -437,3 +437,22 @@ keine neuen Mission-Editor-Objekte erzeugt. Die Werte stammen aus
 `mission/tests/fire-support-strategic-resupply-production-base-runtime/src/10-production-real-arty-selection-rearm-acceptance.lua`
 und sind nicht neu erfunden. DCS-Validierung gegen die **aktuelle**
 Production-`.miz` ausstehend.
+
+
+### FSSR neue Rearm-Observation (17.10.2026)
+
+Wegen des realen 16.10.-Laufs (Honaker M1083 materialisiert,
+`GROUND_AMMO_PACKAGE` verbucht, aber kein `LOCAL_ARTY_REARMED`)
+wurde die bisherige akzeptierte Rearm-MOOSE-FSM **nicht** geaendert.
+Stattdessen meldet der vorhandene Bootstrap beim eingetretenen
+`ARTY.OnAfterRearm` einmalig
+`LOCAL_ARTY_REARM_ENTERED assetId=... ammo=... initialAmmo=...
+distanceM=... thresholdM=... rearmingState=...`.
+Diese Werte belegen die tatsaechlichen MOOSE-Rearm-Bedingungen am
+FSM-Uebergang. Das Engine-Rearm selbst erfolgt anschliessend ueber den
+bisherigen `ARTY:Rearm`-/`_CheckRearmed`-Pfad.
+Die im DCS-Test sichtbare Truck-Naehe wird als reale Owner-Beobachtung
+gewertet, **nicht** stillschweigend als Distanzfehler uminterpretiert.
+Kein fester frei erfundener Nachlade-Timer, kein zweiter Rearm-Service.
+Ob DCS physisch nachlaedt und `OnAfterRearmed` eintritt bleibt
+`DCS_PENDING` bis zum naechsten echten Lauf.
