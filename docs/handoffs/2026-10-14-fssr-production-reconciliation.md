@@ -1203,3 +1203,44 @@ FSSR / installation attack incident
 - Der reale PR-151-Stand bleibt `OPEN / DRAFT / DCS_PENDING` (bei dieser Abfrage). Bereits fliegende Near-AO-CAS und Hot-Standby-Bagram-Flights sind **Zielzustand**, keine aktuell als DCS-funktionierend bewiesene Ausstattung.
 - Die naechste Arbeit in diesem FSSR-Chat konzentriert sich auf die **unabhaengigen** noch offenen ARTY-/Rearm-/QRF-/Site-C2-/AH-64-Aufgaben. Fixed-Wing-Operationalisierung erst nach fertiggestelltem PR #151.
 - Jede weitere Owner-Entscheidung/Testauswertung weiter in dieser Handoff-Akte dokumentieren. Keine Veraenderung der `.miz` durch ChatGPT, kein CODEX, kein isolierter Windows-Build wegen einer Dokumentationskorrektur.
+
+
+## 25. Source-Reconciliation 17.10.2026 – ARTY-Munition und Cross-Site-Providerwechsel
+
+**Arbeitsstand: SOURCE/CI PASS, DCS_PENDING.** Dieser Stand folgt den verbindlichen Owner-Entscheidungen aus Abschnitt 24; PR #151 bleibt zustaendig fuer Fixed-Wing-CAS-Flugbereitstellung. Keine lokale MIZ wurde von ChatGPT veraendert. Noch **keine** gemeinsame DCS-Full-Response-Acceptance und keine belastbare Aussage, dass M1083-Rearm, Ersatz-QRF oder Apache-Fuel-Low dadurch bereits behoben waeren.
+
+### 25.1 Behobene Source-Luecke im bestehenden FSSR-ARTY-C2
+
+Die bisherige `OMW_FireSupStratResupply_FireContinuation.lua` beendete bei `ammo < requiredShots` einer **zuvor rekrutierten** Batterie die _gesamte_ Standort-Auswertung nach dem M1083-Nachschubrequest. Dadurch erhielt ein anderes verfuegbares MOOSE-ARTY-Asset keine erneute Chance, obwohl derselbe Standort weiterhin ein geeignetes lebendes C2-Ziel hatte.
+
+**Neue Semantik, FireContinuation Schema 4:**
+- Munition ist der Zustand eines **physischen Providers**, nicht die Ressourcen- oder Bedarfsautoritaet fuer den gesamten FOB-/COP-Incident.
+- Bei lokaler Munitionsknappheit wird weiterhin nur einmal der akzeptierte M1083-/Functional-ARTY-Rearm-Pfad angefordert; die laufende Nachschubtransaktion wird nicht dupliziert.
+- Der **externe C2-Bedarf bleibt parallel rekrutierbar**. Die naechste Fire Mission geht ueber denselben `Base:RequestIncidentSupport`- und MOOSE-`COMMANDER:CanMission`-/`RecruitAssetsForMission`-Pfad; OMW waehlt **nicht** selbst Wright, Honaker oder eine andere Batterie aus.
+- Nur an tatsaechliche Events gebundene erneute Versuche: der bestehende physische ARTY-Release-, MOOSE-Rearmed- und CAS-Lifecycle-Callback koennen den wartenden Bedarf evaluieren. **Kein** periodischer eigener Retry-Dispatcher. Der vorhandene `OnUnserved`-Vertrag fuer schon initial gescheiterte MOOSE-Rekrutierung bleibt bestehen.
+- Bei unklarer physischer Munition einer bisher ausgewaehlten Batterie wird vorsichtig abgebrochen statt eine fiktive Einsatzbereitschaft anzunehmen.
+- Ein gestarteter, noch nicht abgeschlossener M1083-Nachschub wird durch erfolgreiche externe Rekrutierung **nicht** zum kuenstlichen `Rearmed` erklaert.
+
+**Neue physische Selektionssicherung, ArtySelectionRuntime Schema 4:**
+- **Erst nach echter MOOSE-Providerwahl** wird `owner.arty:GetAmmo(false)` mit den fuer diesen Owner vorgesehenen Schuessen verglichen. Unbekannte oder unzureichende Munition verhindert `AssignTargetCoord`.
+- Das reservierte MOOSE-Asset wird ueber den bereits akzeptierten `releaseAssets -> LEGION.UnRecruitAssets`-Pfad wieder freigegeben und `SELECTED_ARTY_AMMO_INSUFFICIENT`, `SELECTED_ARTY_AMMO_UNKNOWN` oder `SELECTED_ARTY_AMMO_UNAVAILABLE` als konkreter Grund gemeldet.
+- Es gibt **keine** zweite Providerliste, ARTY-Fire-FSM, neu erfundene Ammo-Replenishment-API oder strategische Ressourcenbuchung.
+- **Restgrenze:** Diese Sicherung garantiert **nicht**, dass MOOSE bei einer einzelnen misslungenen Auswahl im selben Aufruf automatisch die naechste Batterie testet. Eine geeignete alternative Batterie muss ueber den dokumentierten eventgebundenen wiederholten MOOSE-Recruitment-Pfad nachweisbar werden. Dieser Fall ist DCS-pflichtig.
+
+### 25.2 Tests und Builder
+
+- `tests/mission-demand/test_fire_support_strategic_resupply_fire_continuation.lua` prueft: M1083-Rearm wird nicht dupliziert, trotz lokaler Ammo-Knappheit wird ein alternativer MOOSE-Recruitment-Versuch unternommen; bei voruebergehend fehlender Providerfreigabe wird kein Auto-Poller gestartet; nach tatsaechlicher Rearm-Evidenz funktioniert die lokale Fortsetzung.
+- `tests/mission-demand/test_fire_support_strategic_resupply_arty_selection_runtime.lua` prueft echte selektierte Batterie, `GetAmmo(false)`, Ablehnung der leeren Batterie **vor** einem Feuerauftrag, Asset-UnRecruit genau einmal und unveraenderte Callback-/MOOSE-Fehlerisolierung.
+- `tools/build-fire-support-strategic-resupply-production-base.ps1`: **Production Base 41**, verlangt `ARTY-SELECTION-RUNTIME-4`.
+- `tools/build-fire-support-strategic-resupply-production-bootstrap.ps1`: **Production Bootstrap 9**, verlangt `FIRE-CONTINUATION-4`. Source Bootstrap Schema **9**.
+- GitHub Actions `MissionDemand validation` und `Documentation validation` fuer Source-Commit `2057ea45ef83a166866f1a50df5bff8fc94e6aed`: **SUCCESS**. Diese CI-Evidenz ist kein Windows-Build oder DCS-PASS; im aktuellen lokalen Owner-Stand liegen noch die zuletzt verifizierten **Base 39 / Bootstrap 7**-Artefakte.
+
+### 25.3 Noch zwingend offen vor einem behaupteten Full-Response-Fix
+
+1. **M1083-Rearm:** Der physische Truck-Stillstand und fehlende `Rearmed`-Completion bleiben ungeklärt; neue `LOCAL_ARTY_REARM_ENTERED`-Diagnostik wird erst in DCS gemessen. Der Source-Change verhindert lediglich, dass ein lokaler Munitionsmangel die _externe_ MOOSE-C2-ARTY-Disposition pauschal blockiert.
+2. **QRF-Verlust:** Ersatz-Request und OPSGROUP-Destroyed-Gate sind Source/CI-geprueft (Abschnitt 22), reale physische Neubeschaffung, CampaignState-Settlement und erneute Bedarfsdisposition bei `NOT_DISPATCHED` bleiben offen.
+3. **AH-64:** `CAS_FUEL_LOW_BEFORE_CONTROLLED_RELEASE` und lange Suchkreise aus dem 16.10.-DCS-Lauf sind noch nicht technisch behoben. `docs/moose/STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md` unterscheidet strikte normale Freigabe (eigenes MOOSE-Sensorbild **und** Supported-Element-Freigabe) vom gesonderten Unable-to-Continue-Abbruch. **Kein** kurzer selbstgebauter `AUFTRAG:Cancel`-/RTB-Ersatz, keine Global-RED-Count-Sensorinjektion, kein Aufweichen akzeptierter Egress-/Return-Routen ohne belegte Source-/DCS-Regressionssicherung.
+4. **Wright/Joyce/Honaker:** Erst realer DCS-Test kann belegen, dass MOOSE den nach Joyce freiwerdenden richtigen physischen Provider tatsächlich neu rekrutiert, über Functional-ARTY schiesst, ohne parallel bei aktivem CAS einen neuen ARTY-Feuerauftrag zu eröffnen.
+5. **Fighter CAS:** Laut Abschnitt 24 ist die Flugbereitstellung/Airborne-/Ground-Alert-Planung Aufgabe von PR #151 und kein Blocker fuer den unabhaengigen FSSR-Test.
+
+**Naechste fachliche Arbeit:** AH-64 Unable-to-Continue/Recovery gegen die exakte akzeptierte Route/FSM und vorhandene Tests source-reconciliieren; QRF-NoCapacity/Repeat-Loss-Settlement schliessen, soweit MOOSE/CampaignState nachgewiesen; finalen Gesamt-Diff/CI abnehmen. Erst danach **ein** lokaler Owner-Pull/Build/Hash fuer beide aktualisierten Lua-Bundles und ein gebuendelter DCS-Lauf. Kein isolierter Zwischen-Build und keine ChatGPT-MIZ-Mutation.
