@@ -196,3 +196,5 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 
 | `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-11` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-11.md` | `ACCEPTED_TECHNICAL_BASELINE`; kombinierter A11-DCS-PASS mit vollständiger Commit-/Bundle-/MIZ-/DCS-/MOOSE-Provenienz |
 | `OMW-RESULT-FSSR-PRODUCTION-BASE-A11-DCS-PASS-20261006` | `results/2026-10-06-production-base-acceptance11-dcs-pass.md` | `ACCEPTED_TECHNICAL_BASELINE`; realer kombinierter A11-DCS-PASS mit vollständiger technischer Acceptance-Provenienz |
+
+| `OMW-HANDOFF-FIXED-WING-CAS-2026-10-17` | `docs/handoffs/2026-10-17-fixed-wing-cas-acceptance-1-to-4-handoff.md` | `DRAFT`; A1–A4 source-/DCS-evidence, A4 failed 3/6 return and separate next-chat handoff |
