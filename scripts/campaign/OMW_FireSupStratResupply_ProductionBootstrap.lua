@@ -8,7 +8,7 @@
 
 local Bootstrap = {}
 
-Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-9"
+Bootstrap.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BOOTSTRAP-10"
 
 local TAG = "[OMW][FireSupStratResupply.Production]"
 local QRF_TEMPLATE = "TPL_BLUE_GND_QRF_MIXED_6"
@@ -74,6 +74,8 @@ local state = {
   localRearmConfig = nil,
   fireContinuation = nil,
   qrfLossSerial = {},
+  pendingQrfReplacement = {},
+  qrfRetryScheduled = {},
   campaignContext = nil,
   siteRegistry = nil,
   airwingCount = 0,
@@ -486,6 +488,89 @@ local function qualifiedParticipants(context)
   return candidates
 end
 
+-- One tactical unmet QRF need per installation incident. Operational
+-- recruitment, stock eligibility and loss settlement remain with the
+-- existing Base -> MOOSE BRIGADE / AUFTRAG lifecycle.
+local function retryQrfReplacement(incidentId, sourceEvent)
+  local pending = state.pendingQrfReplacement[incidentId]
+  if not pending or not state.base then return end
+  local incident = state.base:GetIncident(incidentId)
+  if not incident then
+    state.pendingQrfReplacement[incidentId] = nil
+    return
+  end
+  local live = qualifiedParticipants({incident=incident})
+  if #live == 0 then
+    state.pendingQrfReplacement[incidentId] = nil
+    log("QRF_REPLACEMENT_NOT_REQUIRED incidentId=" .. incidentId
+      .. " reason=NO_LIVE_INCIDENT_TARGET")
+    return
+  end
+  local serial = (state.qrfLossSerial[incidentId] or 0) + 1
+  state.qrfLossSerial[incidentId] = serial
+  local replacement, created, reason = state.base:RequestIncidentSupport(
+    incidentId, "QRF", {
+      requestKey = "INSTALLATION_ATTACK_QRF_REPLACEMENT_" .. tostring(serial),
+      priority = pending.priority,
+      cancelWhenIncidentClosed = false,
+      replacementAfterLoss = true,
+      context = {
+        activation = "QRF_LOSS_REPLACEMENT",
+        source = "INSTALLATION_ATTACK_INCIDENT",
+        sourceTargetGroup = live[1],
+      },
+    }
+  )
+  log("QRF_REPLACEMENT_REQUEST incidentId=" .. incidentId
+    .. " priorDemandId=" .. tostring(pending.priorDemandId)
+    .. " replacementDemandId=" .. tostring(replacement and replacement.demandId)
+    .. " status=" .. tostring(replacement and replacement.status)
+    .. " created=" .. tostring(created)
+    .. " sourceEvent=" .. tostring(sourceEvent)
+    .. " reason=" .. tostring(reason))
+  if replacement and (replacement.status == "DISPATCHED"
+    or replacement.status == "ALREADY_DISPATCHED") then
+    state.pendingQrfReplacement[incidentId] = nil
+  else
+    log("QRF_REPLACEMENT_UNSERVED incidentId=" .. incidentId
+      .. " sourceEvent=" .. tostring(sourceEvent)
+      .. " reason=" .. tostring(reason))
+  end
+end
+
+local function scheduleQrfReplacement(incidentId, sourceEvent)
+  if not state.pendingQrfReplacement[incidentId]
+    or state.qrfRetryScheduled[incidentId] then return end
+  state.qrfRetryScheduled[incidentId] = true
+  FireContinuation.DeferOnce(function()
+    state.qrfRetryScheduled[incidentId] = nil
+    retryQrfReplacement(incidentId, sourceEvent)
+  end)
+end
+
+local function installQrfAvailabilityHooks(brigades)
+  for siteId, brigade in pairs(brigades) do
+    local previousReturn = brigade.OnAfterLegionAssetReturned
+    function brigade:OnAfterLegionAssetReturned(From, Event, To, cohort, asset)
+      if previousReturn then previousReturn(self, From, Event, To, cohort, asset) end
+      for incidentId, pending in pairs(state.pendingQrfReplacement) do
+        if pending.siteId == siteId then
+          scheduleQrfReplacement(incidentId, "MOOSE_LEGION_ASSET_RETURNED")
+        end
+      end
+    end
+    local previousNew = brigade.OnAfterNewAsset
+    function brigade:OnAfterNewAsset(From, Event, To, asset, assignment)
+      if previousNew then previousNew(self, From, Event, To, asset, assignment) end
+      for incidentId, pending in pairs(state.pendingQrfReplacement) do
+        if pending.siteId == siteId then
+          scheduleQrfReplacement(incidentId, "MOOSE_LEGION_NEW_ASSET")
+        end
+      end
+    end
+  end
+end
+
 local function physicalCasPresence(coordinate)
   local external = state.runtime and state.runtime.externalSupportRuntime or nil
   local casLifecycle = external and external.casLifecycle or nil
@@ -794,40 +879,18 @@ local function startInternal(config)
       local incident = runtimeContext and runtimeContext.incident
       local incidentId = incident and incident.incidentId
       if not incidentId then return end
-      -- MOOSE OPSGROUP Destroyed signals the full physical group loss.
-      -- Defer one event turn so the original MOOSE destruction/warehouse
-      -- lifecycle can finish before attempting a replacement recruitment.
-      FireContinuation.DeferOnce(function()
-        if not state.base or not state.base:GetIncident(incidentId) then return end
-        local live = qualifiedParticipants({incident=incident})
-        if #live == 0 then
-          log("QRF_REPLACEMENT_NOT_REQUIRED incidentId=" .. incidentId
-            .. " reason=NO_LIVE_INCIDENT_TARGET")
-          return
-        end
-        local serial = (state.qrfLossSerial[incidentId] or 0) + 1
-        state.qrfLossSerial[incidentId] = serial
-        local replacement, created, reason = state.base:RequestIncidentSupport(
-          incidentId, "QRF", {
-            requestKey = "INSTALLATION_ATTACK_QRF_REPLACEMENT_" .. tostring(serial),
-            priority = demand.priority,
-            cancelWhenIncidentClosed = false,
-            replacementAfterLoss = true,
-            context = {
-              activation = "QRF_LOSS_REPLACEMENT",
-              source = "INSTALLATION_ATTACK_INCIDENT",
-              sourceTargetGroup = live[1],
-            },
-          }
-        )
-        log("QRF_REPLACEMENT_REQUEST incidentId=" .. incidentId
-          .. " priorDemandId=" .. tostring(demand.demandId)
-          .. " destroyedGroup=" .. tostring(armyGroup and armyGroup.groupname)
-          .. " replacementDemandId=" .. tostring(replacement and replacement.demandId)
-          .. " status=" .. tostring(replacement and replacement.status)
-          .. " created=" .. tostring(created)
-          .. " reason=" .. tostring(reason))
-      end)
+      -- A failed replacement remains a tactical need, never a duplicate
+      -- operational MOOSE queue. Real LEGION availability events wake it.
+      if not state.pendingQrfReplacement[incidentId] then
+        state.pendingQrfReplacement[incidentId] = {
+          priorDemandId = demand.demandId,
+          siteId = demand.siteId,
+          priority = demand.priority,
+        }
+      end
+      log("QRF_GROUP_LOSS_REPLACEMENT_PENDING incidentId=" .. incidentId
+        .. " destroyedGroup=" .. tostring(armyGroup and armyGroup.groupname))
+      scheduleQrfReplacement(incidentId, "MOOSE_QRF_GROUP_DESTROYED")
     end,
     qrfRequiredAttributes = GROUP.Attribute.GROUND_APC,
     blueCoalition = coalition.side.BLUE,
@@ -873,6 +936,7 @@ local function startInternal(config)
   state.base = runtime:GetBase()
   state.commander = commander
   state.brigades = brigades
+  installQrfAvailabilityHooks(brigades)
   state.perimeters = perimeters
   state.artyRegistry = registry
   state.airwingCount = airwingCount
