@@ -385,3 +385,31 @@ aendern die `.miz` nicht.
 `test_fire_support_strategic_resupply_production_bootstrap.lua`.
 CI ersetzt keine Missionslaufzeit. `validation_status: DCS_PENDING`;
 keine neue Acceptance-Behauptung.
+
+
+### Full-Response Reconciliation 17.10.2026 – Basis fuer naechste kombinierte Acceptance
+
+Noch **nicht** in DCS validierte, aufeinander abgestimmte Source-Aenderungen:
+- Eine initial durch MOOSE nicht disponierbare ARTY-Anforderung
+  (`NO_AVAILABLE_ARTY_PROVIDER`) bleibt im C2-Bedarf erhalten und
+  wird durch ein reales ARTY-Provider-Release erneut selektiert,
+  ohne zweite `AUFTRAG:NewARTY`-Execution-Queue.
+  Pflichtfall: Honaker wartet waehrend Wright/Joyce-Bindung.
+- Eine bestaetigt durch MOOSE `OPSGROUP.Destroyed` verlorene
+  lokale QRF fuehrt bei vorhandenen lebenden Incident-Targets zu
+  genau einem neuen lokalen QRF-Demand mit neuem Request-Key.
+  Alte `On Road`-/`EngageTarget`-/`ReturnToLegion`-Semantik bleibt.
+- Ein neuer M1083-Observer protokolliert bei `OnAfterRearm`
+  physische Munition/Initialmunition, Abstand und Rearm-Distanz;
+  `Rearmed`-, Consumption- und SupportReturn-Evidence weiter wie A10.
+
+Die naechste kombinierte DCS-Mission muss auch negative Gates testen:
+kein automatisches QRF-Nachspawnen ohne lebenden bekannten Gegner;
+keine neue ARTY-Salve bei physischem CAS-ON-STATION;
+keine Fake-`Rearmed`-Completion bei sichtbarem Truck;
+keine endlosen ARTY-Retries bei fehlenden Ressourcen;
+kein Verlust oder Recredit eines anderen MOOSE-Owners.
+A-10C/F-16C/F-15E sind **noch nicht** auf der bestehenden Helikopter-
+CAS-Lifecycle-/Korridorimplementierung freigegeben. Diese Erweiterung
+ist erst nach eigenem festen AIRWING-/SQUADRON-/Routen-/Payload-/DCS-
+Nachweis umzusetzen. **Status: SOURCE_IMPLEMENTED_PARTIAL / DCS_PENDING.**
