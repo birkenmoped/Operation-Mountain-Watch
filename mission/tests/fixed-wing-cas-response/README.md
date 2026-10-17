@@ -67,18 +67,18 @@ HARNESS_LOADED
 C2_STARTED
 REQUEST_CREATED / REQUEST_SUBMITTED_C2
 FLIGHT_ASSIGNED
-ELEMENT_AIRBORNE (je individuelles Flugzeug)
+ELEMENT_TAXIING / ELEMENT_TAKEOFF / ELEMENT_AIRBORNE (je individuelles Flugzeug)
 MOOSE_MISSION_EXECUTE
 ELEMENT_IN_AO (je individuelles Flugzeug)
 TWO_SHIP_IN_AO
-POSITION_OBSERVER
+POSITION_OBSERVER / ELEMENT_FUEL_OBSERVER
 ```
 
 Alle Events protokollieren `UTILS.SecondsOfToday()`. Berechnet werden pro Flight `REQUEST_CREATED -> ELEMENT_AIRBORNE` getrennt pro Aircraft, `REQUEST_CREATED -> ELEMENT_IN_AO` und `REQUEST_CREATED -> TWO_SHIP_IN_AO`. Die Positionserfassung mit 15-s-Intervall erzeugt einen Messfehler von bis zu ungefaehr 15 s beim AO-Eintritt. Landebahnkreuzung, ATC-Freigabe und Nachbrenneraufholen sind aufgrund fehlender expliziter MOOSE-Events **zunaechst visuelle DCS-/Track-Beobachtungen**, nicht als automatisch bewiesene Ursachen auszugeben.
 
 ## AAR-/Fuel-Grenze
 
-Alle MOOSE-/DCS-Entscheidungen zu Fuel, AAR, RTB, Taxi, Nachbrenner, Navigation und Waffen bleiben unveraendert. Das Bundle weist **keinen** Tanker zu und erzeugt keine AAR-Mission. Gegebenenfalls vorhandene AAR-Automatik der geladenen Mission wirkt unveraendert; eine autonome Refuel-Entscheidung des CAS-Flights ist **nicht** schon durch die Moeglichkeit `FLIGHTGROUP:Refuel` bewiesen. Tatsae chliches AAR-Verhalten muss im DCS-Lauf beobachtet werden.
+Alle MOOSE-/DCS-Entscheidungen zu Fuel, AAR, RTB, Taxi, Nachbrenner, Navigation und Waffen bleiben unveraendert. Das Bundle weist **keinen** Tanker zu und erzeugt keine AAR-Mission. Gegebenenfalls vorhandene AAR-Automatik der geladenen Mission wirkt unveraendert; eine autonome Refuel-Entscheidung des CAS-Flights ist **nicht** schon durch die Moeglichkeit `FLIGHTGROUP:Refuel` bewiesen. Tatsaechliches AAR-Verhalten muss im DCS-Lauf beobachtet werden.
 
 ## MOOSE-Source- und Demo-Nachweise
 
@@ -102,7 +102,7 @@ Output: `mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_A
 
 Der Builder schreibt Version, Git-Commit, UTC-Erzeugungszeit und gepinnten MOOSE-Hash in den Lua-Header. Er enthaelt statische No-Override-Pruefungen und ist in PowerShell ohne Python ausfuehrbar.
 
-Eine Kopie der v26-Mission ist gemäss [Dokument 22](../../../docs/22-test-mission-build-transfer-and-validation-workflow.md) in DCS zur Testmission zu machen; das generierte Bundle muss nach `Moose.lua` und beiden AIRWING-Foundation-Skripten als **DO SCRIPT FILE** eingebunden werden. Kein bestehender Trigger darf ersetzt oder deaktiviert werden. Nach dem Mission-Editor-Speichern die vollstaendige MIZ-/MOOSE-/Bundle-SHA-256-Kette ermitteln. **Der vorhandene Upload bleibt unveraendert.**
+Eine Kopie der v26-Mission ist gemäss [Dokument 22](../../../docs/22-test-mission-build-transfer-and-validation-workflow.md) in DCS zur Testmission zu machen; das generierte Bundle muss nach `Moose.lua` und beiden AIRWING-Foundation-Skripten als **DO SCRIPT FILE** eingebunden werden. Kein bestehender Trigger darf ersetzt oder deaktiviert werden. Nach dem Mission-Editor-Speichern die vollstaendige MIZ-/MOOSE-/Bundle-SHA-256-Kette ermitteln. **Der vorhandene Upload bleibt unveraendert. Die ME-Einbindung des Bundles ist eine explizite Testkopie und noch kein in DCS bestaetigtes Artefakt.**
 
 Acceptance nach realem Test:
 1. Alle drei Anfragen wurden genau einmal erstellt; F-15E erst nach zwei F-16-Airborne-Ereignissen.
