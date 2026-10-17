@@ -4,7 +4,7 @@
 local Base = {}
 local Instance = {}
 Instance.__index = Instance
-Base.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-5"
+Base.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-6"
 
 local TAG = "[OMW][FireSupStratResupply.Base]"
 
@@ -143,7 +143,12 @@ function Instance:RequestIncidentSupport(incidentId, supportType, spec)
     and spec.cancelWhenIncidentClosed == false
     and type(spec.context) == "table"
     and spec.context.sourceTargetGroup ~= nil
-  if incident.closed and not closedArtyContinuation then
+  local closedQrfReplacement = supportType == "QRF"
+    and spec.replacementAfterLoss == true
+    and spec.cancelWhenIncidentClosed == false
+    and type(spec.context) == "table"
+    and spec.context.sourceTargetGroup ~= nil
+  if incident.closed and not closedArtyContinuation and not closedQrfReplacement then
     return nil, false, "INCIDENT_CLOSED"
   end
   local site, profile, contextReason = self:_contextForSite(incident.siteId)
