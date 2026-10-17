@@ -33,12 +33,19 @@ local base = Base.New({
       support={
         artillery={enabled=true},
         cas={enabled=true},
+        qrf={enabled=true},
       },
     }},
   },
   idContract = idContract,
   lifecycleAdapter = lifecycle,
   adapters = {
+    QRF = {
+      Dispatch = function(_, demand, context)
+        eq(context.requestContext.sourceTargetGroup ~= nil, true, "replacement QRF target bound")
+        return {Cancel=function() return false end},true,nil
+      end,
+    },
     ARTY = {
       Dispatch = function(_, demand, context)
         dispatchCount = dispatchCount + 1
@@ -110,5 +117,36 @@ eq(same,fireDemand,"same demand on repeated request")
 eq(deduped,false,"demand deduped")
 eq(dedupeReason,"ALREADY_REQUESTED","dedupe reason")
 eq(dispatchCount,1,"MOOSE owner still only one dispatch")
+
+local _,rejectedReplacement,rejectedReason=base:RequestIncidentSupport(
+  incident.incidentId,"QRF",{
+    requestKey="UNQUALIFIED_QRF",
+    cancelWhenIncidentClosed=false,
+    context={sourceTargetGroup=target},
+  }
+)
+eq(rejectedReplacement,false,"closed QRF needs explicit verified loss purpose")
+eq(rejectedReason,"INCIDENT_CLOSED","unqualified QRF rejected")
+
+local replacement,replacementCreated=base:RequestIncidentSupport(
+  incident.incidentId,"QRF",{
+    requestKey="REPLACEMENT_AFTER_DESTRUCTION_1",
+    cancelWhenIncidentClosed=false,
+    replacementAfterLoss=true,
+    context={sourceTargetGroup=target},
+  }
+)
+eq(replacementCreated,true,"qualified QRF replacement permitted")
+eq(replacement.status,"DISPATCHED","existing ground adapter recruits replacement")
+local _,invalidCas,invalidReason=base:RequestIncidentSupport(
+  incident.incidentId,"CAS",{
+    requestKey="UNAUTHORIZED_CAS_2",
+    cancelWhenIncidentClosed=false,
+    replacementAfterLoss=true,
+    context={sourceTargetGroup=target},
+  }
+)
+eq(invalidCas,false,"QRF replacement cannot reopen CAS")
+eq(invalidReason,"INCIDENT_CLOSED","CAS closed gate retained")
 
 print("PASS test_fire_support_strategic_resupply_closed_arty_continuation")
