@@ -17,7 +17,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-3"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-4"
 
 local TAG = "[OMW][FireSupStratResupply.ArtySelectionRuntime]"
 
@@ -300,6 +300,27 @@ function Instance:Dispatch(demand, context)
   end
 
   local arty = owner.arty
+  -- MOOSE owns provider recruitment; only the selected physical battery may
+  -- be checked for fire readiness. A depleted selected owner cannot be
+  -- commanded to fire merely because another site's battery needs support.
+  if type(arty.GetAmmo) ~= "function" then
+    self.releaseAssets(assets)
+    return nil, false, "SELECTED_ARTY_AMMO_UNAVAILABLE"
+  end
+  local selectedAmmo = arty:GetAmmo(false)
+  local requiredShots = owner.acceptedShots or target.shots
+  if type(selectedAmmo) ~= "number" or type(requiredShots) ~= "number" then
+    self.releaseAssets(assets)
+    return nil, false, "SELECTED_ARTY_AMMO_UNKNOWN"
+  end
+  if selectedAmmo < requiredShots then
+    self.releaseAssets(assets)
+    self:_log("selected MOOSE ARTY battery low ammo demandId=" .. tostring(demand.demandId)
+      .. " selectedAmmo=" .. tostring(selectedAmmo)
+      .. " requiredShots=" .. tostring(requiredShots)
+      .. " asset=" .. tostring(owner.realAssetId))
+    return nil, false, "SELECTED_ARTY_AMMO_INSUFFICIENT"
+  end
   self:_installArtyHooks(arty)
 
   local targetAlias = "OMW|FSSR|ARTY|" .. demand.demandId
