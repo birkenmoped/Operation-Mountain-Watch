@@ -92,11 +92,16 @@ local function tankerCandidate(requestId, flight)
   for _, area in ipairs(allowed) do
     local runtime = aar.GetActive(area, requestId == "CAS_A10" and "SLOW" or "FAST")
     if runtime and runtime.onStationAt and not runtime.egressOrdered and not runtime.lossHandled
-      and runtime.group and runtime.group:IsAlive() then
-      local coord = runtime.group:GetCoordinate()
-      local distance = coord and origin:Get2DDistance(coord) or math.huge
-      if distance <= UTILS.NMToMeters(AAR_SEARCH_MAX_NM) and distance < homeDistance and distance < best then
-        choice, best = runtime, distance
+      and runtime.group and runtime.group:IsAlive() and flight.refueltype then
+      local tankerUnit = runtime.group:GetUnit(1)
+      local isTanker, refuelSystem = tankerUnit and tankerUnit:IsTanker()
+      local compatible = isTanker and refuelSystem == flight.refueltype
+      if compatible then
+        local coord = runtime.group:GetCoordinate()
+        local distance = coord and origin:Get2DDistance(coord) or math.huge
+        if distance <= UTILS.NMToMeters(AAR_SEARCH_MAX_NM) and distance < homeDistance and distance < best then
+          choice, best = runtime, distance
+        end
       end
     end
   end
@@ -186,7 +191,7 @@ local function addObserverHooks(requestId, flight)
     record.aarPhase = "REFUELING"
     record.aarCount = record.aarCount + 1
     log("AAR_SELECTED", {
-      "request=" .. requestId, "track=" .. selected.areaSpec.callsignName,
+      "request=" .. requestId, "callsignFamily=" .. tostring(selected.areaSpec.callsignName),
       "area=" .. selected.selection.area, "tanker=" .. selected.group:GetName(),
       "fuel=" .. tostring(flight:GetFuelMin()), "reason=" .. reason,
       "selection=" .. selectionReason,
@@ -201,6 +206,7 @@ local function addObserverHooks(requestId, flight)
   -- our eligible-tanker check. If no compliant tanker exists, use MOOSE RTB.
   flight:SetFuelLowRTB(false)
   flight:SetFuelLowRefuel(false)
+  -- On a real FuelCritical, the pinned MOOSE FSM retains its own RTB contingency.
 
   local beforeRefueled = flight.OnAfterRefueled
   flight.OnAfterRefueled = function(self, from, event, to, ...)
@@ -376,7 +382,7 @@ local function observe()
       end
 
       if requestId == "CAS_A10" and not record.aarPhase and record.joinedAt
-          and not record.fullAo and record.aarCount == 0
+          and not record.fullAo and record.aarCount == 0 and record.airborneCount == 2
           and record.flight:GetFuelMin() <= A10_PRE_AO_AAR_TRIGGER_PCT then
         record.requestAar("A10_EARLY_AAR_TEST_THRESHOLD")
       end
