@@ -361,6 +361,31 @@ local function createLocalRearmService(definition, group, arty)
       if artilleryGroup ~= group then
         fail("local rearm artillery group identity mismatch assetId=" .. definition.id)
       end
+      if not arty._OMWFssrRearmObserved then
+        arty._OMWFssrRearmObserved = true
+        local previousOnAfterRearm = arty.OnAfterRearm
+        arty.OnAfterRearm = function(selfArty, Controllable, From, Event, To)
+          if previousOnAfterRearm then
+            previousOnAfterRearm(selfArty, Controllable, From, Event, To)
+          end
+          local ok, details = pcall(function()
+            local ammo = selfArty:GetAmmo(false)
+            local support = selfArty.RearmingGroup
+            local battery = selfArty.Controllable
+            local batteryCoord = battery and battery:GetCoordinate()
+            local supportCoord = support and support:GetCoordinate()
+            local distance = batteryCoord and supportCoord
+              and batteryCoord:Get2DDistance(supportCoord) or nil
+            return string.format(
+              "LOCAL_ARTY_REARM_ENTERED assetId=%s ammo=%s initialAmmo=%s distanceM=%s thresholdM=%s rearmingState=%s",
+              tostring(definition.id), tostring(ammo), tostring(selfArty.Nammo0),
+              tostring(distance), tostring(selfArty.RearmingDistance), tostring(To))
+          end)
+          log(ok and details or
+            ("LOCAL_ARTY_REARM_DIAGNOSTIC_UNAVAILABLE assetId="
+            .. tostring(definition.id) .. " reason=" .. tostring(details)))
+        end
+      end
       return arty
     end,
     brigade = supportBrigade,
