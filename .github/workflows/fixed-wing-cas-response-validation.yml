@@ -5,7 +5,7 @@ on:
     paths:
       - '.github/workflows/fixed-wing-cas-response-validation.yml'
       - 'mission/tests/fixed-wing-cas-response/**'
-      - 'tools/build-fixed-wing-cas-response-acceptance-1.ps1'
+      - 'tools/build-fixed-wing-cas-response-acceptance-*.ps1'
   workflow_dispatch:
 
 jobs:
@@ -27,3 +27,20 @@ jobs:
         run: head -n 18 mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_1.lua
       - name: Validate generated Lua 5.1 bundle syntax
         run: luac5.1 -p mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_1.lua
+
+  acceptance-2-static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Lua 5.1 syntax checker
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.1
+      - name: Validate Acceptance 2 Lua 5.1 source syntax
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/src/acceptance-2-three-flight-joined-departure.lua
+      - name: Build Acceptance 2 bundle with PowerShell
+        shell: pwsh
+        run: ./tools/build-fixed-wing-cas-response-acceptance-2.ps1
+      - name: Validate Acceptance 2 generated Lua 5.1 bundle
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_2.lua
