@@ -22,6 +22,8 @@ validated_in_dcs: false
 
 ## AKTUELLER STAND / CHAT-WECHSEL – zuerst lesen
 
+**Owner-Entscheidung vom 17.10.2026 – Abschnitt 24 hat Vorrang vor allen anderslautenden Fixed-Wing-Arbeitspaketen in dieser historischen Akte:** Fixed-Wing-CAS als FSSR-C2-Bedarfsoption beruecksichtigen, aber **keine CAS-Fluege, Fighter-Provider, Ground-Alert-Schedules oder eigene Fixed-Wing-Execution/Recovery in FSSR entwickeln**. PR #151 ist fuer deren spaetere Bereitstellung zustaendig; erst nach dessen Abschluss, Integrationsreife und geprueften MOOSE-Schnittstellen verfuegbare Airborne-/Alert-CAS-Assets aus FSSR disponieren. Bis dahin keine Aktivierung oder Fake-Verfuegbarkeit. Die unabhaengigen laufenden FSSR-Aufgaben (persistenter Bedarf, Ground/QRF, ARTY/Rearm, bestehender AH-64-Lifecycle) bleiben bestehen.
+
 **Fortschreibung 16.10.2026:** Die neuesten vom Projektinhaber festgelegten fachlichen Absprachen und die aus dem realen DCS-Lauf gemeldeten Symptome stehen in **Abschnitt 21**. Fuer einen Chatwechsel **zuerst Abschnitt 21**, danach Abschnitte 19–20 fuer den Build-/MIZ-Stand und Abschnitte 1–18 fuer Architektur- und Fehlerhistorie lesen. Aeltere Statushinweise am Dokumentanfang sind historische Momentaufnahmen und werden durch diese spaetere datierte Fortschreibung konkretisiert; sie begruenden keinen aktuelleren DCS-PASS.
 
 Dieses Dokument ist die **fortlaufende, jederzeit uebergabefaehige Arbeitsakte**. Bei einem neuen Chat **zuerst Abschnitt 12 (kompakte Betriebs-/Uebergabeakte) lesen**, danach die vorangegangenen Abschnitte fuer Ursachen, Quellen und Entscheidungen. Die Metadaten `source_commit` im Header kennzeichnen den urspruenglichen Test-/Aufzeichnungsstand, **nicht** den neuesten Git-HEAD. Der jeweils aktuelle Remote-HEAD muss vor neuer Arbeit per GitHub abgefragt werden.
@@ -1158,3 +1160,46 @@ FSSR / installation attack incident
 - PR-151-Acceptance-1 ist ein **separater fachlicher Messlauf fuer Three-Flight-Response**, kein fertiger kombinierter Honaker-Full-Response-Lauf. Ergebnisse erst nach echten DCS-Logs/Hashes als evidence uebernehmen.
 
 **Gesamtstand 17.10.:** FSSR Source Base 40/Bootstrap 8 plus offene Provider-/Rearm-/CAS-Integrationskanten aus Abschnitt 22; PR #151 `PLANNED / DCS_PENDING`. Keine Code- oder Branch-Merge-Aktion zwischen PR #151 und FSSR und keine Veraenderung des PR-151-Test-Harness durch diese Analyse. Diese Information ist jetzt im FSSR-Handoff dokumentiert und beim Chatwechsel verbindlich mitzulesen.
+
+
+## 24. Owner-Entscheidung 17.10.2026 – Fixed-Wing-CAS-Bereitstellung gehoert ausschliesslich zu PR #151
+
+**Status: VERBINDLICHE FACHLICHE OWNER-ENTSCHEIDUNG FUER FSSR; INTEGRATION PR-ABHAENGIG / DCS_PENDING.** Aktuelle PR-Pruefung: [PR #151](https://github.com/birkenmoped/Operation-Mountain-Watch/pull/151), `agent/fixed-wing-cas-coverage-ground-alert-decision`, noch **OPEN / DRAFT**. Diese spaetere Entscheidung **praezisiert und ersetzt** die in Abschnitten 21 bis 23 teilweise formulierte Erwartung, Fixed-Wing-Provider-/CAS-Flight-Erzeugung, Fixed-Wing-Routing und komplette neue Jet-Execution bereits **innerhalb des jetzigen FSSR-Reconciliation-Pakets** umzusetzen.
+
+### 24.1 Explizite Zuständigkeitsgrenze
+
+**PR #151 (Owner-Auftrag):**
+- Konzipiert, plant, materialisiert und verwaltet nach seiner tatsaechlichen produktiven Fertigstellung die verfuegbaren Fixed-Wing-CAS-Fluege bzw. Assets ueber die autorisierten vorhandenen MOOSE-/AIRWING-/SQUADRON-/ATO-/CampaignState-Lifecycles.
+- Stellt je nach Planungsstand/Bedarf **bereits fliegende CAS-Bereitschafts-Assets im oder nahe des Operationsgebiets** bereit und/oder **Ground-Alert-/Hot-Standby-CAS-Fluege aus Bagram**, soweit sie physisch und strategisch tatsaechlich verfuegbar sind. A-10C aus Kandahar; F-16C/F-15E aus Bagram gemaess aktiver ORBAT und PR-151-CAS-Rollen. Die im PR dokumentierten Ground-Alert-/Airborne-Planungsentscheidungen sind derzeit `PLANNED`, **keine** geprueft vorhandene Runtime-Funktion.
+- Verantwortet die Fixed-Wing-spezifische technische Bereitstellung (inklusive notwendiger eigener Flugplanung, Start, Holdings/Orbit, Wechsel, Fuel/AAR, Egress, RTB, Wiederverfuegbarkeit), soweit in seinem freigegebenen Scope und nach nachgewiesener DCS-Acceptance. FSSR implementiert diese Ausfuehrung **nicht selbst**.
+- Der aktuelle Three-Flight-Acceptance-Code des PR #151 ist noch nicht die spaeter zugesicherte fertige Scheduling-/Availability-/Ground-Alert-Runtime; **Abschluss** bedeutet nicht bloss PR-Nummer vorhanden, Draft-Code gruen oder mergebar, sondern reale dokumentierte produktive Schnittstelle + Genehmigung + konkret validierte Funktionen.
+
+**FSSR (dieser Arbeitsbranch):**
+- Erfasst und haelt den **taktischen CAS-Unterstuetzungsbedarf** eines angegriffenen FOB/COP persistent, parallel zu lokaler Patrouille/ARTY/QRF und externer ARTY. C2 entscheidet fachlich **ob und mit welcher Dringlichkeit CAS erforderlich** ist und kann nach Verfuegbarkeit der PR-151-Schnittstelle geeignete **bereits bereitgestellte/verfuegbare** CAS-Assets ueber normale MOOSE-Request/Recruitment/Tasking-Schnittstellen nutzen.
+- Betrachtet hierbei Rotor- und Fixed-Wing **als zulaessige Bedarfs-/Capability-Kategorien**, ohne selbst einen F-16-/F-15-/A-10-Provider zu starten, Ground Alert zu simulieren, Jet-Routen zu entwerfen, Fighter-Squadrons zu konfigurieren, AAR-Koordination zu duplizieren oder eine zweite Einsatzplanungs-/CAS-Scheduler-Autoritaet aufzubauen.
+- Muss unterscheiden koennen: **CAS on station** (Deconfliction), **Airborne verfuegbar/noch auf dem Weg**, **Ground Alert verfuegbar/noch nicht gestartet**, **kein passendes Asset**, **bereits anderweitig gebunden** und **C2-Bedarf weiter offen**; diese Zustandsdaten duerfen nur aus tatsaechlichen PR-151-/MOOSE-/CampaignState-Nachweisen stammen und werden **nicht** im FSSR-Code erfunden.
+- Die zuvor verbindliche Regel **keine neue ARTY-Fire-Mission, solange CAS physisch im gemeinsamen AO on station ist**, bleibt erhalten. Ein nur geplanter, am Boden stehender oder noch anfliegender CAS-Flight ist **nicht** allein deshalb `CAS_ON_STATION`.
+- Existing AH-64D-rotary-CAS-Lifecycle-/Support-/Release-/RTB-Reconciliation ist weiter eine FSSR-Aufgabe in ihrem bereits akzeptierten Scope; nicht auf die Bereitstellung von PR #151 warten, soweit dieses Paket davon unabhaengig abgeschlossen werden kann.
+
+### 24.2 Implementierungs-/Integrationsregel
+
+**Jetzt nicht entwickeln:**
+- Kein FSSR-`FixedWingCasProvider`-Modul, keine Fixed-Wing-`AUFTRAG`-Erzeugung fuer eigene Bedarfe, keine Fighter-SQUADRON-Registrierung, kein H24-/Ground-Alert-/Airborne-Schedule, keine Jet-Patrol-/Orbit-/Ingress-/Egress-/Recovery-Kopien in FSSR.
+- Keine vorweggenommene `PR #151`-API-Namensgebung oder erfundene Verfuegbarkeits-Events/FSMs; aktuelle Draft-Three-Flight-Test-Ereignisse sind **nicht** automatisch eine freigegebene Produktionsschnittstelle.
+- Keine PR-Merges, Copy-and-Paste des PR-Test-Harness, doppelte Ressourcenvorhaltung oder sonstige PR-151-Scope-Uebernahme ohne gesonderte Owner-Entscheidung.
+
+**Jetzt in FSSR weiterentwickeln:**
+1. Persistent gefuehrter einrichtungsbezogener Unterstuetzungsbedarf; lokale Patrouille/Moerser/ARTY/QRF und externe ARTY nach Zeit bis zur Wirkung, parallel zu fruehzeitig erfasstem CAS-Bedarf.
+2. MOOSE-Provider-Busy/Release/Rearm/Destroyed/-NoCapacity-Gates und autorisierte erneute Disposition, ohne neue Queue-/Recruitment-/Scheduler-Parallelwelt.
+3. Accepted Functional-ARTY/M1083-Completion, QRF-Verlustersatz, bestehende rotary-CAS-Fuel-/Release-/Recovery-Probleme, physische Deconfliction und notwendige Regression.
+4. Fuer **zukuenftiges** Fixed-Wing lediglich fachliches Capability-/Demand-Modell, Status `WAITING_FOR_PR151_PROVIDER_INTERFACE` oder dokumentiert vergleichbarer **domainseitiger Wartezustand**, sofern im bestehenden MissionDemand-Fachvertrag moeglich. **Keine operativ vorgetaeuschte Mission/Asset-Reservation**. Die konkrete Benennung ist hier **kein** zu erfindender Lua-Enum/API-Wert.
+
+**Nach nachweislichem PR-151-Abschluss**: Main-/PR-151-Reconciliation, gepruefte bereitgestellte Flight-/Alert-Availability-/Request-/Release-/Retask-Schnittstellen, MOOSE 2.9.18-Quellcode-/Eventsignaturen, CampaignState-Reservierungsvertraege und DCS-Acceptance lesen; dann **kleinsten Adapter** an die vorhandene MOOSE-/ATO-C2-Schnittstelle implementieren und uebergreifend testen. C2 darf keine doppelte operative Providerautoritaet erhalten. Der genaue Integrationszeitpunkt haengt vom **realen PR-151-Funktions-/Merge-/Acceptance-Stand** ab.
+
+### 24.3 Fuer Chatwechsel verbindliche Einordnung
+
+- **Aktuelle Entscheidung** ist Abschnitt 24; in den aelteren Abschnitten 21 bis 23 genannte Implementierungsziele fuer eigene Fixed-Wing-Provider/Jet-Routen durch FSSR sind **SUPERSEDED FUER FSSR**.
+- **PR #151 ist die Fremdprojekt-Abhaengigkeit** und zustaendige Bereitstellung des Fixed-Wing-CAS-Asset-/Bereitschaftspools. FSSR plant mit diesem kuenftigen Pool, implementiert **nicht** dessen Erzeugung.
+- Der reale PR-151-Stand bleibt `OPEN / DRAFT / DCS_PENDING` (bei dieser Abfrage). Bereits fliegende Near-AO-CAS und Hot-Standby-Bagram-Flights sind **Zielzustand**, keine aktuell als DCS-funktionierend bewiesene Ausstattung.
+- Die naechste Arbeit in diesem FSSR-Chat konzentriert sich auf die **unabhaengigen** noch offenen ARTY-/Rearm-/QRF-/Site-C2-/AH-64-Aufgaben. Fixed-Wing-Operationalisierung erst nach fertiggestelltem PR #151.
+- Jede weitere Owner-Entscheidung/Testauswertung weiter in dieser Handoff-Akte dokumentieren. Keine Veraenderung der `.miz` durch ChatGPT, kein CODEX, kein isolierter Windows-Build wegen einer Dokumentationskorrektur.
