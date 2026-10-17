@@ -1272,3 +1272,40 @@ Die aktuelle `createSiteBrigades()`-Foundation registriert `PLATOON:New(QRF_TEMP
 `scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua`: Schema **PRODUCTION-BOOTSTRAP-10**, dazu `tools/build-fire-support-strategic-resupply-production-bootstrap.ps1` und `tests/mission-demand/test_fire_support_strategic_resupply_production_bootstrap.lua` synchron angepasst. GitHub `MissionDemand validation` sowie `Documentation validation` zum Source-Commit `12fd370ce86ee7997f4e23c1f6559a5b50ac06be` **SUCCESS**. Das ist **kein** realer Windows-Builder-Lauf und keine physische DCS-Resupply-/QRF-Rekrutierung. Vor neuem Test Stand der Ground-/CampaignState-QRF-Vertraege und gegebenenfalls echte Bestandsoptionen klaeren. Der lokale Owner hat noch keine neuen Bundle-/MIZ-Hashes geliefert; aktuelle benoetigte Builderstufen Base **41**, Bootstrap **10** (erst nach Abschluss gemeinsamer Reconciliation neu bauen).
 
 Die Fixed-Wing-CAS-Asset-Bereitstellung bleibt bei PR #151, siehe Abschnitt 24; bestehender AH-64-Unable-to-Continue-/RTB-Pfad und M1083-Rearm sind weiterhin **offen** und duerfen nicht als behoben berichtet werden.
+
+
+### 26.1 Ground-QRF-Ressourcenkosten – Governance-Klaerung statt angenommener Production-Stock
+
+Der zustaendige Ground-Fachentwurf auf `main`,
+`docs/ground/ARMY-GROUND-RESOURCE-QUANTITY-AND-SETTLEMENT-BASELINE.md`,
+hat **Status `PLANNED`**, also **keine projektweite
+`BINDING`-Autoritaet**. Er enthaelt folgende explizite
+**Working Action Costs je Ground QRF**:
+
+```yaml
+PERSONNEL: 16
+VEHICLE: 4
+SUPPLY: 1
+AMMO: 3
+FUEL: 3
+```
+
+Diese Werte sind **keine** vom FSSR-Branch bereits autorisierte
+produktive QRF-Commitment-/Settlement-Transaktion. Die akzeptierte
+`OMW_GroundCampaignStateAdapter.lua` besitzt
+`CanMaterialize`, `OnMaterialized`, `OnReturned`, `OnLost`
+und `ReconcileRestore` auf expliziten Resource-Maps, aber
+derzeit fehlt die nachgewiesene Bindung der im FSSR-BRIGADE rekrutierten
+physischen `ARMYGROUP` mit einer
+`CampaignState`-QRF-Commitment-Identitaet, insbesondere fuer
+Teilverluste, MOOSE-Warehouse-Nachbestueckung und Restart.
+
+**Stop-Gate vor Source-Aenderung am QRF-Bestand:** Projektinhaber
+muss bestaetigen, ob dieser `PLANNED`-Working-Action-Cost-Vertrag
+fuer die produktive FSSR-QRF als Ressourcenverbrauch uebernommen
+werden soll, oder ein anderer aktueller `BINDING`-QRF-Vertrag
+massgeblich ist. Erst dann darf die erste/zweite QRF anhand
+autoritativer CampaignState-Ressourcen konsumiert und als physische
+MOOSE-PLATOON-Gruppenmateralisierung angeboten werden.
+Kein fiktiver Credit verlorener Fahrzeuge, kein `Ngroups`-Erhoehen
+ohne explizit autorisierte physische/strategische Ressourcen-Korrelation.
