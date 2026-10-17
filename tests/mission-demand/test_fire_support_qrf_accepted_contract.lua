@@ -44,7 +44,7 @@ excludes(factory, "timer.scheduleFunction", "QRF factory custom target scheduler
 -- override wins over the MissionFactory default.
 contains(factory, 'local DEFAULT_ENGAGE_FORMATION = "On Road"', "QRF factory road-preferred transit")
 excludes(factory, 'local DEFAULT_ENGAGE_FORMATION = "Vee"', "QRF factory march formation")
-contains(runtime, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13", "QRF runtime schema")
+contains(runtime, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-14", "QRF runtime schema")
 contains(runtime, 'local QRF_ENGAGE_FORMATION = "On Road"', "QRF runtime road-preferred transit")
 contains(runtime, "engageFormation=QRF_ENGAGE_FORMATION", "QRF runtime formation forwarding")
 excludes(runtime, 'local QRF_ENGAGE_FORMATION = "Vee"', "QRF runtime Vee override")
