@@ -45,6 +45,9 @@ Technische Lifecycle-Details:
 
 ### Fixed-Wing CAS response acceptance (source-reviewed; DCS pending)
 
+Acceptance 4 erweitert den source-reviewed (DCS_PENDING) Scope um `AUFTRAG:SetMissionSpeed`, Kandahar-`SetMissionHoldingCoord`, `FLIGHTGROUP:Refuel`, `OnAfterRefueled`, `UNIT:IsTanker`, `FLIGHTGROUP.refueltype` und den vorhandenen OMW-AAR-Controller-Adapter `GetActive(area,profile)`. MOOSE pausiert und setzt den CAS-Missions-Lifecycle nach Refuel fort; die neue konkrete CAS-Integration ist **nicht** DCS-validiert. Siehe [A4-Testvertrag](../../mission/tests/fixed-wing-cas-response/ACCEPTANCE-4.md).
+
+
 Die branchgebundene [Three-Flight-CAS-Acceptance](../../mission/tests/fixed-wing-cas-response/README.md) verwendet vorhandene und in der eingebetteten v26-`Moose.lua` source-gepruefte `COMMANDER`-, `AIRWING`-, `SQUADRON`-, `AUFTRAG`, `FLIGHTGROUP`, `OPSGROUP`, `GROUP`, `ZONE_RADIUS`- und `SCHEDULER`-Schnittstellen: `COMMANDER:AddMission`, `AUFTRAG:NewCAS`, `AUFTRAG:AssignSquadrons`, `AUFTRAG:SetRequiredAssets`, `OnAfterOpsOnMission`, `OnAfterElementAirborne`, `CountElements`, `GROUP:IsAirborne(true)` sowie passive Zone-/Unit-Koordinatenpruefung. Das ist **keine** neue `VALIDATED`-Einstufung und keine behauptete CAS- oder ATC-Runtime-Acceptance. Eine Native-DCS-Kontrollalternative wurde nicht genehmigt oder implementiert.
 
 ## 2. Statusbedeutung
