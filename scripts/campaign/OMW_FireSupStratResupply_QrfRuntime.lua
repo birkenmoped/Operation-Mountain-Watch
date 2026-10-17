@@ -75,6 +75,9 @@ function Runtime.New(spec)
   needFunction(legionBridge, "New", "legionBridge")
   local resolveTarget = needCallable(spec.resolveTarget or spec.resolveCoordinate, "resolveTarget")
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
+  if spec.onGroupDestroyed ~= nil and type(spec.onGroupDestroyed) ~= "function" then
+    fail("onGroupDestroyed must be a function when provided")
+  end
   if type(ZONE) ~= "table" or type(ZONE.FindByName) ~= "function" then fail("MOOSE ZONE:FindByName() is required") end
   if type(ZONE_RADIUS) ~= "table" or type(ZONE_RADIUS.New) ~= "function" then fail("MOOSE ZONE_RADIUS:New() is required") end
   if type(UTILS) ~= "table" or type(UTILS.NMToMeters) ~= "function" then fail("MOOSE UTILS.NMToMeters() is required") end
@@ -120,6 +123,7 @@ function Runtime.New(spec)
     requiredAssetsMax=spec.requiredAssetsMax or (spec.requiredAssetsMin or 1),
     requiredAttributes=spec.requiredAttributes,
     requiredProperties=spec.requiredProperties,
+    onGroupDestroyed=spec.onGroupDestroyed,
     logger=spec.logger,
   })
   local bridge = legionBridge.New({ resolveLegion=function(siteId) local brigade=brigades[siteId]; if not brigade then return nil,"SITE_LEGION_NOT_CONFIGURED" end; return brigade end, factory=function(demand,context,legion) return factory:Create(demand,context,legion) end, logger=spec.logger })
