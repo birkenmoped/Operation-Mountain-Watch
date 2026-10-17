@@ -30,6 +30,14 @@ local state = {
   observers = {},
 }
 
+local function maybeRequestF15()
+  local f16 = state.flights.CAS_F16
+  if not f16 or not state.requests.CAS_A10 or state.requests.CAS_F15E then return end
+  if f16.airborneCount ~= 2 or f16.flight:CountElements() ~= 2 then return end
+  if not f16.flight.group or not f16.flight.group:IsAirborne(true) then return end
+  state.Request("CAS_F15E")
+end
+
 local function markFlight(id, flight)
   if state.flights[id] then
     return
@@ -83,12 +91,7 @@ local function markFlight(id, flight)
     end
 
     -- The third incident is created only when BOTH F-16 elements are airborne.
-    if id == "CAS_F16" and record.airborneCount == 2
-        and flight:CountElements() == 2
-        and flight.group and flight.group:IsAirborne(true)
-        and not state.requests.CAS_F15E then
-      state.Request("CAS_F15E")
-    end
+    if id == "CAS_F16" then maybeRequestF15() end
   end
 
   local previousExecute = flight.OnAfterMissionExecute
@@ -128,11 +131,14 @@ local function request(id)
   report("REQUEST_CREATED", { "request=" .. id, "origin=" .. definition.origin, "mission=" .. mission:GetName() })
   state.commander:AddMission(mission)
   report("REQUEST_SUBMITTED_C2", { "request=" .. id })
+  if id == "CAS_A10" then maybeRequestF15() end
 end
 
 state.Request = request
 
 local function observe()
+  -- Recheck in case the DCS unit airborne flag settles after the MOOSE element event.
+  maybeRequestF15()
   for id, record in pairs(state.flights) do
     local flight = record.flight
     local group = flight.group
