@@ -772,7 +772,7 @@ local function startInternal(config)
       -- MOOSE OPSGROUP Destroyed signals the full physical group loss.
       -- Defer one event turn so the original MOOSE destruction/warehouse
       -- lifecycle can finish before attempting a replacement recruitment.
-      SCHEDULER:New(nil, function()
+      FireContinuation.DeferOnce(function()
         if not state.base or not state.base:GetIncident(incidentId) then return end
         local live = qualifiedParticipants({incident=incident})
         if #live == 0 then
@@ -802,7 +802,7 @@ local function startInternal(config)
           .. " status=" .. tostring(replacement and replacement.status)
           .. " created=" .. tostring(created)
           .. " reason=" .. tostring(reason))
-      end, {}, 1)
+      end)
     end,
     qrfRequiredAttributes = GROUP.Attribute.GROUND_APC,
     blueCoalition = coalition.side.BLUE,
