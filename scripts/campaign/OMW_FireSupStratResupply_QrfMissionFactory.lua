@@ -15,7 +15,7 @@ local Factory = {}
 local Instance = {}
 Instance.__index = Instance
 
-Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8"
+Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-9"
 
 local TAG = "[OMW][FireSupStratResupply.QrfMissionFactory]"
 local DEFAULT_ENGAGE_SPEED_KNOTS = 20
