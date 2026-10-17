@@ -113,3 +113,8 @@ Acceptance nach realem Test:
 6. Kein `VALIDATED` ohne durchgefuehrten DCS-Test mit Commit, Bundle, MIZ, DCS- und MOOSE-Provenienz.
 
 Keine DCS-Runtime-Behauptung vor dem realen Test.
+
+
+## Acceptance 2 (Nachfolge; A1 unveraendert)
+
+Auf den dokumentierten A1-DCS-Befund folgt [Acceptance 2](ACCEPTANCE-2.md): MOOSE `SetMissionHoldingCoord` + `AddConditionPush` fuer Bagram-Two-Ship-Join, CAS-Missionshoehe 22.000 ft MSL, Fuel-Low-/Critical-/RTB-Observer und C2-Pending-Diagnostik fuer Kandahar. Neues Lua-Quellfile und eigener PowerShell-Builder. Beide Testbundles **niemals gleichzeitig in der .miz laden**. A2 ist `DCS_PENDING`, kein DCS-PASS.
