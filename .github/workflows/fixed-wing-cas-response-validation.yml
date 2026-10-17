@@ -1,0 +1,27 @@
+name: Fixed-wing CAS response static validation
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/fixed-wing-cas-response-validation.yml'
+      - 'mission/tests/fixed-wing-cas-response/**'
+      - 'tools/build-fixed-wing-cas-response-acceptance-1.ps1'
+  workflow_dispatch:
+
+jobs:
+  acceptance-1-static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Lua 5.1 syntax checker
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.1
+      - name: Validate Lua 5.1 source syntax
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/src/acceptance-1-three-flight-c2.lua
+      - name: Build acceptance bundle with PowerShell
+        shell: pwsh
+        run: ./tools/build-fixed-wing-cas-response-acceptance-1.ps1
+      - name: Validate generated Lua 5.1 bundle syntax
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_1.lua
