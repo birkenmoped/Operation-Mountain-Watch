@@ -43,6 +43,10 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW`](MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW.md)
 - [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md)
 
+### Fixed-Wing CAS response acceptance (source-reviewed; DCS pending)
+
+Die branchgebundene [Three-Flight-CAS-Acceptance](../../mission/tests/fixed-wing-cas-response/README.md) verwendet vorhandene und in der eingebetteten v26-`Moose.lua` source-gepruefte `COMMANDER`-, `AIRWING`-, `SQUADRON`-, `AUFTRAG`, `FLIGHTGROUP`, `OPSGROUP`, `GROUP`, `ZONE_RADIUS`- und `SCHEDULER`-Schnittstellen: `COMMANDER:AddMission`, `AUFTRAG:NewCAS`, `AUFTRAG:AssignSquadrons`, `AUFTRAG:SetRequiredAssets`, `OnAfterOpsOnMission`, `OnAfterElementAirborne`, `CountElements`, `GROUP:IsAirborne(true)` sowie passive Zone-/Unit-Koordinatenpruefung. Das ist **keine** neue `VALIDATED`-Einstufung und keine behauptete CAS- oder ATC-Runtime-Acceptance. Eine Native-DCS-Kontrollalternative wurde nicht genehmigt oder implementiert.
+
 ## 2. Statusbedeutung
 
 ```text
