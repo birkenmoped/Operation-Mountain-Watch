@@ -31,6 +31,7 @@ local fireCalls = {}
 local rearmCalls = 0
 local logged = {}
 local busy = false
+local lowAmmoSelectionAttempts = 0
 local runtime = Continuation.New({
   getIncident = function(id)
     eq(id, incident.incidentId, "lookup incident")
@@ -52,6 +53,10 @@ local runtime = Continuation.New({
     eq(incidentArg, incident, "base incident identity")
     eq(contextArg.incident, incident, "selection context identity")
     eq(demandArg.incidentId, incident.incidentId, "source demand incident")
+    if ammo < 4 then
+      lowAmmoSelectionAttempts = lowAmmoSelectionAttempts + 1
+      return nil,false,"SELECTED_ARTY_AMMO_INSUFFICIENT"
+    end
     fireCalls[#fireCalls + 1] = {target=target:GetName(),key=requestKey}
     return {demandId="CYCLE-"..#fireCalls,status=busy and "NOT_DISPATCHED" or "DISPATCHED"},true,nil
   end,
@@ -108,10 +113,12 @@ ammo=2
 runtime:OnFinished(demand3,context,entry,"CEASE_FIRE")
 runDeferred()
 eq(rearmCalls,1,"rearm service requested once")
+eq(lowAmmoSelectionAttempts,1,"alternate MOOSE recruitment attempted during local rearm")
 eq(#fireCalls,2,"no fire with insufficient ammo")
 runtime:OnCasEvidence()
 runDeferred()
 eq(rearmCalls,1,"no repeated rearm request while active")
+eq(lowAmmoSelectionAttempts,2,"CAS release event re-evaluates external provider even during rearm")
 ammo=10
 runtime:OnRearmed("HONAKER")
 runDeferred()
