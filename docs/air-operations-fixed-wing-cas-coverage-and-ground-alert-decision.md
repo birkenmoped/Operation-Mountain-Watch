@@ -117,6 +117,16 @@ Einsatzlogik:
 6. Bei fehlender Ablösung erfolgt dennoch rechtzeitiger sicherer RTB und offene `COVERAGE_GAP`-Meldung; kein endloses Orbiting bis Bingo.
 7. Nach Landung erst nach tatsächlicher MOOSE-Lifecycle-Bestätigung und CampaignState-Reconciliation wieder verfügbar; keine sofortige fiktive Wiederherstellung von Treibstoff, Munition oder Wartungsstatus.
 
+### 6.1 Owner-Entscheidung vom 17.10.2026: FuelLow-Scope Fixed-Wing-CAS
+
+Der Projektinhaber legt fuer die naechste Fixed-Wing-CAS-Korrektur **30 % FuelLow** als vorlaeufigen, zu testenden Schwellenwert fest. Der Scope ist ausschliesslich **Fixed-Wing-CAS-Flights** (A-10C II, F-16C, F-15E in der CAS-Rolle), nicht alle OMW-Fluege und nicht automatisch jede Mission derselben SQUADRON.
+
+- Die Implementierung muss diesen Scope am tatsaechlich zugewiesenen CAS-`FLIGHTGROUP` begrenzen; eine globale SQUADRON-Default-Aenderung waere nur zulaessig, wenn nachweislich keine anderen Einsatzrollen betroffen sind.
+- MOOSE-first: `FLIGHTGROUP:SetFuelLowThreshold(30)` ist der vorgesehene Konfigurationsweg; die FuelLow-/FuelCritical-FSM und die vorhandenen AAR-/RTB-Lifecycles bleiben erhalten.
+- **30 % ist eine FuelLow-Ereignisschwelle, keine nachgewiesene Bingo-/Landing-Reserve.** Der A4-FuelLow-/Tanker-Fallback und seine Konflikte mit der eingebauten 50-NM-Suche muessen vor Runtime-Aenderungen reconciliert werden.
+- Keine Uebertragung auf AWACS, AAR-Tanker, ISR, rotary-wing CAS, Transport oder sonstige OMW-Fluege.
+- Entscheidung dokumentiert, aber **nicht implementiert und nicht DCS-validiert**. A4 bleibt FAIL; A5 bleibt bis zur Ursachen- und Lifecycle-Reconciliation gesperrt.
+
 ## 7. ATO/C2- und MOOSE-Vertrag
 
 Die bestehende ATO-Foundation bleibt maßgeblich:
