@@ -118,3 +118,8 @@ Keine DCS-Runtime-Behauptung vor dem realen Test.
 ## Acceptance 2 (Nachfolge; A1 unveraendert)
 
 Auf den dokumentierten A1-DCS-Befund folgt [Acceptance 2](ACCEPTANCE-2.md): MOOSE `SetMissionHoldingCoord` + `AddConditionPush` fuer Bagram-Two-Ship-Join, CAS-Missionshoehe 22.000 ft MSL, Fuel-Low-/Critical-/RTB-Observer und C2-Pending-Diagnostik fuer Kandahar. Neues Lua-Quellfile und eigener PowerShell-Builder. Beide Testbundles **niemals gleichzeitig in der .miz laden**. A2 ist `DCS_PENDING`, kein DCS-PASS.
+
+
+## Acceptance 3 (Nachfolge; A1/A2 unveraendert)
+
+[Acceptance 3](ACCEPTANCE-3.md) erweitert A2 um MOOSE-`SetDefaultAltitude` auch fuer RTB, schnelleres Alarm-CAS-Transitprofil mit `SetDefaultSpeed`, A-10-Rekrutierungsreichweite (COHORT und AUFTRAG je 400 NM) und per-Aircraft Speed-/Fuel-/Hoehentelemetrie. **A1/A2/A3 duerfen nicht gemeinsam geladen werden.** Status DCS_PENDING.
