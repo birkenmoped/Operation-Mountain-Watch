@@ -1244,3 +1244,31 @@ Die bisherige `OMW_FireSupStratResupply_FireContinuation.lua` beendete bei `ammo
 5. **Fighter CAS:** Laut Abschnitt 24 ist die Flugbereitstellung/Airborne-/Ground-Alert-Planung Aufgabe von PR #151 und kein Blocker fuer den unabhaengigen FSSR-Test.
 
 **Naechste fachliche Arbeit:** AH-64 Unable-to-Continue/Recovery gegen die exakte akzeptierte Route/FSM und vorhandene Tests source-reconciliieren; QRF-NoCapacity/Repeat-Loss-Settlement schliessen, soweit MOOSE/CampaignState nachgewiesen; finalen Gesamt-Diff/CI abnehmen. Erst danach **ein** lokaler Owner-Pull/Build/Hash fuer beide aktualisierten Lua-Bundles und ein gebuendelter DCS-Lauf. Kein isolierter Zwischen-Build und keine ChatGPT-MIZ-Mutation.
+
+
+## 26. QRF-Ersatzbedarf bei voruebergehend unzureichender MOOSE-Verfuegbarkeit (17.10.2026)
+
+**Stand: SOURCE-/CI-PASS, DCS_PENDING.** Fortsetzung des fachlichen QRF-MUSS-Vertrags (Abschnitte 21, 22, 24) auf dem FSSR-Branch. Es wurde kein zusaetzlicher Spawner, keine MOOSE-Operation-Queue, kein Native-DCS-Ressourcenledger und kein periodischer Poller eingefuehrt.
+
+### Aenderung
+
+Der erste OPSGROUP-`OnAfterDestroyed`-Callback stellte bislang einmalig einen QRF-Ersatzbedarf. Bei `NOT_DISPATCHED` / `NO_AVAILABLE` ging die nachfolgende Dispositionschance verloren. Der Production Bootstrap Version **10** haelt jetzt hoechstens einen **taktischen, noch unerfuellten QRF-Ersatzbedarf pro Incident** in `state.pendingQrfReplacement` vor (kein alternativer MOOSE-Auftrags- oder Warehouse-Besitz). Beim bestaetigten Totalverlust wird er ueber `scheduleQrfReplacement` nach exakt einem MOOSE-`SCHEDULER`-Defer erneut evaluiert.
+
+`retryQrfReplacement` prueft mit dem vorhandenen Incident Coordinator `GetParticipants(true)` die weiterhin lebenden roten Zielteilnehmer. Bei fehlenden lebenden Kontakten entfaellt der unbediente Bedarf, andernfalls wird ein neuer `Base:RequestIncidentSupport(...,"QRF",...)` mit eindeutiger fortlaufender Request-ID ueber die **vorhandene** MOOSE-`AUFTRAG:NewONGUARD`-/BRIGADE-Rekrutierung versucht. `DISPATCHED` bzw. `ALREADY_DISPATCHED` beenden den Wartezustand; `NOT_DISPATCHED` wird mit `QRF_REPLACEMENT_UNSERVED` protokolliert und wartet. Neue Rekrutierungsversuche erfolgen ausschliesslich nach:
+- `OPSGROUP.OnAfterDestroyed`: bestaetigter physischer QRF-Gruppentotalverlust;
+- `BRIGADE.OnAfterLegionAssetReturned`: konkretes MOOSE-`LEGION`-Asset wurde zurueckgegeben;
+- `BRIGADE.OnAfterNewAsset`: ein neues Asset wurde dem konkreten MOOSE-`LEGION`-Bestand hinzugefuegt.
+
+Die beiden BRIGADE-Observer verketten eventuell vorhandene `OnAfter...`-Callbacks und wecken **nur Bedarfe derselben Installation**. Pro Incident gleichzeitig maximal ein angesetzter One-Shot-Retry. Bei weiterem Mangel keine automatische Wiederholung ohne neues MOOSE-Ereignis. MOOSE-Version 2.9.18 `LEGION:onafterLegionAssetReturned` / `LEGION:onafterNewAsset` und `WAREHOUSE:onafterNewAsset` wurden in der gepinnten `Moose.lua` source-geprueft.
+
+### Zwingende Bestands-/Governance-Grenze
+
+Die aktuelle `createSiteBrigades()`-Foundation registriert `PLATOON:New(QRF_TEMPLATE, 1, ...)` **pro Site nur mit einem MOOSE-QRF-Asset**. Gepinnte `PLATOON:New(TemplateGroupName, Ngroups, PlatoonName)` definiert `Ngroups` als Anzahl der Asset-Gruppen. Diese konkrete Konfiguration beweist **keine** Ersatz-QRF-Kapazitaet nach deren Totalverlust. Zusätzliche autoritative CampaignState-Warehouse-Ressourcen sind nicht ohne pruefbare CampaignState->BRIGADE-Stock-Integration gleichbedeutend mit verfuegbaren neuen MOOSE-QRF-Assets. Ein verlorenes Asset darf nicht durch `LEGION.UnRecruitAssets`, `SetReturnToLegion` oder Wartelogik fictiv wiederhergestellt werden. Die vorhandene Ground-/Warehouse-Baseline ist vor jeder Erhoehung des `Ngroups`-Wertes zu pruefen. **Keine Kapazitaet stillschweigend erhoeht.**
+
+**Noch offen fuer echte Owner-Vorgabe und DCS-Acceptance:** tatsaechliche QRF-Reserven je Site, deren autoritative CampaignState-Bilanz und zulaessige physische MOOSE-Stock-Materialisierung. Diese Quellenlage muss geklaert sein, bevor die Aussage `QRF-Ersatz bis Warehouse-Bestand leer` als produktiv umgesetzt oder DCS-validiert gelten darf.
+
+### Verifikation und naechster Test
+
+`scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua`: Schema **PRODUCTION-BOOTSTRAP-10**, dazu `tools/build-fire-support-strategic-resupply-production-bootstrap.ps1` und `tests/mission-demand/test_fire_support_strategic_resupply_production_bootstrap.lua` synchron angepasst. GitHub `MissionDemand validation` sowie `Documentation validation` zum Source-Commit `12fd370ce86ee7997f4e23c1f6559a5b50ac06be` **SUCCESS**. Das ist **kein** realer Windows-Builder-Lauf und keine physische DCS-Resupply-/QRF-Rekrutierung. Vor neuem Test Stand der Ground-/CampaignState-QRF-Vertraege und gegebenenfalls echte Bestandsoptionen klaeren. Der lokale Owner hat noch keine neuen Bundle-/MIZ-Hashes geliefert; aktuelle benoetigte Builderstufen Base **41**, Bootstrap **10** (erst nach Abschluss gemeinsamer Reconciliation neu bauen).
+
+Die Fixed-Wing-CAS-Asset-Bereitstellung bleibt bei PR #151, siehe Abschnitt 24; bestehender AH-64-Unable-to-Continue-/RTB-Pfad und M1083-Rearm sind weiterhin **offen** und duerfen nicht als behoben berichtet werden.
