@@ -5,7 +5,7 @@
 local Continuation = {}
 local Instance = {}
 Instance.__index = Instance
-Continuation.SchemaVersion = "OMW-FSSR-FIRE-CONTINUATION-3"
+Continuation.SchemaVersion = "OMW-FSSR-FIRE-CONTINUATION-4"
 
 local function requireFunction(spec, key)
   if type(spec[key]) ~= "function" then
@@ -104,17 +104,16 @@ function Instance:_evaluate(incidentId)
   -- An initially unavailable provider has no prior physical battery to
   -- inspect. Re-present that sustained C2 requirement to MOOSE recruitment
   -- when an actual release event arrives; do not bind it to another battery.
-  local ammo = pending.entry and self.getPhysicalAmmo(pending.entry) or pending.requiredShots
-  if type(ammo) ~= "number" then
+  local ammo = pending.entry and self.getPhysicalAmmo(pending.entry) or nil
+  if pending.entry and type(ammo) ~= "number" then
     self.log("C2_FIRE_AMMO_UNKNOWN incidentId=" .. tostring(incidentId))
     return
   end
-  if ammo < pending.requiredShots then
-    if pending.rearmCompleted then
-      self.log("C2_FIRE_AMMO_STILL_LOW_AFTER_REARM incidentId=" .. tostring(incidentId))
-      return
-    end
-    if not pending.rearmRequested then
+  if pending.entry and ammo < pending.requiredShots then
+    -- Rearm restores the previous Functional ARTY owner. The installation
+    -- requirement is independent: another MOOSE-selected battery may provide
+    -- the next fire mission while this physical owner is rearming.
+    if not pending.rearmRequested and not pending.rearmCompleted then
       local accepted, reason = self.requestRearm(pending.entry, pending.demand)
       if accepted then
         pending.rearmRequested = true
@@ -124,7 +123,9 @@ function Instance:_evaluate(incidentId)
           .. " reason=" .. tostring(reason))
       end
     end
-    return
+    self.log("C2_FIRE_LOCAL_AMMO_LOW_SEARCH_EXTERNAL incidentId=" .. tostring(incidentId)
+      .. " assetId=" .. tostring(pending.entry.owner and pending.entry.owner.realAssetId)
+      .. " rearmRequested=" .. tostring(pending.rearmRequested))
   end
 
   local nextSerial = (self.serial[incidentId] or 0) + 1
@@ -183,7 +184,7 @@ function Instance:OnFinished(demand, context, entry, reason)
   -- Wake only waiting incidents on this terminal event; no retry poller.
   if entry and entry.released then
     for otherId, pending in pairs(self.waiting) do
-      if otherId ~= demand.incidentId and not pending.rearmRequested then
+      if otherId ~= demand.incidentId then
         self:_defer(otherId)
       end
     end
@@ -236,7 +237,7 @@ end
 
 function Instance:OnCasEvidence()
   for incidentId, pending in pairs(self.waiting) do
-    if pending and not pending.rearmRequested then self:_defer(incidentId) end
+    if pending then self:_defer(incidentId) end
   end
 end
 
