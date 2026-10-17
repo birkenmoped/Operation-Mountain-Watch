@@ -7,7 +7,7 @@ local function eq(a,b,label) if a~=b then error(string.format("%s expected=%s ac
 local function yes(v,label) if v~=true then error(label.." expected=true") end end
 local function no(v,label) if v~=false then error(label.." expected=false") end end
 
-eq(Runtime.SchemaVersion,"OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13","QRF runtime schema")
+eq(Runtime.SchemaVersion,"OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-14","QRF runtime schema")
 
 local previousAuftrag=AUFTRAG
 local previousZone=ZONE

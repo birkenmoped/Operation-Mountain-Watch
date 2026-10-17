@@ -13,7 +13,7 @@ supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
 source_branch: agent/automatic-response-orchestration-continuation
-source_commit: GIT_HISTORY
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -966,3 +966,82 @@ FLIGHTGROUP
 Der allgemeine Base-31-Scope ist source-implemented und DCS-pending. Der geerbte
 geroutete STORAGE-Vertrag bleibt auf einen Carrier begrenzt; daraus folgt keine
 allgemeine Multi-Carrier-Freigabe.
+
+### 13.10.2026 – FSSR Production Mission Bootstrap
+
+Die normale Mission bindet die bereits akzeptierte FSSR-Production-Base ueber einen eigenen Bootstrap an die vorhandenen OMW-Foundations.
+
+~~~text
+OMW_FireSupStratResupply_ProductionBootstrap
+-> USERFLAG OMW_FSSR_READY / OMW_FSSR_RESUPPLY_READY
+-> BRIGADE:New + PLATOON:New for six installation organisations
+-> COMMANDER:New + AddAirwing for already-running AIRWING foundations
+-> OMW_FireSupStratResupply_ArtyRealAssetRegistry
+-> Functional ARTY owner handoff
+-> OMW.FireSupStratResupply.New(spec)
+-> Runtime:Prepare
+-> Runtime:StartPerimeters
+-> Runtime:StartSite
+~~~
+
+Keine neue MOOSE-Methode und kein neuer nativer DCS-Bypass werden eingefuehrt. Der Bootstrap verwendet ausschliesslich bereits im FSSR-/Ground-/AirOps-Stack source-gepruefte MOOSE-Vertraege.
+
+Strategic Resupply bleibt im Bootstrap fail-closed, bis ein produktiver physischer STORAGE-/Transport-Descriptor injiziert wird. A11-Fixture-STORAGE wird nicht uebernommen.
+
+## FSSR CAS-AO-Deconfliction – Source-Review 15.10.2026
+
+Fuer die produktive read-only CAS-Belegungsabfrage
+`OMW_FireSupStratResupply_CasLifecycleRuntime.lua` (Schema 2,
+`IsOnStationAt(coordinate)`) wurden die folgenden **bereits im Projekt
+verwendeten** MOOSE-Methoden gegen die im Projekt bereitgestellte
+`Moose.lua` geprueft:
+
+- `ZONE_BASE:IsCoordinateInZone(Coordinate)` – gepinnter Source, Methode
+  um Zeile 17876. Rueckgabe: boolean, Verwendung nur mit echten MOOSE
+  `COORDINATE`-Objekten.
+- `OPSGROUP:GetCoordinate(NewObject, UnitName)` – gepinnter Source,
+  Methode um Zeile 220804. `FLIGHTGROUP` besitzt die OPSGROUP-Basis;
+  der im CAS-Lifecycle bereits gebundene Flight liefert die Position.
+
+Es wird keine neue MOOSE-Klasse oder Dispatch-/Routing-Funktion
+eingefuehrt. Dieser Source-Review ist **kein DCS-Laufzeitnachweis**;
+Unit-Test und DCS-Acceptance fuer die neue Belegungsabfrage stehen aus.
+
+
+## FSSR Production Full Fire Response – One-shot C2 deferral (15.10.2026)
+
+Die neue `OMW_FireSupStratResupply_FireContinuation.lua` nutzt ausschliesslich
+die bereits im Projekt verwendete MOOSE-Klasse `SCHEDULER`:
+`SCHEDULER:New(MasterObject, SchedulerFunction, SchedulerArguments, Start, Repeat, RandomizeFactor, Stop)`.
+Gepinnte `Moose.lua` 2.9.18, Commit
+`73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`, Quellzeile etwa
+`13174`. Der konkrete Vertrag `SCHEDULER:New(nil, callback, {}, 1)`
+ist **eine einmalige Verschiebung** aus dem bereits akzeptierten
+Functional-`ARTY:OnAfterCeaseFire`-Callback, **kein** Repeat-/World-Scan.
+`ARTY:GetAmmo(false)` (Source etwa 99163) bleibt MOOSE-physische Ammo-Autoritaet;
+CampaignState-Settlement erfolgt nur im bereits akzeptierten
+`GroundAmmoRearmAdapter`. Source-reviewed und CI-Test, DCS-PENDING.
+
+
+### FSSR-Reconciliation: OPSGROUP-Verlustereignis und Rearm-Observation (17.10.2026)
+
+Die gepinnte `Moose.lua` 2.9.18 / Commit
+`73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` wurde im Source auf
+`OPSGROUP:onbeforeDead` (ca. Zeile 226957), `OPSGROUP:onafterDestroyed`
+(ca. Zeile 226944), `OPSGROUP:onafterDead` und
+`ARTY:onafterRearm` (ca. Zeile 98490), `ARTY:onafterRearmed`
+(ca. Zeile 98582) und `ARTY:_CheckRearmed` (ca. Zeile 98617) geprueft.
+`OPSGROUP:OnAfterDestroyed` wird nun in
+`OMW_FireSupStratResupply_QrfMissionFactory.lua` nach dem bisherigen
+Handler einmalig an den autoritativen lokalen QRF-Verlust-Fachcallback
+weitergereicht. Dies wird nur nach dem MOOSE-Gruppenzerstoerungsereignis
+ausgeloest; einzelne Elementverluste sind dafuer kein Ersatz.
+
+`OMW_FireSupStratResupply_ProductionBootstrap.lua` verknuepft
+`ARTY.OnAfterRearm` ausschliesslich als lesenden Diagnostik-Observer
+mit physischem Ammo-Stand, `Nammo0`, M1083-zu-Batterie-Distanz und
+konfigurierter `RearmingDistance`; der bestehende
+`GroundAmmoRearmAdapter` besitzt weiter die Settlement- und
+`OnAfterRearmed`-Autoritaet. Das Re-arm-FSM-Verhalten wurde **nicht**
+ersetzt oder ueberschrieben. Aktueller Nachweis: Source/CI; fuer diesen
+neuen Beobachter und die QRF-Ersatzanforderung **DCS_PENDING**.

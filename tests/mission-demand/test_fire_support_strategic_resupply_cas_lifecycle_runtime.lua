@@ -200,6 +200,19 @@ commander:OnAfterOpsOnMission("*","OpsOnMission","*",flight,mission)
 eq(flight.boundGeometry~=nil,true,"flight corridor bound")
 eq(hasEvent("CAS_OWNER_CORRIDOR_INSTALLED")~=nil,true,"corridor evidence")
 
+-- Ground truth for deconfliction is flight position in the configured MOOSE AO,
+-- not the logical mission state alone.
+local occupied,occupiedReason,occupiedDemand=runtime:IsOnStationAt({name="TARGET_IN_AO"})
+eq(occupied,true,"physical CAS occupancy")
+eq(occupiedReason,"CAS_PHYSICALLY_IN_SHARED_AO","physical occupancy reason")
+eq(occupiedDemand,"D-CAS-1","physical occupancy demand")
+local originalCoordinate=flight.GetCoordinate
+flight.GetCoordinate=function() return nil end
+local unresolved,unresolvedReason=runtime:IsOnStationAt({name="TARGET_IN_AO"})
+eq(unresolved,nil,"unknown CAS position must fail closed")
+eq(unresolvedReason,"CAS_AO_PRESENCE_UNRESOLVED","unknown CAS reason")
+flight.GetCoordinate=originalCoordinate
+
 mission.executing=true
 runtime:_updateAll()
 eq(hasEvent("CAS_EXECUTING")~=nil,true,"executing evidence")
@@ -214,6 +227,7 @@ runtime:_updateAll()
 eq(cancelCount,1,"controlled release after stable no contact")
 eq(handle.reason,"SUPPORTED_ELEMENT_RELEASE_NO_CONTACT","release reason")
 eq(hasEvent("CAS_CONTROLLED_RELEASE")~=nil,true,"release evidence")
+eq(runtime:IsOnStationAt({name="TARGET_IN_AO"}),true,"CAS physically present during release")
 
 flight:OnAfterFuelLow("*","FuelLow","*")
 eq(hasEvent("CAS_FUEL_LOW").beforeRelease,false,"fuel low after release is not pre-release failure")
@@ -226,6 +240,7 @@ runtime:_updateAll()
 eq(hasEvent("CAS_LEGION_ASSET_RETURNED")~=nil,true,"asset returned evidence")
 eq(hasEvent("CAS_LIFECYCLE_COMPLETE")~=nil,true,"lifecycle complete evidence")
 eq(runtime:GetState("D-CAS-1").completed,true,"lifecycle completed")
+eq(runtime:IsOnStationAt({name="TARGET_IN_AO"}),false,"CAS no longer occupying AO after return")
 
 -- Unknown provider is fail-closed before physical dispatch assignment.
 local mission2={

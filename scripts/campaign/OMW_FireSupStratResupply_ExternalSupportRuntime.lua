@@ -10,7 +10,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-3"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-4"
 local TAG = "[OMW][FireSupStratResupply.ExternalSupportRuntime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message),2) end
@@ -37,6 +37,7 @@ function Runtime.New(spec)
     local selection=needTable(spec.artyFunctionalSelection,"artyFunctionalSelection")
     if type(selection.resolveFunctionalArty)~="function" then fail("artyFunctionalSelection.resolveFunctionalArty must be a function") end
     if selection.releaseAssets~=nil and type(selection.releaseAssets)~="function" then fail("artyFunctionalSelection.releaseAssets must be a function when provided") end
+    if selection.onFireMissionFinished~=nil and type(selection.onFireMissionFinished)~="function" then fail("artyFunctionalSelection.onFireMissionFinished must be a function when provided") end
   end
   if type(spec.resolveArtyTarget)~="function" then fail("resolveArtyTarget must be a function") end
   if type(spec.resolveCasGeometry)~="function" then fail("resolveCasGeometry must be a function") end
@@ -69,6 +70,7 @@ function Runtime.New(spec)
       artyMissionFactory=artyFactory,
       resolveFunctionalArty=selection.resolveFunctionalArty,
       releaseAssets=selection.releaseAssets,
+      onFireMissionFinished=selection.onFireMissionFinished,
       defaultPriority=selection.defaultPriority,
       defaultMaxEngagements=selection.defaultMaxEngagements,
       logger=spec.logger,

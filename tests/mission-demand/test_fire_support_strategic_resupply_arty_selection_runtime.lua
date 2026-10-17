@@ -32,13 +32,15 @@ local function releaseAssets(assets)
   releases=releases+1
 end
 
-local arty={assignCalls={},removeCalls={}}
+local arty={assignCalls={},removeCalls={},groupname="ARTY_BLUE_WRIGHT_L118_01"}
 function arty:AssignTargetCoord(coord,prio,radius,shots,maxengage,time,weapontype,name,unique)
   self.assignCalls[#self.assignCalls+1]={coord=coord,prio=prio,radius=radius,shots=shots,maxengage=maxengage,name=name,unique=unique}
   return name
 end
 function arty:RemoveTarget(name) self.removeCalls[#self.removeCalls+1]=name end
+function arty:GetAmmo() return self.physicalAmmo or 20 end
 
+local notifications={}
 local runtime=Runtime.New({
   commander=commander,
   artyMissionFactory=factory,
@@ -49,6 +51,12 @@ local runtime=Runtime.New({
     return {arty=arty,priority=7,maxEngagements=1,acceptedShots=4,acceptedRadiusM=60}
   end,
   releaseAssets=releaseAssets,
+  onFireMissionFinished=function(finishedDemand, context, entry, reason)
+    eq(entry.demand, finishedDemand, "completion demand identity")
+    eq(context.marker, "CTX", "completion context")
+    yes(entry.released, "completion must run after selection release")
+    notifications[#notifications+1]={demandId=finishedDemand.demandId,reason=reason}
+  end,
 })
 
 local demand={demandId="D|ARTY|1",supportType="ARTY",siteId="COP_HONAKER"}
@@ -67,10 +75,23 @@ eq(releases,0,"no early release")
 
 arty:OnAfterOpenFire(nil,nil,nil,nil,{name=runtime:GetState(demand.demandId).targetName})
 yes(runtime:GetState(demand.demandId).started,"fire started")
+arty.currentTarget={name=runtime:GetState(demand.demandId).targetName}
+arty:OnEventShot({IniGroupName="OTHER_BATTERY"})
+eq(runtime:GetState(demand.demandId).physicalShots,0,"foreign shots ignored")
+arty:OnEventShot({IniGroupName=arty.groupname})
+eq(runtime:GetState(demand.demandId).physicalShots,1,"physical shot correlated")
 arty:OnAfterCeaseFire(nil,nil,nil,nil,{name=runtime:GetState(demand.demandId).targetName})
 yes(runtime:GetState(demand.demandId).completed,"fire completed")
 no(asset.isReserved,"selection released after cease fire")
 eq(releases,1,"one release after cease fire")
+eq(#notifications,1,"one completion callback after cease fire")
+eq(notifications[1].demandId,demand.demandId,"completion callback demandId")
+eq(notifications[1].reason,"CEASE_FIRE","completion callback reason")
+eq(runtime:GetState(demand.demandId).physicalShots,1,"cease fire shot evidence persists")
+arty:OnEventShot({IniGroupName=arty.groupname})
+eq(runtime:GetState(demand.demandId).physicalShots,1,"shot after release ignored")
+arty:OnAfterCeaseFire(nil,nil,nil,nil,{name=runtime:GetState(demand.demandId).targetName})
+eq(#notifications,1,"repeated MOOSE CeaseFire must not duplicate callback")
 no(handle:Cancel("LATE"),"completed handle not cancellable")
 
 commander.can=false
@@ -100,11 +121,51 @@ eq(missingReason,"SELECTED_ARTY_NOT_MATERIALIZED","missing owner reason")
 no(asset.isReserved,"missing owner releases selection")
 eq(releases,2,"missing owner release")
 
+-- A cease-fire callback without a physical shot must not be reported as a
+-- confirmed fire mission (Fortress false-positive regression).
+do
+  local fakeAsset={spawngroupname="NO_SHOT_ARTY"}
+  local fakeLegion={alias="NO_SHOT_LEGION"}
+  local fakeCommander={}
+  function fakeCommander:CanMission() return true end
+  function fakeCommander:RecruitAssetsForMission()
+    return true,{fakeAsset},{[fakeLegion.alias]=fakeLegion}
+  end
+  local fakeArty={groupname="NO_SHOT_ARTY"}
+  function fakeArty:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
+  function fakeArty:RemoveTarget() end
+  function fakeArty:GetAmmo() return 20 end
+  local callbackReason
+  local releaseCount=0
+  local noShotRuntime=Runtime.New({
+    commander=fakeCommander,
+    artyMissionFactory=factory,
+    resolveFunctionalArty=function() return {arty=fakeArty} end,
+    releaseAssets=function() releaseCount=releaseCount+1 end,
+    onFireMissionFinished=function(_,_,entry,reason)
+      eq(entry.physicalShots,0,"no shot recorded")
+      callbackReason=reason
+    end,
+  })
+  local demandArg={demandId="NO_SHOT_DEMAND",supportType="ARTY"}
+  local _,created=noShotRuntime:Dispatch(demandArg,{marker="CTX"})
+  yes(created,"no-shot fixture dispatched")
+  fakeArty:OnAfterOpenFire(nil,nil,nil,nil,{name=noShotRuntime:GetState(demandArg.demandId).targetName})
+  fakeArty.currentTarget={name=noShotRuntime:GetState(demandArg.demandId).targetName}
+  fakeArty:OnAfterCeaseFire(nil,nil,nil,nil,fakeArty.currentTarget)
+  eq(callbackReason,"NO_PHYSICAL_SHOT_EVIDENCE","no-shot terminal outcome")
+  eq(releaseCount,1,"no-shot selection released")
+end
+
+local cancelledNotifications={}
 local runtimeCancel=Runtime.New({
   commander=commander,
   artyMissionFactory=factory,
   resolveFunctionalArty=function() return {arty=arty} end,
   releaseAssets=releaseAssets,
+  onFireMissionFinished=function(_,_,_,why)
+    cancelledNotifications[#cancelledNotifications+1]=why
+  end,
 })
 local cancelHandle,cancelCreated=runtimeCancel:Dispatch({demandId="D|ARTY|5",supportType="ARTY"},{marker="CTX"})
 yes(cancelCreated,"cancel fixture dispatched")
@@ -113,6 +174,8 @@ yes(cancelHandle:Cancel("INCIDENT_CLOSED"),"queued cancel accepted")
 eq(#arty.removeCalls,1,"functional target removed")
 no(asset.isReserved,"queued cancel releases selection")
 eq(releases,3,"queued cancel release")
+eq(#cancelledNotifications,1,"queued cancel callback")
+eq(cancelledNotifications[1],"CANCELLED_BEFORE_FIRE_START","queued cancel reason")
 no(cancelHandle:Cancel("DUP"),"cancel idempotent")
 
 
@@ -132,6 +195,7 @@ eq(releases,4,"malformed owner release")
 local throwingArty={}
 function throwingArty:AssignTargetCoord() error("ASSIGN_FAILED") end
 function throwingArty:RemoveTarget() end
+function throwingArty:GetAmmo() return 20 end
 local assignRuntime=Runtime.New({
   commander=commander,
   artyMissionFactory=factory,
@@ -172,6 +236,7 @@ do
     local a={}
     function a:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
     function a:RemoveTarget() end
+    function a:GetAmmo() return 20 end
     return a
   end
   local artyA=newArty()
@@ -200,6 +265,101 @@ do
   artyA:OnAfterCeaseFire(nil,nil,nil,nil,{name=stateA.targetName})
   no(assetA.isReserved,"concurrent ARTY A released independently")
   eq(released2,2,"two independent selection releases")
+end
+
+
+-- Dead must release the recruited asset and notify C2 once, even if the
+-- MOOSE FSM delivers the same terminal event more than once.
+do
+  local selected={spawngroupname="DEAD_ARTY",isReserved=false}
+  local selectedLegion={alias="DEAD_LEGION"}
+  local deadCommander={}
+  function deadCommander:CanMission() return true end
+  function deadCommander:RecruitAssetsForMission()
+    selected.isReserved=true
+    return true,{selected},{[selectedLegion.alias]=selectedLegion}
+  end
+  local releaseCount=0
+  local finished={}
+  local deadArty={}
+  function deadArty:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
+  function deadArty:RemoveTarget() end
+  function deadArty:GetAmmo() return 20 end
+  local deadRuntime=Runtime.New({
+    commander=deadCommander,
+    artyMissionFactory=factory,
+    resolveFunctionalArty=function() return {arty=deadArty} end,
+    releaseAssets=function(assets)
+      eq(assets[1],selected,"dead release asset identity")
+      selected.isReserved=false
+      releaseCount=releaseCount+1
+    end,
+    onFireMissionFinished=function(demandArg,context,entry,reason)
+      yes(entry.released,"dead callback must follow release")
+      finished[#finished+1]={id=demandArg.demandId,reason=reason}
+    end,
+  })
+  local deadDemand={demandId="DEAD_FIRE",supportType="ARTY"}
+  local handle,created=deadRuntime:Dispatch(deadDemand,{marker="CTX"})
+  yes(created and handle~=nil,"dead fixture dispatched")
+  deadArty:OnAfterDead(nil,nil,nil,nil,"battery")
+  no(selected.isReserved,"dead asset released")
+  eq(releaseCount,1,"dead release once")
+  eq(#finished,1,"dead callback once")
+  eq(finished[1].id,deadDemand.demandId,"dead callback demand")
+  eq(finished[1].reason,"FUNCTIONAL_ARTY_DEAD","dead callback reason")
+  deadArty:OnAfterDead(nil,nil,nil,nil,"battery")
+  eq(#finished,1,"duplicate dead callback suppressed")
+  eq(releaseCount,1,"duplicate dead release suppressed")
+end
+
+-- A faulty C2 listener must not break MOOSE selection release.
+do
+  local selected={spawngroupname="THROW_ARTY"}
+  local selectedLegion={alias="THROW_LEGION"}
+  local throwCommander={}
+  function throwCommander:CanMission() return true end
+  function throwCommander:RecruitAssetsForMission()
+    return true,{selected},{[selectedLegion.alias]=selectedLegion}
+  end
+  local releaseCount=0
+  local fireArty={}
+  function fireArty:AssignTargetCoord(_,_,_,_,_,_,_,name) return name end
+  function fireArty:RemoveTarget() end
+  function fireArty:GetAmmo() return 20 end
+  local throwRuntime=Runtime.New({
+    commander=throwCommander,
+    artyMissionFactory=factory,
+    resolveFunctionalArty=function() return {arty=fireArty} end,
+    releaseAssets=function() releaseCount=releaseCount+1 end,
+    onFireMissionFinished=function() error("C2_LISTENER_FAILED") end,
+  })
+  local demandArg={demandId="THROW_LISTENER",supportType="ARTY"}
+  local _,created=throwRuntime:Dispatch(demandArg,{marker="CTX"})
+  yes(created,"throwing listener fixture dispatched")
+  local ok=pcall(function()
+    fireArty:OnAfterCeaseFire(nil,nil,nil,nil,{name=throwRuntime:GetState(demandArg.demandId).targetName})
+  end)
+  yes(ok,"throwing listener contained")
+  eq(releaseCount,1,"release survives throwing listener")
+  yes(throwRuntime:GetState(demandArg.demandId).completed,"completion state retained")
+end
+
+-- A MOOSE-selected depleted battery must release its reservation and remain
+-- unable to fire; C2 can then consider another provider on the next event.
+do
+  local priorRelease = releases
+  local priorAssignments = #arty.assignCalls
+  arty.physicalAmmo = 2
+  local missing,created,reason=runtime:Dispatch(
+    {demandId="LOW_AMMO_SELECTED",supportType="ARTY"},{marker="CTX"})
+  eq(missing,nil,"depleted battery does not get a firing handle")
+  no(created,"depleted battery selection rejected")
+  eq(reason,"SELECTED_ARTY_AMMO_INSUFFICIENT","specific depleted reason")
+  no(asset.isReserved,"depleted provider unreserved")
+  eq(releases,priorRelease+1,"selected battery released exactly once")
+  eq(#arty.assignCalls,priorAssignments,"never task depleted battery")
+  arty.physicalAmmo = nil
 end
 
 print("PASS test_fire_support_strategic_resupply_arty_selection_runtime")

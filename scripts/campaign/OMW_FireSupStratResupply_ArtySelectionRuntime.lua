@@ -17,7 +17,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-1"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-4"
 
 local TAG = "[OMW][FireSupStratResupply.ArtySelectionRuntime]"
 
@@ -74,6 +74,9 @@ function Runtime.New(spec)
   if spec.releaseAssets ~= nil and type(spec.releaseAssets) ~= "function" then
     fail("releaseAssets must be a function when provided")
   end
+  if spec.onFireMissionFinished ~= nil and type(spec.onFireMissionFinished) ~= "function" then
+    fail("onFireMissionFinished must be a function when provided")
+  end
   if spec.logger ~= nil and type(spec.logger) ~= "function" then
     fail("logger must be a function when provided")
   end
@@ -94,6 +97,7 @@ function Runtime.New(spec)
     defaultPriority = defaultPriority,
     defaultMaxEngagements = defaultMaxEngagements,
     logger = spec.logger,
+    onFireMissionFinished = spec.onFireMissionFinished,
     entries = {},
     entriesByTargetName = {},
     artyHooks = {},
@@ -102,6 +106,17 @@ end
 
 function Instance:_log(message)
   if self.logger then self.logger(TAG .. " " .. tostring(message)) end
+end
+
+function Instance:_notifyFinished(entry, reason)
+  if entry.finishedNotified then return end
+  entry.finishedNotified = true
+  if not self.onFireMissionFinished then return end
+  local ok, err = pcall(self.onFireMissionFinished, entry.demand, entry.context, entry, reason)
+  if not ok then
+    self:_log("fire completion callback error demandId=" .. tostring(entry.demand.demandId)
+      .. " reason=" .. tostring(err))
+  end
 end
 
 function Instance:_release(entry, reason)
@@ -123,6 +138,22 @@ function Instance:_installArtyHooks(arty)
   self.artyHooks[arty] = true
 
   local runtime = self
+
+  -- MOOSE ARTY:OnEventShot is already subscribed by the sole Functional ARTY
+  -- owner. Chain that handler; never create a second EVENTHANDLER or fire FSM.
+  local previousShot = arty.OnEventShot
+  arty.OnEventShot = function(selfArty, eventData)
+    if previousShot then previousShot(selfArty, eventData) end
+    if not eventData or eventData.IniGroupName ~= selfArty.groupname then return end
+    local target = selfArty.currentTarget
+    local targetName = target and target.name or nil
+    local entry = targetName and runtime.entriesByTargetName[targetName] or nil
+    if not entry or entry.arty ~= selfArty or not entry.started or entry.released then return end
+    entry.physicalShots = entry.physicalShots + 1
+    runtime:_log(string.format(
+      "functional ARTY physical shot demandId=%s target=%s count=%d",
+      tostring(entry.demand.demandId), tostring(targetName), entry.physicalShots))
+  end
 
   local previousOpenFire = arty.OnAfterOpenFire
   arty.OnAfterOpenFire = function(selfArty, Controllable, From, Event, To, target)
@@ -147,8 +178,10 @@ function Instance:_installArtyHooks(arty)
     local entry = targetName and runtime.entriesByTargetName[targetName] or nil
     if not entry then return end
     entry.completed = true
-    entry.completedReason = entry.cancelRequested and "CANCELLED_AFTER_FIRE_START" or "CEASE_FIRE"
+    entry.completedReason = entry.cancelRequested and "CANCELLED_AFTER_FIRE_START"
+      or (entry.physicalShots > 0 and "CEASE_FIRE" or "NO_PHYSICAL_SHOT_EVIDENCE")
     runtime:_release(entry, entry.completedReason)
+    runtime:_notifyFinished(entry, entry.completedReason)
     runtime:_log(string.format(
       "functional ARTY fire complete demandId=%s target=%s cancelled=%s",
       tostring(entry.demand.demandId), tostring(targetName), tostring(entry.cancelRequested == true)))
@@ -164,6 +197,7 @@ function Instance:_installArtyHooks(arty)
         entry.failed = true
         entry.failureReason = "FUNCTIONAL_ARTY_DEAD"
         runtime:_release(entry, entry.failureReason)
+        runtime:_notifyFinished(entry, entry.failureReason)
       end
     end
   end
@@ -266,6 +300,27 @@ function Instance:Dispatch(demand, context)
   end
 
   local arty = owner.arty
+  -- MOOSE owns provider recruitment; only the selected physical battery may
+  -- be checked for fire readiness. A depleted selected owner cannot be
+  -- commanded to fire merely because another site's battery needs support.
+  if type(arty.GetAmmo) ~= "function" then
+    self.releaseAssets(assets)
+    return nil, false, "SELECTED_ARTY_AMMO_UNAVAILABLE"
+  end
+  local selectedAmmo = arty:GetAmmo(false)
+  local requiredShots = owner.acceptedShots or target.shots
+  if type(selectedAmmo) ~= "number" or type(requiredShots) ~= "number" then
+    self.releaseAssets(assets)
+    return nil, false, "SELECTED_ARTY_AMMO_UNKNOWN"
+  end
+  if selectedAmmo < requiredShots then
+    self.releaseAssets(assets)
+    self:_log("selected MOOSE ARTY battery low ammo demandId=" .. tostring(demand.demandId)
+      .. " selectedAmmo=" .. tostring(selectedAmmo)
+      .. " requiredShots=" .. tostring(requiredShots)
+      .. " asset=" .. tostring(owner.realAssetId))
+    return nil, false, "SELECTED_ARTY_AMMO_INSUFFICIENT"
+  end
   self:_installArtyHooks(arty)
 
   local targetAlias = "OMW|FSSR|ARTY|" .. demand.demandId
@@ -302,6 +357,7 @@ function Instance:Dispatch(demand, context)
     target = target,
     targetName = targetName,
     started = false,
+    physicalShots = 0,
     completed = false,
     failed = false,
     released = false,
@@ -320,6 +376,7 @@ function Instance:Dispatch(demand, context)
       entry.completed = true
       entry.completedReason = "CANCELLED_BEFORE_FIRE_START"
       runtime:_release(entry, entry.completedReason)
+      runtime:_notifyFinished(entry, entry.completedReason)
     end
     return true
   end

@@ -346,3 +346,113 @@ Post-merge direct production artifact hash readback: VERIFIED
 Ground rearm integration block: CLOSED
 External filesystem/server persistence host: NOT PRESENT / NOT TESTED / NOT CLAIMED
 ```
+
+
+## FSSR Production-Bootstrap-5 – Wiederverwendung der vorhandenen Rearm-Module
+
+Die Reconciliation vom 14.10.2026 ergaenzt eine **opt-in Composition** im
+`OMW_FireSupStratResupply_ProductionBootstrap.lua`. Die vier bereits vorhandenen
+Module `GroundSupportMaterializer`, `FixedFireSupportAmmoSupport`,
+`GroundAmmoRearmAdapter` und `FixedFireSupportAmmoRearmService` werden ohne
+Aenderung ihrer Lifecycle-Implementierung in das Production-Bundle eingebettet.
+
+Pro explizit konfigurierter Fixed-Fire-Batterie wird beim ersten Aufruf des
+MOOSE-Selected-Functional-ARTY-Resolvers der Rearm-Service fuer die physische
+Batterie erzeugt. Dieser Dienst benoetigt eine durch die Produktivmission
+nachgewiesene eigene MOOSE-Spawnzone, ein M1083-Template sowie eindeutige
+`nodeId`, `assignment`, `platoonName` und `carrierEntityId`.
+Erzeugung und MOOSE-Bereitschaft des Dienstes sind **kein** automatischer
+Munitionsverbrauch und **keine** physische Rearm-Anforderung.
+
+Eine spaetere autorisierte lokale Rearm-Anforderung wird durch
+`OMW.FireSupStratResupplyProduction.RequestLocalArtyRearm(assetId, spec)`
+an den **bestehenden** Rearm-Service delegiert, ohne das Materialisierungs-,
+MOOSE-ARTY-, CampaignState- oder Return-to-stock-Verhalten zu kopieren.
+`startArty=false` und die konkrete materialisierte Batteriereferenz werden
+erzwungen. Die fachlich gueltige Ausloeseschwelle, Transaktionsidentitaet,
+Menge und erneute Freigabe des ARTY-Fire-Support-Auftrags sind derzeit
+**nicht** durch diesen Adapter implementiert.
+
+Wichtig: Die neue Zusammensetzung muss noch lokal gebaut und in DCS
+einschliesslich Warehouse-Materialisierung, M1083-Entnahme, physischem
+`ARTY:Rearm()`, Ressourcentransaktion, M1083-Rueckkehr und wiederholter
+Anforderung geprueft werden. Aus alter Acceptance folgt fuer den neu
+gebuendelten und anders initialisierten Production-Pfad kein automatisches
+`VALIDATED`.
+
+
+## ARTY-Completion-Observer fuer FSSR Production
+
+Der produktive `ArtySelectionRuntime` besitzt einen optionalen Callback
+`onFireMissionFinished(demand, context, entry, reason)`, der **nach**
+MOOSE-`OnAfterCeaseFire` und Freigabe der Selection-Reservierung einmalig
+ausgeloest wird. Ausserdem werden vorzeitiger Cancel sowie der MOOSE-`Dead`-
+Fehler signalisiert. Diese Notification verwendet die bereits installierten
+MOOSE-ARTY-FSM-Hooks; sie implementiert keinen eigenen ARTY-Lifecycle.
+
+Die Signalbruecke **startet weder** einen neuen Feuerauftrag **noch** den M1083.
+Nachladen bleibt Aufgabe des zuvor dokumentierten `FixedFireSupportAmmoRearmService`,
+nachfolgende Ziel- und CAS-Deconfliction-Entscheidungen bleiben Aufgabe der
+autoritativen C2-Laufzeit. Das Signal ersetzt keinen physischen
+`EVENTS.Shot`-Nachweis und wurde im neuen Production-Bundle noch nicht in
+DCS bestaetigt.
+
+
+## Production Base 38 – physisches Fire-Evidence-Gate (15.10.2026)
+
+Die bestehende `ArtySelectionRuntime` verkettet ab Schema 3 den vorhandenen
+MOOSE-`ARTY:OnEventShot(EventData)` des einzigen ARTY-Owners und zaehlt
+pro selektierter Fire-Mission nur Ereignisse fuer `IniGroupName == arty.groupname`
+und `arty.currentTarget.name`. Das Feld `entry.physicalShots` ist
+**keine** CampaignState-Ressourcenbuchung. Bei `OnAfterCeaseFire` ohne
+korrelierten Schuss wird `NO_PHYSICAL_SHOT_EVIDENCE` signalisiert statt
+eines erfolgreichen `CEASE_FIRE`. Dieser Rueckgabegrund ist ein Gate
+fuer die spaetere C2-Continuation und verhindert den historischen
+Fortress-False-Positive; kein neuer Feuer-, Rearm- oder Scheduler-Owner.
+DCS-Validierung und Unit-Testausfuehrung stehen noch aus.
+
+
+## FSSR Production Bootstrap 7 – A10-vorgepruefte vier M1083-Rearm-Pfade
+
+Das neue Produktionspaket verdrahtet die **bereits vorhandenen** vier
+A10-Standortbereiche `ZON_BLUE_GND_{BOSTICK,WRIGHT,FORTRESS,HONAKER}_RESUPPLY`,
+das ME-Template `TPL_BLUE_GND_SUP_M1083` und die jeweils registrierten
+`GROUND_NODE_*`-CampaignState-Knoten. Der A10-Vertrag fuer einen
+`GROUND_AMMO_PACKAGE` pro M1083-Rearm und denselben MOOSE
+`ARTY:Rearm()`-Owner bleibt erhalten. Ein eigener Counter fuer strategische
+Munition entsteht nicht. Die MOOSE-BRIGADE wird ausschliesslich durch
+`FixedFireSupportAmmoSupport.New` nach Registrierung des Materializers
+gestartet; Bootstrap erzeugt keine zweite BRIGADE-Start-/Routenlogik.
+
+`FireContinuation` fordert den Rearm nach positiv belegter physischer
+ARTY-Salve nur bei `ARTY:GetAmmo(false) < acceptedShots` an,
+dedupliziert bis `OnAfterRearmed` und fuehrt nach der MOOSE-Rueckmeldung
+eine erneut autorisierte Ziel-/CAS-Pruefung durch. `config.localArtyRearm`
+ist optional: `nil` setzt die A10-Defaults fuer vier Sites, `false`
+deaktiviert den lokalen Rearm explizit und eine Tabelle ueberschreibt
+die konkrete Konfiguration (vollstaendige echte Daten notwendig).
+Fehlendes ME-Template oder fehlende Zonen werden **vor** der eigentlichen
+Feueranforderung beim Bootstrap-Start fail-closed gemeldet. Es werden
+keine neuen Mission-Editor-Objekte erzeugt. Die Werte stammen aus
+`mission/tests/fire-support-strategic-resupply-production-base-runtime/src/10-production-real-arty-selection-rearm-acceptance.lua`
+und sind nicht neu erfunden. DCS-Validierung gegen die **aktuelle**
+Production-`.miz` ausstehend.
+
+
+### FSSR neue Rearm-Observation (17.10.2026)
+
+Wegen des realen 16.10.-Laufs (Honaker M1083 materialisiert,
+`GROUND_AMMO_PACKAGE` verbucht, aber kein `LOCAL_ARTY_REARMED`)
+wurde die bisherige akzeptierte Rearm-MOOSE-FSM **nicht** geaendert.
+Stattdessen meldet der vorhandene Bootstrap beim eingetretenen
+`ARTY.OnAfterRearm` einmalig
+`LOCAL_ARTY_REARM_ENTERED assetId=... ammo=... initialAmmo=...
+distanceM=... thresholdM=... rearmingState=...`.
+Diese Werte belegen die tatsaechlichen MOOSE-Rearm-Bedingungen am
+FSM-Uebergang. Das Engine-Rearm selbst erfolgt anschliessend ueber den
+bisherigen `ARTY:Rearm`-/`_CheckRearmed`-Pfad.
+Die im DCS-Test sichtbare Truck-Naehe wird als reale Owner-Beobachtung
+gewertet, **nicht** stillschweigend als Distanzfehler uminterpretiert.
+Kein fester frei erfundener Nachlade-Timer, kein zweiter Rearm-Service.
+Ob DCS physisch nachlaedt und `OnAfterRearmed` eintritt bleibt
+`DCS_PENDING` bis zum naechsten echten Lauf.
