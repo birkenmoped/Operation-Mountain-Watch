@@ -1309,3 +1309,49 @@ autoritativer CampaignState-Ressourcen konsumiert und als physische
 MOOSE-PLATOON-Gruppenmateralisierung angeboten werden.
 Kein fiktiver Credit verlorener Fahrzeuge, kein `Ngroups`-Erhoehen
 ohne explizit autorisierte physische/strategische Ressourcen-Korrelation.
+
+
+## 27. MOOSE 2.9.19 – offizieller Release-Diff und OMW-Upgrade-Entscheidungsvorbereitung (18.10.2026)
+
+**Status: RESEARCH_VERIFIED / UPGRADE_NOT_AUTHORIZED / DCS_PENDING.** Diese Bewertung ist eine technische Empfehlung, **keine** stillschweigende Entscheidung des Projektinhabers ueber den global gepinnten MOOSE-Stand. Keine geaenderte `Moose.lua`, keine `.miz`-Mutation, keine lokalen Builds, keine produktiven API-Aenderungen.
+
+### 27.1 Exakte Quellen und Vergleichsbasis
+
+- Offizielle [MOOSE 2.9.19 Release-Notes](https://github.com/FlightControl-Master/MOOSE/releases/tag/2.9.19), veröffentlicht **11.10.2026**.
+- Offizielle [MOOSE 2.9.18 Release-Notes](https://github.com/FlightControl-Master/MOOSE/releases/tag/2.9.18), veröffentlicht **14.06.2026**.
+- GitHub Source-Diff [tatsaechlich gepinnter 2.9.18-Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` zu Tag `2.9.19`](https://github.com/FlightControl-Master/MOOSE/compare/73d3ed119cd9e7e3f2cfcabbaa34513d30529b54...2.9.19): **114 nachfolgende Commits**, 27 geaenderte Repository-Dateien im GitHub-Vergleich. GitHub Tag-zu-Tag `2.9.18...2.9.19` ergab **116** Commits; fuer OMW ist der gepinnte *tatsaechliche* Commit ausschlaggebend, nicht die rein nominelle Release-Nummer.
+- Gepinnte OMW-MOOSE-Bundle-Basis bleibt `Moose.lua` 2.9.18, Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`, aus bisheriger MIZ-Evidenz SHA-256 `E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`. Ein neuer 2.9.19-`Moose.lua`-SHA wurde **nicht** lokal vom Owner ermittelt und darf nicht erfunden werden.
+
+### 27.2 Abgleich mit aktuellen FSSR-Problemen
+
+| Beobachtetes Problem | 2.9.19-Diff-/Release-Befund | Bewertung |
+|---|---|---|
+| Honaker 2B11/M1083-physischer Rearm ohne `Rearmed` | **Keine** Aenderung an `Moose/Functional/Artillery.lua` zwischen gepinntem Commit und 2.9.19 | **Kein nachgewiesener ARTY-Rearm-Fix**; DCS-Munitions-/Distance-/FSM-Diagnostik bleibt erforderlich |
+| Freiwerdende Wright-ARTY wird nicht fuer Honaker rekrutiert | **Keine** Aenderung an `Moose/Ops/Commander.lua`, `Moose/Ops/Legion.lua` oder `Functional/Artillery.lua` | Persistenter OMW-Standortbedarf und Provider-Release-/Re-Recruitment bleiben fachliche Aufgabe |
+| Vollstaendig verlorene QRF ohne Ersatz | **Keine** Aenderung an `Ops/OpsGroup.lua`, `Ops/Brigade.lua`, `Ops/Legion.lua` | Kein fixiertes Ground-/QRF-/Warehouse-Recruitment; CampaignState-Kapazitaet weiter gesondert |
+| AH-64 kreist bis FuelLow; unkontrollierte Freigabe / sichere RTB-Korridore | **Keine** Aenderung an `Ops/FlightGroup.lua` oder gezielte CAS-Release-/Return-Routen-Korrektur | Kein nachgewiesener Fix fuer OMW-Routen- und Supported-Element-Release-Vertrag |
+| PR #151 CAS-Airborne/Ground-Alert | `Ops/AirWing.lua`: `AIRWING:SetNumberCAP(n, grouping)`, `CheckCAP()` mit Gruppierung | CAP-Gruppierung, **nicht** CAS-Provider-Bereitstellung oder ATO-Ground-Alert. PR #151 bleibt verantwortlich |
+
+`Ops/Auftrag.lua` wurde zwar geaendert, aber die konkrete Diff-Hunk betrifft `ESCORT`-`TaskEscort`/`TaskFollow`, **nicht** `NewARTY`, `NewCAS` oder unsere CAS-Release-Semantik. Dies ist keine Rechtfertigung fuer einen produktiven MOOSE-Upgrade zum Beheben des FSSR-CAS-Problems.
+
+### 27.3 Relevante allgemeine Verbesserungen und Risiken
+
+- `Wrapper/Controllable.lua` cached `SetOption()`-Werte, um DCS `S_EVENT_GROUP_CHANGE_OPTION` (Event ID **61**) bei sich wiederholenden KI-Optionsbefehlen zu entlasten; `GROUP:Respawn()` und `DATABASE` erhalten Cache-Reset-/Objektwechsel-Handling. Laut Release-Notes duerfen Optionswechsel dann **nicht** teils ueber MOOSE und teils direkt am nativen DCS-Controller erfolgen, sonst koennen Cachezustand und DCS-Option auseinanderlaufen. Vor Einfuehrung deshalb OMW-Options-Adapter/MOOSE-First-Compliance pruefen.
+- `Core/Spawn.lua` fuehrt `OnBeforeTemplateSpawnGroup` fuer Template-Tweaks ein; *kein* notwendiger Ersatz fuer bereits akzeptierten `BRIGADE`-/`WAREHOUSE`-/QRF-Road-Spawn.
+- `Ops/AirWing.lua` erweitert `SetNumberCAP` um optionales `grouping`; produktive CAS-Flugplanbereitstellung im anderen PR #151 wird davon nicht automatisch hergestellt.
+- `Core/ScheduleDispatcher.lua` fuehrt die interne Hilfsfunktion `_Reclaim()` ein; **nicht** als Beweis einer geloesten MOOSE-FSM-/DCS-Timing-Stoerung verwenden. Im Commit-Verlauf wurde ein frueherer ScheduledDispatcher-Memory-Leak-Eingriff **wegen ausgefallener delayed/FSM-Events rueckgaengig gemacht** (Commit `8c60a8c6784d696650a97f77a838593a47e90c`). Besondere Regression-Sorgfalt fuer FSSR `SCHEDULER`-/FSM-Deferred-Events.
+- Weitere Release-Schwerpunkte `AIRBOSS`, `CTLD`, `MANTIS`, `SHORAD`, `DATABASE`, `ZONE_RADIUS`, `FORMATION`, `GROUP`, `SPAWN`, `CONTROLLABLE`: projektweit moegliche Verbesserungen, aber potentiell breite Nebenwirkungen fuer bereits akzeptierte DCS-Lifecycles.
+- Kein gesondert signierter Owner-Test, DCS-Run oder Hashvergleich fuer 2.9.19 durchgefuehrt; Quell-/Release-Analyse ist **kein Runtime-Nachweis**.
+
+### 27.4 Empfehlung und kontrollierter Upgrade-Pfad
+
+**Empfehlung:** Vor der naechsten FSSR-Full-Response-Acceptance **bei der bisher gepinnten 2.9.18 bleiben**. Keine derzeitige Problemursache ist durch 2.9.19 nachweislich geloest, und ein ungepruefter Framework-Upgrade wuerde die Vergleichbarkeit mit allen bisher dokumentierten MIZ-/Bundle-/DCS-Acceptances verlieren.
+
+Ein spaeterer Versionswechsel kann **als eigenstaendige, vom Owner zu genehmigende MOOSE-Reconciliation** vorbereitet werden:
+1. Beschaffung der exakt veröffentlichten 2.9.19-Release-`Moose.lua`, echte Herkunft/Checksumme und gegen gepinnten Stand abgeglichene APIs, Events und FSM.
+2. Dokumentierter Source-Diff/Gap-Assessment fuer ARTY, OPSGROUP/LEGION/WAREHOUSE, AIRWING/SQUADRON/AUFTRAG, FLIGHTGROUP/RTB, SCHEDULER, CTLD/CSAR und DCS-Optionen.
+3. Alle einschlaegigen `docs/moose/`-Klassen-/Methodennachweise und Builder-/MOOSE-Hashes nachvollziehbar aktualisieren.
+4. **Separate** reale MOOSE-Regressionen fuer Startup/Recruitment, QRF/Return/Loss, Functional-ARTY-Rearm, CAS-Route/Release/RTB, AirOps/CAS/ATO, Warehouse, CTLD/CSAR und Multiplayer; volle Git-Commit->Bundle->MIZ->DCS-Provenienz nach `docs/22-test-mission-build-transfer-and-validation-workflow.md`.
+5. Erst nach Owner-Entscheidung und dokumentierter DCS-Acceptance globalen gepinnten Stand umstellen. Keine Annahme, dass 2.9.19 automatisch Verbesserungen bei unseren vier konkreten offenen FSSR-Fehlern erzeugt.
+
+**FSSR bleibt jetzt** bei Base 41 / Bootstrap 10 als GitHub-Source-Zwischenstand, ohne diese aus reinem MOOSE-Upgrade-Anlass neu zu bauen; naechster fachlicher Schritt weiterhin QRF-Kapazitaets-/CampaignState-Entscheidung und AH-64-Unable-to-Continue-/Rearm-Diagnostik.
