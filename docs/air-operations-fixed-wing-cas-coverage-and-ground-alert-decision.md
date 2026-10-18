@@ -210,4 +210,24 @@ Geprueft: offizielles Repository `FlightControl-Master/MOOSE_MISSIONS_UNPACKED` 
 4. Vor neuem A5-Code: Lifecycle-Inheritance-Tabelle (produktive AWACS/AAR/CAS-Quellen, exakte MOOSE-Methoden, geaenderte Boundary, Regressionen), klare MOOSE-API-Loesung und danach Owner-Freigabe, soweit eine interne MOOSE-Override-/INTENTIONAL_CHANGE-Grenze betroffen ist.
 5. Neues Acceptance nur mit Diagnostik der `MissionStart/UnpauseMission/RouteToMission`-Reihenfolge, aktivem Routen-/Holding-Zustand, individueller Fuel-/Hoehen-/Geschwindigkeitstelemetrie und horizontalem/vertikalem Elementabstand sowie physischer CAS-/RTB-/Asset-Return-Evidenz; alte A1-A4-Artefakte nicht aendern.
 
+
+### 10.5 Konkretisierung: Push-Bedingung ist kein abtrennbarer Departure-Task
+
+Die erneute Source-Pruefung der eingebetteten MOOSE-Version ergibt eine entscheidende Differenz:
+
+- A4 erstellt **einen** `AUFTRAG:NewCAS` und setzt am selben Objekt sowohl `SetMissionHoldingCoord` als auch `AddConditionPush`.
+- `AUFTRAG:IsReadyToPush` (Zeile ca. 179407) prueft `Tpush` und `conditionPush`.
+- `OPSGROUP:onbeforeTaskExecute` (ca. 223075) prueft `IsReadyToPush` bei Ausfuehrung des *Mission-Tasks*. Bei noch offener Bedingung nutzt es `FLIGHTGROUP:Wait` **an der dann erreichten Position**, nicht zwingend im Departure-Raum.
+- `FLIGHTGROUP:onafterWait` (ca. 206312) implementiert ein MOOSE-eigenes Orbit an der aktuellen Position mit konfigurierbarer Hoehe/Geschwindigkeit. Dies ist ein vorhandener Baustein, **aber kein Beleg fuer einmalige Departure-Freigabe bei bereits laufender C2-CAS-Mission**.
+- `OPSGROUP:RouteToMission` (ca. 224853) baut bei jedem Aufruf einen Holding-Wegpunkt auf, solange `mission:GetMissionHoldingCoord()` einen Wert liefert. `mission.unpaused` verhindert den Holding-Block nicht.
+- `AUFTRAG:SetMissionHoldingCoord(nil)` ist **kein** oeffentlicher Loeschweg: die Methode ruft `Coordinate:IsInstanceOf` auf; ohne Coordinate ist das ungueltig. Im gepinnten AUFTRAG-Source ist keine eigene dokumentierte Clear-/OneShot-Holding-Methode gefunden worden.
+
+**Ausgeschlossene vermeintliche Sofortkorrektur:** `SetMissionHoldingCoord` einfach streichen und `AddConditionPush(joined)` beibehalten. Dadurch entfaellt der Departure-Orbit; der MOOSE-Wartepfad greift erst am Missions-Ausfuehrungspunkt. Der erforderliche Start-/Join-Vertrag wird nicht nachgewiesen.
+
+**Kleinste fachliche Trennung:** einmaliger Departure-Orbit/Join (MOOSE-eigen), anschliessend wiederaufnehmbarer CAS-`AUFTRAG` ohne Departure-Holding; AAR unterbricht ausschliesslich den jeweils laufenden MOOSE-Auftrag und fuehrt danach mit dessen FSM fort. Dies beschreibt den Soll-Vertrag und ist **noch kein nachgewiesenes Queue-/Dispatch-Rezept**.
+
+**Naechstes Source-Gate:** Fuer einen vollstaendig oeffentlichen MOOSE-Pfad muss gezeigt werden, wie eine bereits C2-rekrutierte konkrete FLIGHTGROUP ihren einmaligen Staging-/Join-Abschnitt abschliesst, **bevor** die CAS-Route beginnt, ohne einen zweiten operativen C2-Mission-Owner zu erzeugen und ohne selbst Route/Task/RTB zu uebernehmen. Zu pruefen sind insbesondere `AUFTRAG:NewORBIT`, `FLIGHTGROUP:Wait`, `OPSGROUP:AddMission` und die AIRWING-Rekrutierungs-/Mission-Queue-Semantik. Keiner dieser einzelnen API-Namen belegt schon den gesamten Workflow.
+
+**Minimaladapter nur als ausdruecklich freizugebende Alternative:** Den einmaligen Holding-Wert nach echtem Join zu entfernen wuerde einen internen `AUFTRAG`-Zustand aendern. Weil eine oeffentliche Clear-Methode nicht gefunden wurde, ist dies **kein** derzeit genehmigter Produktionsfix. Keine stille Mutation, kein MOOSE-Source-Patch.
+
 **Aktueller Gate-Status: BLOCKED_FOR_A5_IMPLEMENTATION** bis zur dokumentierten Entscheidung fuer einen versionsverifizierten MOOSE-First-Korrekturweg.
