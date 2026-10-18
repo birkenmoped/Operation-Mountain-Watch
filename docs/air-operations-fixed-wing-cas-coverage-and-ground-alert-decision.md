@@ -265,3 +265,45 @@ Im tatsaechlich getesteten A4-Source `mission/tests/fixed-wing-cas-response/src/
 5. Kein auf A4 rueckwirkender PASS, keine `.miz`-Mutation, keine neue DCS-Validierungsbehauptung.
 
 **Aktueller Gate-Status: BLOCKED_FOR_A5_IMPLEMENTATION** bis zur dokumentierten Entscheidung fuer einen versionsverifizierten MOOSE-First-Korrekturweg.
+
+
+### 10.10 Erneute offizielle MOOSE-Demo-Recherche: Legacy UND OPS/develop (18.10.2026)
+
+**Grund fuer erneute Untersuchung:** Die vorangegangene Sichtung betrachtete vor allem `MOOSE_MISSIONS/master` und ueberging die OPS-Beispiele unter `MOOSE_MISSIONS/develop`. Der Owner forderte einen breiten Source-Abgleich fuer CAS/CAP-Holding plus AAR plus Weiterflug. Die GitHub-Gesamtdateibaeume wurden fuer `FlightControl-Master/MOOSE_Demos/master` (175 Dateien), `MOOSE_MISSIONS_UNPACKED/master` (6859 Dateien), `MOOSE_MISSIONS/master` (798 Lua/Demo-Dateien und weitere Binaerdateien) und `MOOSE_MISSIONS/develop` (1708 Dateien) nach Script-/Demo-Themen inventarisiert. Relevante Original-Lua-Demos wurden anschliessend einzeln gelesen. **Dies ist keine manuelle Quellcode-Zeilenpruefung jedes Demo-Skripts und keine DCS-Validierung.**
+
+**Legacy Demos (historische Quelle fuer das MOOSE-Konzept, aber NICHT importierbarer OMW-Code):**
+
+| Offizielles Demo | Gelesener Mechanismus | Evidenzgrenze |
+|---|---|---|
+| `AI/AI_A2G_Dispatcher/AID-A2G-363 - CAS Airplanes Patrol Refuel/AID-A2G-363 - CAS Airplanes Patrol Refuel.lua` | `AI_A2G_DISPATCHER`, `SetSquadronCasPatrol`, `SetDefaultTanker("Tanker")`, `SetDefaultFuelThreshold(0.9)` | Demonstriert CAS-Patrol plus AAR-Konfiguration, nicht `AUFTRAG`-Resume |
+| `AI/AI_A2A_Dispatcher/AID-A2A-016 - Refuel Tanker Test/AID-A2A-016 - Refuel Tanker Test.lua` | `AI_A2A_DISPATCHER`, `SetSquadronCap`, `SetDefaultTanker`, `SetSquadronTanker`, FuelThresholds | Demonstriert CAP plus Tanker-Konfiguration |
+| `AID-A2A-030`, `AID-A2A-031` | CAP RTB/ReEngage beziehungsweise Out-of-Fuel | Kein vollstaendiger Refueled/Resume-Demo-Quellnachweis |
+
+Web-Dokumentation `AI.AI_A2G_Dispatcher` Abschnitt 10.7.3 beschreibt explizit automatische Betankung statt Low-Fuel-RTB fuer SEAD/BAI/CAS. Die aktuelle gepinnte OMW-`Moose.lua` enthaelt **weder `AI_A2G_DISPATCHER` noch `AI_A2A_DISPATCHER`**; diese historischen Aufrufsignaturen sind deshalb nicht auf OMW uebertragbar.
+
+**OPS-Demos des offiziellen `MOOSE_MISSIONS/develop`-Branches (teilweise direkt versionsueberpruefbar):**
+
+| Offizielles Demo | Gelesener Mechanismus | Bedeutung |
+|---|---|---|
+| `Ops/Flightgroup/Flightgroup - 060 - Refuel/Flightgroup - 060 - Refuel.lua` | `FLIGHTGROUP:__Refuel(60)`, `OnAfterRefuel`, `OnAfterRefueled` | Direkter offizieller Nachweis fuer FLIGHTGROUP-AAR und FSM-Callbacks; Demo **weist nach Betankung keine weitere CAS-Mission zu** |
+| `Ops/Airwing/Airwing - 200 - GCICAP/Airwing - 200 - GCICAP.lua` | AIRWING CAP-Patrolpoints; `SQUADRON:SetFuelLowRefuel(true)`; `SQUADRON:SetFuelLowThreshold(0.3)` | Moderne, konzeptionell nahe OPS-Konfiguration fuer CAP und automatisches AAR. **Achtung: gepinnte SQUADRON-Methode erwartet Prozent 0..100, nicht 0..1; `0.3` wird als 0,3 % gespeichert, nicht als 30 %. Beispielwert deshalb NICHT uebernehmen.** |
+| `Ops/EasyGCICAP/EasyGCICAP - 100 - Basic/EasyGCICAP - 100 - Basic.lua` | `EASYGCICAP` mit CAP- und Tanker-Patrolpoints, Fighter- und Tanker-Squadrons | Bestandteil neuerer OPS-Architektur; kein exakter CAS-/Two-Ship-Join-Resume-Beweis |
+| `Ops/Auftrag/Airforce/Auftrag - 017 - CAS/Auftrag - 017 - CAS.lua` | `AUFTRAG:NewCAS` + `FLIGHTGROUP:AddMission` | CAS-Missionsgrundfunktion |
+| `Ops/Auftrag/Airforce/Auftrag - 018 - CAP/Auftrag - 018 - CAP.lua` | `AUFTRAG:NewCAP` + FLIGHTGROUP | CAP-Missionsgrundfunktion |
+| `Ops/Auftrag/Airforce/Auftrag - 022 - Orbit/Auftrag - 022 - Orbit.lua` | Mehrere priorisierte `AUFTRAG:NewORBIT_*` in einer FLIGHTGROUP-Queue; `OnAfterExecuting` -> `__Cancel` nach fester Zeit | Quellbeleg fuer legitime MOOSE-Missionsqueue und kontrollierte Orbit-Beendigung, aber kein direktes C2-Recruit-Join-AAR-Beispiel |
+| `Ops/Auftrag/Airforce/Auftrag - 100 - CAS Enhanced/Auftrag - 100 - CAS Enhanced.lua` | `AUFTRAG:NewPATROLZONE` + `FLIGHTGROUP:SetEngageDetectedOn` | Alternative MOOSE-First-CAS-Semantik fuer flexible AO; keine automatische AAR-Fortsetzung im Demo nachgewiesen |
+| `Ops/Airwing/Airwing - 010 - Fighter Wing/Airwing - 010 - Fighter Wing.lua` | `SQUADRON:SetGrouping(2)`, AIRWING + CAP/BAI + `AUFTRAG` | Belegt native Two-Ship-Rekrutierung, kein expliziter nachgezogener Departure-Join oder Refueled-Resume |
+
+**Versionierter MOOSE-Check:** Die gepinnte `Moose.lua` enthaelt u.a. `FLIGHTGROUP:SetFuelLowThreshold` (ca. 203814), `FLIGHTGROUP:SetFuelLowRefuel` (ca. 203862), `FLIGHTGROUP:onafterRefueled` (ca. 206404), `SQUADRON:SetFuelLowThreshold` (ca. 245348), `SQUADRON:SetFuelLowRefuel` (ca. 245357). `FLIGHTGROUP:SetFuelLowThreshold(30)` und `SQUADRON:SetFuelLowThreshold(30)` erwarten **30**, nicht **0.3**. Bei der historischen A2G-Dispatcher-Konfiguration wird dagegen der Bruch `0.9` genutzt. Die Demo-Quellen gehoeren unterschiedlichen Klassen-/API-Generationen an; Schwellenwerte duerfen nicht unbesehen gemischt werden.
+
+**Befund:** Offizielle MOOSE-Projekte demonstrieren explizit (a) CAS-/CAP-Patrol mit AAR, (b) moderne AIRWING-/SQUADRON-FuelLowRefuel-Konfiguration, (c) direkte FLIGHTGROUP-Refuel-FSM und (d) AUFTRAG-Missionqueue. **Nicht gefunden wurde in den konkret gesichteten modernen Originalskripten** die vollstaendige Kombination `AIRWING/COMMANDER Zwei-Flugzeug-Start -> Departure-Join-Holding -> AAR in CAS-Transit -> Refueled -> CAS-Resume ohne Hold-Reentry -> physischer Return`. Die Existenz der einzelnen Framework-Funktionen bedeutet weder einen nachgewiesenen identischen kombinierten Lifecycle noch dessen Unmoeglichkeit.
+
+**Konsequenz fuer A4/A5:** Kein eigener Flight-Controller und kein vorschneller interner Holding-Mutator. Zuerst `SQUADRON:SetFuelLowRefuel` + `FLIGHTGROUP`-AAR-FSM als dokumentierte moderne MOOSE-First-Baseline gegen konkrete AAR-Provider-Entscheidung und Pinned-Source pruefen; danach das klar separierbare Problem des einmaligen Departure-Join/Push und wiederholten `RouteToMission` korrigieren. Fuer den A4-Test-Scope bleibt die 30-%-Schwelle **nur CAS-FLIGHTGROUP**, keine globale SQUADRON-Aenderung. Eine neue DCS-Acceptance bleibt erforderlich.
+
+**Offizielle Links:**
+- https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/develop/Ops/Flightgroup
+- https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/develop/Ops/Auftrag/Airforce
+- https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/develop/Ops/Airwing
+- https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/master/AI/AI_A2G_Dispatcher
+- https://flightcontrol-master.github.io/MOOSE_DOCS/Documentation/AI.AI_A2G_Dispatcher.html
+- https://flightcontrol-master.github.io/MOOSE_DOCS/Documentation/Ops.FlightGroup.html
