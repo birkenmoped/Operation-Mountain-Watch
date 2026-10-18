@@ -244,4 +244,24 @@ Gepinnte `Moose.lua`:
 
 Der zuerst zu pruefende Korrekturvorschlag bleibt daher die **einmalige Departure-Freigabe mit genau einem CAS-Mission-Owner**. Falls die gepinnte oeffentliche API die einmalige Entfernung des CAS-Holdings nicht zulaesst, muss vor jedem internen Minimaladapter eine ausdrueckliche Owner-Entscheidung fallen. Eine vermutete MOOSE-Faehigkeit nicht als bestaetigten API-Vertrag ausgeben.
 
+### 10.7 Source-gepruefte zweite Fehlerursache: nicht persistente Join-Freigabe
+
+Im tatsaechlich getesteten A4-Source `mission/tests/fixed-wing-cas-response/src/acceptance-4-three-flight-joined-aar.lua` speichert `joinedForMission(requestId)` zwar `record.joinedAt` beim ersten erfolgreichen Join, gibt am Funktionsende aber `return joined` fuer die **erneut gemessene** Entfernung zurueck. Da die Funktion direkt als `AUFTRAG:AddConditionPush` installiert ist, kann nach getrenntem AAR ein zuvor erfuellter Departure-Join beim naechsten MOOSE-Push-Check wieder FALSE sein.
+
+**Erforderliche Korrektur im naechsten, neuen Testsource (nicht im historisch getesteten A4):** Die einmalig bestaetigte Departure-Freigabe als latch aus `record.joinedAt ~= nil` auswerten; weiterhin nur MOOSE-`AddConditionPush` als Missionsfreigabe benutzen. Dies loest **nicht** das unabhaengige erneut eingefuegte Holding bei `RouteToMission`, ist aber notwendig, um einen blockierten CAS-Push nach AAR zu vermeiden. Keine eigene Mission-FSM.
+
+### 10.8 Quellcodegrenze: AAR nach eingeleitetem RTB
+
+`FLIGHTGROUP:onafterRTB` (ca. 205995) setzt `destbase`, ruft **`CancelAllMissions()`** und danach `_LandAtAirbase(...)` auf. `FLIGHTGROUP:onafterRefuel` (ca. 206366) verwendet dagegen `PauseMission()` nur fuer eine *vorhandene aktuelle Mission*; `onafterRefueled` (ca. 206404) laesst `_CheckGroupDone()` entscheiden, ob ein pausierter Auftrag vorliegt.
+
+**Folge:** Betankung im RTB-Abschnitt kann nicht ohne Weiteres als `PauseMission -> UnpauseMission -> RTB fortsetzen` modelliert werden. Nach RTB-Cancel existiert typischerweise kein pausierter CAS-Auftrag. Ein erneuter `RTB()`-Aufruf oder eine andere Recovery-Fortsetzung darf nicht ungeprueft im Harness erfunden werden. Zuerst die vorhandenen produktiven AWACS-/AAR- und AIRWING-Recovery-Vertraege auf eine getestete MOOSE-First-Loesung pruefen; dann gegebenenfalls ein eigenes, begrenztes Acceptance-Gate fuer RTB-AAR vorsehen.
+
+### 10.9 Korrekturreihenfolge und Verifikationsgrenze
+
+1. In neuer Acceptance-Quelle (A4 bleibt unveraendert) **sticky join** ueber vorhandene `AddConditionPush`-Bedingung korrigieren, geeigneten quellengestützten einmaligen Holding-Abschluss bestimmen.
+2. Den einmaligen Departure-Holding-Abschluss vorzugsweise ueber **oeffentliche** MOOSE-API umsetzen. Ein blosses Versetzen des Holdings auf das AO per `SetMissionHoldingCoord` wurde **nicht** als semantisch gleichwertige CAS-Resume-Loesung nachgewiesen: es erzeugt beim Resume weiterhin einen separaten Orbit-Wegpunkt.
+3. Fixed-Wing-CAS-FLIGHTGROUPs auf `SetFuelLowThreshold(30)` konfigurieren; FuelLow/FuelCritical, Tanker-Eignung und MOOSE-RTB muessen ohne zweiten Fuel-/Recovery-FSM-Owner reconciliert sein.
+4. Vor erneutem DCS-Lauf Source-/Unit-/Build-Checks, exakte Bundle-Provenienz und diagnostische FSM-/Wegpunkt-/Two-Ship-Telemetrie herstellen. DCS-Test muss AAR waehrend Transit und waehrend CAS gesondert beobachten. RTB-AAR ist wegen `CancelAllMissions` ein eigenes offenes Gate.
+5. Kein auf A4 rueckwirkender PASS, keine `.miz`-Mutation, keine neue DCS-Validierungsbehauptung.
+
 **Aktueller Gate-Status: BLOCKED_FOR_A5_IMPLEMENTATION** bis zur dokumentierten Entscheidung fuer einen versionsverifizierten MOOSE-First-Korrekturweg.
