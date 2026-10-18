@@ -230,4 +230,18 @@ Die erneute Source-Pruefung der eingebetteten MOOSE-Version ergibt eine entschei
 
 **Minimaladapter nur als ausdruecklich freizugebende Alternative:** Den einmaligen Holding-Wert nach echtem Join zu entfernen wuerde einen internen `AUFTRAG`-Zustand aendern. Weil eine oeffentliche Clear-Methode nicht gefunden wurde, ist dies **kein** derzeit genehmigter Produktionsfix. Keine stille Mutation, kein MOOSE-Source-Patch.
 
+### 10.6 MOOSE Mission-Queue: separates ORBIT technisch vorhanden, aber kein bewiesener C2-Handoff
+
+Gepinnte `Moose.lua`:
+
+- `AUFTRAG:NewORBIT` (ca. 176248) erzeugt einen legitimen Air-Missionstyp mit Kreis-/Racetrack-Orbit, Hoehe und Geschwindigkeit. Dies ist **kein** allgemeiner Sammel-/Join-Abschlussvertrag.
+- `OPSGROUP:AddMission` (ca. 224035) stellt einen Auftrag fuer **eine bereits existierende konkrete OPSGROUP** in deren lokale Queue; `AUFTRAG:AddOpsGroup`, Gruppenstatus und Missionqueue werden aktualisiert.
+- `OPSGROUP:_GetNextMission` (ca. 224191) waehlt nach Priority/Startzeit und `SCHEDULED`-/Ready-/Importance-Bedingungen aus. Ein eigener ORBIT muss demnach vorher beendet oder kontrolliert uebergeben werden, bevor CAS regelhaft startet.
+- `OPSGROUP:onafterMissionDone` (ca. 224683) entfernt die abgelaufenen Wegpunkte und prueft `Mission.legionReturn`; eine unachtsame Staging-Mission kann die Asset-Rueckgabe beeinflussen.
+- `AUFTRAG:NewNOTHING` (ca. 177848) ist ausdruecklich nur fuer GROUND/NAVAL und fuer Fixed-Wing-Departure ungeeignet.
+
+**Bewertung:** MOOSE stellt alle erforderlichen Grundbausteine bereit, aber eine zweite, nach C2-Zuweisung derselben Gruppe hinzugefuegte ORBIT-Mission ist nicht schon allein durch API-Existenz ein fehlerfreier, minimaler Ersatz. Die Queue-Prioritaet, die Join-Abschluss-/MissionDone-Semantik, die konkrete AIRWING-Asset-Zuordnung und die Rueckbuchung muessen im Verbund nachgewiesen werden. Eine solche Architektur waere ausserdem komplexer als der im Owner-Gespraech gewuenschte einzelne CAS-Auftrag.
+
+Der zuerst zu pruefende Korrekturvorschlag bleibt daher die **einmalige Departure-Freigabe mit genau einem CAS-Mission-Owner**. Falls die gepinnte oeffentliche API die einmalige Entfernung des CAS-Holdings nicht zulaesst, muss vor jedem internen Minimaladapter eine ausdrueckliche Owner-Entscheidung fallen. Eine vermutete MOOSE-Faehigkeit nicht als bestaetigten API-Vertrag ausgeben.
+
 **Aktueller Gate-Status: BLOCKED_FOR_A5_IMPLEMENTATION** bis zur dokumentierten Entscheidung fuer einen versionsverifizierten MOOSE-First-Korrekturweg.
