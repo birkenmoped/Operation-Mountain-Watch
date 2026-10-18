@@ -115,6 +115,7 @@ local resolveGroundTransport=function() return {} end
 local resolveAirTransport=function() return {} end
 local transferResolver=function() return {originNodeId="GROUND_NODE_JALALABAD",destinationNodeId="GROUND_NODE_JOYCE"} end
 local terminalObserved={}
+local externalSupportHook=function() return {CAS=true,ARTY=true},nil end
 local arty={marker="ARTY"}
 local alarmZone={IsCoordinateInZone=function() return true end}
 local runtime=Runtime.New({
@@ -126,6 +127,7 @@ local runtime=Runtime.New({
   resolveGuardPathline=function() return {} end,
   resolveGuardTemplateGroup=function() return {} end,
   resolveQrfCoordinate=function() return {} end,
+  onExternalSupportRequired=externalSupportHook,
   externalAdapters={ARTY=arty},
   perimeters={FOB_JOYCE={anchorCoordinate={},radiusM=1000,priority=10}},
   alarmEvidence={sites={FOB_JOYCE={alarmZone=alarmZone,weaponTrackStepSec=0.25}}},
@@ -183,6 +185,7 @@ eq(calls.transportSettlementSpec.store,campaignStore,"settlement uses CampaignSt
 eq(calls.transportSettlementSpec.campaignState,campaignState,"settlement campaign module")
 eq(calls.transportSettlementSpec.resolveTransfer,transferResolver,"transfer resolver forwarded")
 eq(calls.installationIncidentBridgeSpec.base,runtime:GetBase(),"incident bridge uses same Base")
+eq(calls.installationIncidentBridgeSpec.onExternalSupportRequired,externalSupportHook,"external-support escalation hook forwarded")
 eq(calls.installationIncidentRuntimeSpec.incidentCoordinator,modules.installationAttackIncident,"authoritative incident coordinator injected")
 eq(calls.alarmEvidenceSpec.installationId,"BLUE_GROUND_FOB_JOYCE","alarm evidence installation id from registry")
 eq(calls.alarmEvidenceSpec.alarmZone,alarmZone,"alarm evidence zone forwarded")

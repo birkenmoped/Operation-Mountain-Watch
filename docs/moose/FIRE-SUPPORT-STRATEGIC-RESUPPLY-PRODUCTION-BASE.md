@@ -11,14 +11,14 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 ---
 
 # Fire Support / Strategic Resupply – Production Base
 
-Status: SOURCE_IMPLEMENTED / QRF-GUARD-CAS-ARTY-TEILPFADE DCS-VALIDIERT / STRATEGIC RESUPPLY UND COMBINED MULTI-DEMAND OFFEN
+Status: PRODUCTION_BASE_MERGED / A11 ACCEPTED_TECHNICAL_BASELINE / PRODUCTION-MISSION-BOOTSTRAP SOURCE_IMPLEMENTED DCS_PENDING
 
 ## Zweck
 
@@ -505,3 +505,222 @@ Korridor gibt es bei `routeRequired=true` keinen Direct-Line-Fallback.
 
 Der allgemeine geroutete Strategic-Resupply-Scope bleibt bis zum realen A11-Lauf
 `DCS_REVALIDATION_PENDING`.
+
+## Production-Mission-Bootstrap nach PR #149
+
+Nach Merge von PR #149 bleibt das eigentliche Production-Base-Bundle unveraendert der generische Composition-Contract:
+
+~~~text
+mission/fire-support-strategic-resupply/dist/OMW_FireSupStratResupply_Base.lua
+~~~
+
+Fuer die normale OMW-Mission wird zusaetzlich eine getrennte Integrationsschicht gebaut:
+
+~~~text
+scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua
+tools/build-fire-support-strategic-resupply-production-bootstrap.ps1
+
+-> mission/fire-support-strategic-resupply/dist/OMW_FireSupStratResupply_Production.lua
+~~~
+
+Die Trennung ist absichtlich:
+
+~~~text
+OMW_FireSupStratResupply_Base.lua
+= generische Production Base / Domain- und MOOSE-Composition
+
+OMW_FireSupStratResupply_Production.lua
+= missionsspezifische OMW-Integration der bereits laufenden Bases
+~~~
+
+Der Production-Bootstrap wird erst nach Warehouse, Ground und den AirOps-Foundations geladen. Er verwendet ausschliesslich die bereits vorhandenen Runtime-Objekte und erstellt keine Acceptance-Fixtures, keine kuenstliche Ressourcenknappheit und keine zweite Provider-Queue.
+
+Verbindliche Startgrenze dieses Bootstrap-Standes:
+
+~~~text
+Moose.lua
+-> OMW_AirOps_Warehouse_Base.lua
+-> OMW_Ground_Base.lua
+-> AAR/AWACS und AirOps-Foundations
+-> OMW_FireSupStratResupply_Base.lua
+-> OMW_FireSupStratResupply_Production.lua
+~~~
+
+Der Bootstrap prueft fail-closed:
+
+~~~text
+OMW_WAREHOUSE_READY == 1
+OMW_GROUND_READY == 1
+OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED == 1
+shared OMW.AirOps.CampaignContext == OMW.Ground.Base.GetContext()
+>= 1 running AIRWING
+all six FSSR site warehouses/templates/pathlines required by SiteRegistry
+fixed L118/2B11 templates as Late Activation
+~~~
+
+Danach werden die akzeptierten Production-Komponenten verdrahtet:
+
+~~~text
+6 site BRIGADEs
++ incident-local Guard/QRF
++ six installation perimeters
++ shared MOOSE COMMANDER
++ all already-running AIRWINGs
++ real fixed-fire-support asset registry
++ existing Functional ARTY owners
++ shared CAS lifecycle / Jalalabad accepted execution profile
+-> Runtime:Prepare()
+-> StartPerimeters()
+-> BRIGADE/COMMANDER Start
+-> StartSite(all six)
+-> OMW_FSSR_READY = 1
+~~~
+
+### Strategic-Resupply-Grenze des Bootstrap-1
+
+Der generische Base-/A11-Vertrag fuer Strategic Resupply bleibt akzeptiert. Die normale v26-Mission enthaelt jedoch derzeit keinen autoritativ festgelegten produktiven physischen STORAGE-Descriptor fuer alle Ground-Ressourcen/Sites. Die A11-spezifischen dynamisch erzeugten STORAGE-Fixtures und die kuenstliche Wright-Knappheit werden ausdruecklich nicht in Production uebernommen.
+
+Deshalb gilt:
+
+~~~text
+kein config.resupply
+-> FSSR core runtime startet
+-> OMW_FSSR_READY = 1
+-> OMW_FSSR_RESUPPLY_READY = 0
+-> kein Strategic-Resupply-Dispatch
+
+explizit injiziertes config.resupply
+-> CampaignState store/rows werden aus Ground Base gebunden
+-> physischer Transportvertrag bleibt caller-owned
+-> OMW_FSSR_RESUPPLY_READY = 1
+~~~
+
+Das ist fail-closed und keine Ruecknahme der A11-Acceptance. Es verhindert lediglich, dass eine Acceptance-Fixture stillschweigend zur produktiven Missionsgeometrie oder physischen STORAGE-Autoritaet wird.
+
+Der Production-Bootstrap ist bis zum realen DCS-Integrationslauf SOURCE_IMPLEMENTED / DCS_PENDING.
+
+
+## Production-Orchestration-Korrektur nach erstem A12-Full-Response-Lauf
+
+Der erste reale Production-Lauf mit funktionierendem Bootstrap zeigte eine
+Orchestration-Regression:
+
+~~~text
+qualified installation incident
+-> Guard demand created
+-> QRF demand created
+-> ARTY adapter/runtime vorhanden, aber kein ARTY demand
+-> CAS adapter/runtime vorhanden, aber kein CAS demand
+~~~
+
+Das war keine offene Fachentscheidung. Der bereits dokumentierte Full-Response-Vertrag
+fordert externe Unterstützung als eigenstaendige C2-Eskalation aus einem qualifizierten
+Installation-Angriff. CAS ist insbesondere **kein** Fallback nach QRF- oder ARTY-Fehler.
+
+Die Korrektur fuehrt deshalb keinen neuen Fire-/CAS-Lifecycle ein. Sie ergaenzt nur
+die beim Base-Umbau verlorene Orchestrationsgrenze:
+
+~~~text
+InstallationIncidentBridge
+-> local Guard
+-> local QRF
+-> onExternalSupportRequired(...)
+   -> CAS requirement
+   -> ARTY requirement
+~~~
+
+Die beiden externen Demands verwenden weiterhin ausschliesslich die bereits vorhandenen
+Production-Adapter:
+
+~~~text
+CAS demand
+-> shared CasLifecycleRuntime
+-> MOOSE COMMANDER/LEGION provider+asset selection
+-> owner execution profile
+-> PATROLZONE + SetEngageDetected
+-> accepted release/recovery lifecycle
+
+ARTY demand
+-> ArtySelectionRuntime
+-> MOOSE COMMANDER/LEGION selection-only recruitment
+-> exact real fixed battery
+-> existing Functional ARTY owner
+-> AssignTargetCoord
+~~~
+
+Harte Grenzen:
+
+~~~text
+- keine konkrete Batterie/AIRWING/SQUADRON im Orchestrator vorwaehlen;
+- CAS/ARTY cancelWhenIncidentClosed=false;
+- Alarm-/Perimeter-Clear beendet weder QRF noch CAS/ARTY automatisch;
+- keine zweite Target-/Routing-/Release-/Recovery-State-Machine;
+- Fehler einer externen Eskalation duerfen Guard/QRF nicht unterdruecken;
+- Acceptance-Harness bleibt Observer/Stimulus und ist nicht Orchestration-Owner.
+~~~
+
+Der geaenderte Scope ist nur:
+
+~~~text
+qualified installation incident
+-> external ARTY/CAS demand creation
+~~~
+
+Die geerbten ARTY- und CAS-Ausfuehrungslifecycles bleiben unveraendert und muessen im
+naechsten realen DCS-Lauf nur an dieser neuen/rekonstruierten Orchestrationsgrenze
+regressionsgeprueft werden.
+
+
+### Fixed-Fire-Readiness vor Perimeter-Aktivierung
+
+Die normale Mission startet die Security-Perimeter erst nach dem MOOSE-
+`OnAfterAssetSpawned`-Nachweis fuer alle vier registrierten Fixed-Fire-Support-Assets.
+Damit wird die externe ARTY-Eskalation nicht gegen noch nicht materialisierte
+Warehouse-Assets freigegeben.
+
+~~~text
+BRIGADE/WAREHOUSE materialization
+-> all fixed fire assets materialized
+-> COMMANDER running
+-> perimeter start
+-> incidents / response demands allowed
+~~~
+
+Diese Barriere ist eventgetrieben und verwendet keinen zusaetzlichen Scheduler.
+
+
+## Production Base 36 – read-only CAS-AO-Belegung (15.10.2026)
+
+Die `CasLifecycleRuntime` ergaenzt den lesenden Zugriff
+`IsOnStationAt(targetCoordinate)` zur spaeteren ARTY-C2-Deconfliction.
+Die Methode liest nur bereits vorhandene CAS-Missionen, die autoritative
+MOOSE-`ZONE`-Geometrie und die physische MOOSE-FLIGHGROUP-Koordinate.
+Sie erzeugt keine weiteren Ziele, Missionsauftraege, SCHEDULER oder
+einen parallelen CAS/ARTY-Lifecycle. `nil` bedeutet *CAS-Position
+unaufgeloest* und darf nicht als `false` interpretiert werden.
+Auch ein bereits eingeleiteter CAS-Release beweist keinen physischen
+Egress. Tests sowie DCS-Validation stehen aus. Der Base-Builder 36
+erwartet `CAS-LIFECYCLE-RUNTIME-2`; diese Schicht aktiviert noch
+keine automatische Folgefeuer- oder Rearm-Logik.
+
+
+## Fire Support / Strategic Resupply – Full Fire Response (15.10.2026)
+
+Die Production Base Schema 5 (Builder 39) ergaenzt **ausschliesslich**
+fuer C2-qualifizierte ARTY-Continuation den engen geschlossenen-Incident-
+Fall; alle anderen Support-Typen werden nach `CloseIncident` weiterhin
+blockiert. Production Bootstrap Schema 7 (Builder 7) bundelt
+`OMW_FireSupStratResupply_FireContinuation.lua` Schema 2 und den
+A10-Local-Rearm-Default fuer vier Fixed-Fire-Standorte. Die MissionDemand-
+/MOOSE-/CampaignState-Eigentuemer bleiben unveraendert: neue Demand-IDs
+durch Base, Providerwahl durch MOOSE, physisches Fire und M1083-Rearm
+durch dieselbe Functional-ARTY-Instanz, strategischer Verbrauch ausschliesslich
+durch den bestehenden GroundAmmoRearmAdapter.
+
+Die C2-Continuation wird ausschliesslich aus `CEASE_FIRE` mit
+`physicalShots > 0` und freigegebenem Asset evaluiert, mit einem
+einmaligen MOOSE-SCHEDULER-Deferred-Event zum Schutz vor Callback-
+Reentranz. CAS-AO-Ungewissheit sperrt neues Feuer. Der produktive
+Ground-/Air-Strategic-Resupply-Descriptor wird dadurch **nicht**
+ersetzt; `OMW_FSSR_RESUPPLY_READY=0` bleibt ohne echte Konfiguration.
+Unit-/CI-Tests und anschliessende DCS-Acceptance sind gesondert zu werten.

@@ -15,7 +15,7 @@ supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
 source_branch: agent/automatic-response-orchestration-continuation
-source_commit: GIT_HISTORY
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -60,6 +60,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 66–84 | Warehouse-/CampaignState-/STORAGE-Stack | PR 66 startete von `main`; danach gestapelt | Resource ownership, Fuel/Weapon STORAGE, CampaignState transactions, loss/recovery, final fighter mapping | `scripts/campaign/`, `scripts/logistics/`, Warehouse-Testfixtures und branchgebundene Detaildokumentation | offene Draft-Historie; keine pauschale Main-Autorität | mehrere exakt dokumentierte DCS-Acceptance-Stände; finaler Fighter-Gate PASS | 85 | nicht als 214-Commit-Stack direkt integrieren; PR 85 war der saubere Main-Reconciliation-Pfad |
 | 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach gemergtem PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; aktuell nicht mergebar gegen `main` | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; vor Integration Reconciliation gegen aktuellen `main` erforderlich |
 | 136 | `agent/automatic-response-orchestration-continuation` | `main` / PR #135 accepted parent | Stage 1D-S SUPPLY und Stage 1D-P PERSONNEL orchestration baselines | `scripts/campaign/`, `scripts/logistics/`, `mission/tests/ground-resupply-execution/`, `docs/moose/`, handoffs | `DRAFT` PR; merge requires explicit owner approval | Stage 1D-S and Stage 1D-P contain exact-provenance `ACCEPTED_TECHNICAL_BASELINE` results; Stage 1D-P Air Acceptance-4 PASS | new Stage 1D-V branch after merge | current integration candidate; no repository-wide authority until merge |
+| 150 | `agent/fire-support-strategic-resupply-production-bootstrap` | `main` after merged PR #149 | FSSR normal-mission Production Bootstrap | `scripts/campaign/OMW_FireSupStratResupply_ProductionBootstrap.lua`, `tools/build-fire-support-strategic-resupply-production-bootstrap.ps1`, A12/docs | `DRAFT`; merge requires explicit owner approval | A12 PLANNED / DCS_PENDING | production mission integration | binds merged FSSR Base to Warehouse/Ground/AirOps; Strategic Resupply physical production descriptor still explicit/fail-closed |
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
 
@@ -86,6 +87,7 @@ main
 │                   └── PR 85 (merged clean Warehouse reconciliation)
 ├── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
 ├── PR 136 (Stage 1D-S / Stage 1D-P integration candidate; Draft until owner Ready/Merge approval)
+└── PR 150 (FSSR Production Bootstrap; A12 DCS integration pending)
 
 ```
 

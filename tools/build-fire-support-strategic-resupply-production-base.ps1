@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-33'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-41'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -66,25 +66,26 @@ $combined=(($moduleSpecs|ForEach-Object{$sources[$_.Name]}) -join "`n")+"`n"+$ro
 foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-4',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-4',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-12',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-6',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-14',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-3',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-14',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-9',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-MISSION-FACTORY-2',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-1',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-4',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-REAL-ASSET-REGISTRY-1',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-3',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-4',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-5',
   'RecruitAssetsForTransport','TransportAssign',
   'OMW-FLIGHTPATH-NAME-CONTRACT-1','OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8','OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2','OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1','OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-3',
   'CAS_CONTROLLED_RELEASE','CAS_HOME_LANDED','CAS_LEGION_ASSET_RETURNED',
+  'NO_PHYSICAL_SHOT_EVIDENCE','functional ARTY physical shot',
   'PATROLZONE_ENGAGE','AUFTRAG:NewPATROLZONE','SetEngageDetected',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-6',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME-2',
   'OMW-FOB-THREAT-OPSZONE-ADAPTER-6',
@@ -153,14 +154,14 @@ foreach($marker in @(
   'roadSpawnAdapter=RoadSpawnAdapter',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-3',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-14',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-9',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-2',
   'OMW-FLIGHTPATH-NAME-CONTRACT-1','OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8','OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2','OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1',
   'CAS_CONTROLLED_RELEASE','CAS_HOME_LANDED','CAS_LEGION_ASSET_RETURNED',
   'PATROLZONE_ENGAGE','AUFTRAG:NewPATROLZONE','SetEngageDetected',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-6',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-STORAGE-TRANSPORT-FACTORY-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-SETTLEMENT-3',
@@ -170,7 +171,7 @@ foreach($marker in @(
   'INCIDENT_LOCAL_SECURITY','INSTALLATION_ATTACK_LOCAL_GUARD','MOOSE_OPSZONE_RED_PRESENCE',
   'AUFTRAG:NewONGUARD','SetReturnToLegion(true)','armyGroup:EngageTarget',
   'DEFAULT_ENGAGE_FORMATION = "On Road"','QRF_ENGAGE_FORMATION = "On Road"',
-  'sourceIncidentCoordinator','GetParticipants(true)','cancelWhenIncidentClosed=false',
+  'sourceIncidentCoordinator','GetParticipants(true)','cancelWhenIncidentClosed=false','onExternalSupportRequired',
   'brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)','physicalTargetGroup',
   'ROAD_ALIGNED_WAREHOUSE_SPAWN','vehicleSpacingM','forwardCoordinate = targetCoordinate','accessContainment=ANCHOR_ONLY',
   'OMW.FireSupStratResupply=Package')){
@@ -180,23 +181,30 @@ foreach($marker in @(
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host 'PackageSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1'
-Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-12'
+Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-14'
 Write-Host 'ResupplyTransportRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-5'
 Write-Host 'OpsTransportCorridorAdapterSchema: OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2'
 Write-Host 'StrategicResupplyRouteLifecycle: AIR_RESUPPLY corridor mandatory -> selected MOOSE carrier AssetSpawned -> shared corridor Bind -> OnAfterTransport outbound -> OnAfterDelivered reverse'
 Write-Host 'StrategicResupplyRecruitment: COMMANDER RecruitAssetsForTransport -> selected Assetitem(s) -> TransportAssign; no concrete OMW carrier selection'
 Write-Host 'SiteRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6'
 Write-Host 'SupportProfilesSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-4'
-Write-Host 'BaseSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-4'
+Write-Host 'BaseSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-6'
 Write-Host 'GuardRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-3'
 Write-Host 'GuardMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3'
-Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13'
-Write-Host 'QrfMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8'
+Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-14'
+Write-Host 'QrfMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-9'
 Write-Host 'ArtyMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-MISSION-FACTORY-2'
-Write-Host 'ArtySelectionRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-1'
+$artySelectionSchema = [regex]::Match($sources.ArtySelectionRuntime, 'Runtime\.SchemaVersion\s*=\s*"([^"]+)"')
+if (-not $artySelectionSchema.Success) { throw 'ArtySelectionRuntime source schema not readable.' }
+Write-Host "ArtySelectionRuntimeSchema: $($artySelectionSchema.Groups[1].Value)"
+$externalSupportSchema = [regex]::Match($sources.ExternalSupportRuntime, 'Runtime\.SchemaVersion\s*=\s*"([^"]+)"')
+if (-not $externalSupportSchema.Success) { throw 'ExternalSupportRuntime source schema not readable.' }
+Write-Host "ExternalSupportRuntimeSchema: $($externalSupportSchema.Groups[1].Value)"
 Write-Host 'ArtyRealAssetRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-REAL-ASSET-REGISTRY-1'
 Write-Host 'CasMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3'
-Write-Host 'CasLifecycleRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1'
+$casLifecycleSchema = [regex]::Match($sources.CasLifecycleRuntime, 'Runtime\.SchemaVersion\s*=\s*"([^"]+)"')
+if (-not $casLifecycleSchema.Success) { throw 'CasLifecycleRuntime source schema not readable.' }
+Write-Host "CasLifecycleRuntimeSchema: $($casLifecycleSchema.Groups[1].Value)"
 Write-Host 'CasReleasePolicySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1'
 Write-Host 'StorageTransportFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-STORAGE-TRANSPORT-FACTORY-2'
 Write-Host 'TransportSettlementSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-SETTLEMENT-3'
@@ -206,7 +214,7 @@ Write-Host 'ArtyRealAssetContract: existing site-bound templates register as one
 Write-Host 'ArtyDescriptorContract: superseded descriptor-only registry excluded from active production bundle after A10 real-asset acceptance'
 Write-Host 'ExternalCasModes: CAS | PATROLZONE_ENGAGE; provider selection remains MOOSE COMMANDER-owned'
 Write-Host 'CasLifecycle: shared production route/release/recovery owner; Acceptance harness must observe only'
-Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5'
+Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-6'
 Write-Host 'PerimeterBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4'
 Write-Host 'ThreatAdapterSchema: OMW-FOB-THREAT-OPSZONE-ADAPTER-6'
 Write-Host 'GuardActivation: no physical Guard before alarm; incident-local Guard demand on qualified RED perimeter presence'

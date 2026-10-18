@@ -15,7 +15,7 @@ local Factory = {}
 local Instance = {}
 Instance.__index = Instance
 
-Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8"
+Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-9"
 
 local TAG = "[OMW][FireSupStratResupply.QrfMissionFactory]"
 local DEFAULT_ENGAGE_SPEED_KNOTS = 20
@@ -64,6 +64,9 @@ function Factory.New(spec)
   local requiredAttributes = validateRequirement(spec.requiredAttributes, "requiredAttributes")
   local requiredProperties = validateRequirement(spec.requiredProperties, "requiredProperties")
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
+  if spec.onGroupDestroyed ~= nil and type(spec.onGroupDestroyed) ~= "function" then
+    fail("onGroupDestroyed must be a function when provided")
+  end
 
   return setmetatable({
     resolveTarget = resolveTarget,
@@ -76,6 +79,7 @@ function Factory.New(spec)
     requiredAttributes = requiredAttributes,
     requiredProperties = requiredProperties,
     logger = spec.logger,
+    onGroupDestroyed = spec.onGroupDestroyed,
   }, Instance)
 end
 
@@ -119,6 +123,18 @@ function Instance:_bindDirectTargetCycle(mission, demand, context, tacticalZone,
   mission._OMWQrfArmyGroups[armyGroup] = true
   local factory = self
   local previousDisengage = armyGroup.OnAfterDisengage
+  local previousDestroyed = armyGroup.OnAfterDestroyed
+  if self.onGroupDestroyed then
+    function armyGroup:OnAfterDestroyed(From, Event, To)
+      if previousDestroyed then previousDestroyed(self, From, Event, To) end
+      if mission._OMWQrfLossReported or mission._OMWQrfCompleting then return end
+      mission._OMWQrfLossReported = true
+      factory:_log("QRF_GROUP_DESTROYED demandId=" .. tostring(demand.demandId)
+        .. " siteId=" .. tostring(demand.siteId)
+        .. " group=" .. tostring(self.groupname or self.alias))
+      factory.onGroupDestroyed(demand, context, self)
+    end
+  end
 
   local function acquireNext(reason)
     if mission._OMWQrfCompleting then return false end

@@ -14,7 +14,7 @@ supersedes:
   - registry that listed Document 22 only as a branch reservation
 superseded_by:
 source_branch: agent/air-tasking-plan-main-reconciliation
-source_commit: 9d282bf61e7e54f110b95a4ee9eb2bede01838a5
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -185,4 +185,5 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 | `OMW-RESULT-FSSR-PRODUCTION-BASE-A10-REAL-ARTY-DCS-PASS-20261002` | `results/2026-10-02-production-base-acceptance10-real-arty-dcs-pass.md` | `ACCEPTED_TECHNICAL_BASELINE`; realer A10-DCS-PASS fuer RealAssetRegistry, MOOSE Fixed-ARTY-Selektion, Functional ARTY und M1083-Rearm |
 
 | `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-11` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-11.md` | `ACCEPTED_TECHNICAL_BASELINE`; kombinierter A11-DCS-PASS mit vollständiger Commit-/Bundle-/MIZ-/DCS-/MOOSE-Provenienz |
+| `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-12` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-12.md` | `PLANNED`; Production-Mission-Bootstrap-Integration ohne Acceptance-Fixtures; DCS-Nachweis ausstehend |
 | `OMW-RESULT-FSSR-PRODUCTION-BASE-A11-DCS-PASS-20261006` | `results/2026-10-06-production-base-acceptance11-dcs-pass.md` | `ACCEPTED_TECHNICAL_BASELINE`; realer kombinierter A11-DCS-PASS mit vollständiger technischer Acceptance-Provenienz |
