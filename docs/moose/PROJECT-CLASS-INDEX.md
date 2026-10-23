@@ -43,6 +43,13 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW`](MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW.md)
 - [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md)
 
+### Fixed-Wing CAS response acceptance (source-reviewed; DCS pending)
+
+Acceptance 4 erweitert den source-reviewed (DCS_PENDING) Scope um `AUFTRAG:SetMissionSpeed`, Kandahar-`SetMissionHoldingCoord`, `FLIGHTGROUP:Refuel`, `OnAfterRefueled`, `UNIT:IsTanker`, `FLIGHTGROUP.refueltype` und den vorhandenen OMW-AAR-Controller-Adapter `GetActive(area,profile)`. MOOSE pausiert und setzt den CAS-Missions-Lifecycle nach Refuel fort; die neue konkrete CAS-Integration ist **nicht** DCS-validiert. Siehe [A4-Testvertrag](../../mission/tests/fixed-wing-cas-response/ACCEPTANCE-4.md).
+
+
+Die branchgebundene [Three-Flight-CAS-Acceptance](../../mission/tests/fixed-wing-cas-response/README.md) verwendet vorhandene und in der eingebetteten v26-`Moose.lua` source-gepruefte `COMMANDER`-, `AIRWING`-, `SQUADRON`-, `AUFTRAG`, `FLIGHTGROUP`, `OPSGROUP`, `GROUP`, `ZONE_RADIUS`- und `SCHEDULER`-Schnittstellen: `COMMANDER:AddMission`, `AUFTRAG:NewCAS`, `AUFTRAG:AssignSquadrons`, `AUFTRAG:SetRequiredAssets`, `OnAfterOpsOnMission`, `OnAfterElementAirborne`, `CountElements`, `GROUP:IsAirborne(true)` sowie passive Zone-/Unit-Koordinatenpruefung. Das ist **keine** neue `VALIDATED`-Einstufung und keine behauptete CAS- oder ATC-Runtime-Acceptance. Eine Native-DCS-Kontrollalternative wurde nicht genehmigt oder implementiert.
+
 ## 2. Statusbedeutung
 
 ```text
@@ -966,3 +973,13 @@ FLIGHTGROUP
 Der allgemeine Base-31-Scope ist source-implemented und DCS-pending. Der geerbte
 geroutete STORAGE-Vertrag bleibt auf einen Carrier begrenzt; daraus folgt keine
 allgemeine Multi-Carrier-Freigabe.
+
+
+### 23.10.2026 – Fixed-Wing-CAS A5 Departure-Marshalling / Mission-Queue-Gate
+
+Owner-authorized design direction recorded in `docs/air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md` section 10.11. Pinned `Moose.lua` 2.9.18 was inspected for `AUFTRAG:NewORBIT`, `AUFTRAG:NewORBIT_CIRCLE`, `AUFTRAG:NewORBIT_RACETRACK`, `OPSGROUP:AddMission`, `AUFTRAG:AddConditionPush`, `AUFTRAG:SetMissionHoldingCoord`, and `OPSGROUP:RouteToMission`. The intended separation is a one-shot MOOSE ORBIT for formation joining and a resumable MOOSE CAS mission without departure holding. Exact handoff/queue behavior for COMMANDER-assigned FLIGHTGROUP must be source-proven before runtime changes; the methods' independent existence does not validate the composition. No internal AUFTRAG mutation or replacement of MOOSE's mission/AAR/recovery FSM is authorized. **Status: SOURCE_REVIEWED / QUEUE_HANDOFF_PENDING / DCS_PENDING.**
+
+
+### 24.10.2026 – OPSGROUP queue ordering for fixed-wing CAS departure ORBIT
+
+Pinned MOOSE 2.9.18 source reconciliation: `COMMANDER:onafterMissionAssign` hands to `LEGION:MissionRequest`; `LEGION` invokes `flightgroup:AddMission(CAS)` before scheduling `__OpsOnMission(5, flightgroup, CAS)`. `OPSGROUP:_GetNextMission` sorts priority/start time, `_QueueUpdate` starts a scheduled mission when none is current, and an urgent higher-priority arrival cancels the current mission. Therefore inserting an ORBIT solely in `COMMANDER.OnAfterOpsOnMission` does **not** prove ORBIT-before-CAS ordering; urgent priority may cancel a running CAS. `OPSGROUP:onafterMissionDone`/`_CheckGroupDone` can continue queued work when present, but the atomic initial handoff is unresolved. See decision doc section 10.12. Status: `SOURCE_REVIEWED / RACE_IDENTIFIED / RUNTIME_PENDING / DCS_PENDING`. No owner approval for AUFTRAG internals mutation.

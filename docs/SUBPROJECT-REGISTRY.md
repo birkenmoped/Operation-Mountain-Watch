@@ -27,6 +27,11 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 
 ## 2. Aktuelle offene Unterprojekte
 
+Neuer Dokumentations-Branch (16.10.2026): `agent/fixed-wing-cas-coverage-ground-alert-decision`, Parent `main`, Dokument `docs/air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md`, Status `PLANNED / DCS_PENDING`. Umfang umfasst jetzt zusätzlich `mission/tests/fixed-wing-cas-response/` und `tools/build-fixed-wing-cas-response-acceptance-1.ps1` für eine source-geprüfte, DCS-pendente MOOSE-Three-Flight-Response-Acceptance. Owner-Beschluss zu H24 Bagram Ground Alert als 2-ship, zur A-10-CAS-Präferenz und zu zulässigen Airborne-CAS-Lücken wird in **Draft-PR #151** vorgelegt; noch keine Merge-Freigabe oder Runtime-Änderung.
+
+**Aktueller Stand 17.10.2026 (Draft PR #151):** CAS Response Acceptance 1–4 wurde branch-lokal in DCS erprobt. A4 **FAIL**: F-16-Wingman sowie beide A-10 verloren, beide F-15E nach Bagram zurueck; A-10 PATTY MOOSE-AAR erfolgreich, aber CAS-AO-/Mission-Fortsetzung ungeklaert. Dokumentierte komplette Ergebnisse und Uebergabe: `docs/handoffs/2026-10-17-fixed-wing-cas-acceptance-1-to-4-handoff.md`. Keine Projektbaseline, kein Merge/Ready ohne Owner-Freigabe.
+
+
 | PR | Branch | Parent/Base | Thema | Primäre Pfade | Governance-Status | Acceptance-Status | Nachfolger | Produktionsrelevanz |
 |---:|---|---|---|---|---|---|---|---|
 | 3 | `design/warehouses-and-concealment` | `main` | frühe Logistics-/Warehouse-/MOOSE-Baseline | `docs/`, `mission/tests/`, `vendor/moose/` | `DRAFT`; Altbestand | keine repositoryweite Acceptance | 4 | Grundlage vieler späterer Stacks; vor Integration neu bewerten |
