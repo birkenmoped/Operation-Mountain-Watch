@@ -307,3 +307,34 @@ Web-Dokumentation `AI.AI_A2G_Dispatcher` Abschnitt 10.7.3 beschreibt explizit au
 - https://github.com/FlightControl-Master/MOOSE_MISSIONS/tree/master/AI/AI_A2G_Dispatcher
 - https://flightcontrol-master.github.io/MOOSE_DOCS/Documentation/AI.AI_A2G_Dispatcher.html
 - https://flightcontrol-master.github.io/MOOSE_DOCS/Documentation/Ops.FlightGroup.html
+
+
+### 10.11 Owner-Entscheidung vom 23.10.2026: A5-Arbeit wieder aufnehmen
+
+**Entscheidung:** Nach der am 18.10.2026 im MOOSE-Discord gestellten und bis zum 23.10.2026 unbeantworteten Rueckfrage wird A5 nicht weiter allein wegen ausstehender externer Beratung blockiert. Der Owner hat den **MOOSE-First-Pruef- und Entwicklungsweg** genehmigt: einmaliges Departure-Marshalling bevorzugt als eigenstaendigen MOOSE-ORBIT-Auftrag, anschliessend einen wiederaufnehmbaren CAS-AUFTRAG ohne Departure-Holding. Eine spaetere Discord-Antwort wird als Revisionsanlass bewertet, nicht als Implementierungs-Voraussetzung.
+
+**Freigabeumfang:** Erlaubt sind versionsverifizierte oeffentliche MOOSE-Funktionen, dokumentierte FSM-/Queue-Kombinationen sowie ein neuer, getrennt provenancegefuehrter Acceptance-Test. **Nicht freigegeben** sind interne AUFTRAG-Feldmutation, MOOSE-Source-Patch, Native-DCS-Flugcontroller, alternative Ressourcenautoritaet oder Veraenderung akzeptierter Recovery-Invarianten. Ist eine solche Ausnahme erforderlich, bleibt sie ausdruecklich owner-approval-pflichtig.
+
+**Pruefung der eingebetteten MOOSE-2.9.18-Quelle (23.10.2026):**
+
+| Methode | Quellenbefund | Noch nicht bewiesen |
+|---|---|---|
+| `AUFTRAG:NewORBIT(Coordinate, Altitude, Speed, Heading, Leg)` | Oeffentlicher Konstruktor, `Moose.lua` ca. Zeile 176248; ORBIT_CIRCLE/RACETRACK ebenfalls vorhanden | Automatisches Freigeben eines bereits begonnenen Departure-Orbits bei Join |
+| `OPSGROUP:AddMission(Mission)` | Oeffentliche Queue-API, ca. Zeile 224035; registriert OpsGroup, scheduled Mission und haengt Queue-Eintrag an | Reihenfolge, Pause-/Cancel-Grenze und Uebergang fuer ein vom COMMANDER rekrutiertes Two-Ship |
+| `AUFTRAG:AddConditionPush` | Oeffentliche Push-Bedingung, ca. Zeile 179045 | Korrekte Ingress-Behandlung in Kombination mit weiteren Waypoints; Discord-Befund vom 11.12.2024 ist historische Evidenz |
+| `AUFTRAG:SetMissionHoldingCoord` | Eigenschaft bleibt auf dem Mission-Objekt; ca. Zeile 181172 | Keine belegte oeffentliche One-shot-Clear-API in diesem Source |
+| `OPSGROUP:RouteToMission` | Fuegt weiterhin einen Holding-Wegpunkt ein, sofern die Mission einen Holding-Coordinate besitzt | Exakte physische A4-Waypoint-Ausfuehrung nach AAR bleibt DCS-diagnostisch offen |
+
+**A5-Ausfuehrungsvertrag, vor Lua-Implementierung auf dem konkreten COMMANDER/AIRWING-Pfad zu schliessen:**
+
+1. Eine C2-CAS-Anfrage behaelt einen eindeutigen Demand-/Mission-Owner und die exakte zugewiesene SQUADRON/AIRWING-/Asset-Herkunft. Kein zweiter konkurrierender Recruitment-/Asset-Owner fuer ORBIT und CAS.
+2. MOOSE startet das Two-Ship. Der Departure-ORBIT wird nur der **bereits ausgewaehlten physischen FLIGHTGROUP** zugeordnet; ob und wann ein COMMANDER-generierter CAS-Auftrag vorher/nachher in der Queue stehen darf, wird am gepinnten Source und den offiziellen Demos geprueft. Kein blindes Cancel/Replace, das MOOSE zum RTB veranlassen kann.
+3. Der Join wird erst nach zwei nachgewiesen airborne Elementen und Erreichen des vereinbarten 2-NM-Abstands einmalig gesetzt (`joinedAt`-Latch). Nach gesetzter Freigabe gibt es keine erneute dynamische Join-Anforderung nach AAR.
+4. Die Beendigung des ORBIT und der Uebergang zum CAS muessen **ausschliesslich ueber belegte oeffentliche MOOSE-Methoden/Callbacks** erfolgen. Der CAS-AUFTRAG erhaelt **kein** `SetMissionHoldingCoord` fuer den Departure-Orbit.
+5. `FLIGHTGROUP:Refuel`, das Pausieren und die Fortsetzung bleiben MOOSE-Aufgabe. AAR im Transit und in CAS werden getrennt diagnostiziert; AAR nach `RTB()` bleibt eigenes Gate wegen `CancelAllMissions()`.
+6. Normaler Missionsabschluss, RTB, Landung, ReturnToLegion/AIRWING-Asset-Return und CampaignState-Settlement behalten ihre bisherigen Eigentuemer. Der Testharness darf nur ausloesen, beobachten und verifizieren.
+7. Kein A4-Quellcode-/Ergebnis-Retrofit und kein `.miz`-Eingriff. A5 benoetigt eigene Source-/Builder-/Bundle-/Mission-/MOOSE-Hashes und anschliessende echte DCS-Validierung.
+
+**Lifecycle-Inheritance / Regressionsgrenze:** Inherit `docs/moose/ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md`, insbesondere §8.3, §11 und §11.2. Die dortige validierte A9-Baseline betrifft Rotary-Wing-CAS; sie ist **kein** PASS fuer Fixed-Wing-CAS. Fuer den fixed-wing-spezifischen A4-Lifecycle bleiben Testquelle `mission/tests/fixed-wing-cas-response/src/acceptance-4-three-flight-joined-aar.lua`, Quellencommit `ae4961a46cbe2bd47dfbb1a67426e480798b2135`, Bundle-SHA256 `284F001BD397DC171F4EB17B8676E75BAA37AC00D2588D59724804722E3C7FA8` reine FAIL-/Diagnose-Evidenz. Verwendete produktive AIRWING-/AAR-/Return-Module muessen vor dem naechsten Runtime-Diff einzeln erfasst werden; nicht vom Testharness kopieren.
+
+**Gate-Zustand:** `A5_DESIGN_AUTHORIZED / PUBLIC_QUEUE_HANDOFF_SOURCE_CHECK_PENDING / RUNTIME_NOT_CHANGED / DCS_PENDING`. Der fruehere pauschale Status `BLOCKED_FOR_A5_IMPLEMENTATION` aus §10.9 ist hinsichtlich der Owner-Entscheidung **ueberholt**, nicht hinsichtlich der noch offenen API-/Lifecycle-Pruefung. Falls die oeffentliche Queue-Uebergabe nicht nachweisbar tragfaehig ist, zuerst Gap-/Ausnahme-ADR und neue Owner-Entscheidung, danach erst Minimaladapter.
