@@ -973,3 +973,8 @@ FLIGHTGROUP
 Der allgemeine Base-31-Scope ist source-implemented und DCS-pending. Der geerbte
 geroutete STORAGE-Vertrag bleibt auf einen Carrier begrenzt; daraus folgt keine
 allgemeine Multi-Carrier-Freigabe.
+
+
+### 23.10.2026 – Fixed-Wing-CAS A5 Departure-Marshalling / Mission-Queue-Gate
+
+Owner-authorized design direction recorded in `docs/air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md` section 10.11. Pinned `Moose.lua` 2.9.18 was inspected for `AUFTRAG:NewORBIT`, `AUFTRAG:NewORBIT_CIRCLE`, `AUFTRAG:NewORBIT_RACETRACK`, `OPSGROUP:AddMission`, `AUFTRAG:AddConditionPush`, `AUFTRAG:SetMissionHoldingCoord`, and `OPSGROUP:RouteToMission`. The intended separation is a one-shot MOOSE ORBIT for formation joining and a resumable MOOSE CAS mission without departure holding. Exact handoff/queue behavior for COMMANDER-assigned FLIGHTGROUP must be source-proven before runtime changes; the methods' independent existence does not validate the composition. No internal AUFTRAG mutation or replacement of MOOSE's mission/AAR/recovery FSM is authorized. **Status: SOURCE_REVIEWED / QUEUE_HANDOFF_PENDING / DCS_PENDING.**
