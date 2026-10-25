@@ -354,3 +354,24 @@ Web-Dokumentation `AI.AI_A2G_Dispatcher` Abschnitt 10.7.3 beschreibt explizit au
 **Neu eingegrenzte technische Luecke:** Ein garantiertes und racefreies `CAS mission enrolled but not yet started -> append/execute ORBIT for exactly same FLIGHTGROUP -> joined -> ORBIT Done -> CAS starts` ist mit den bislang nachgewiesenen oeffentlichen Funktionen **noch nicht belegt**. Die erforderliche atomare Queue-Initialisierung darf nicht mit einem zeitlichen Scheduler-Trick oder `urgent`-Cancellation erraten werden.
 
 **Naechster Implementierungsgate:** Vor A5-Testcode eine oeffentliche MOOSE-Moeglichkeit fuer einen vor der AIRWING-Zuweisung wirksamen, einmaligen Marshalling-Auftrag oder einen dokumentierten Delay-/Queue-Startvertrag identifizieren und an genau diesem Codepfad beweisen. Falls das nicht gelingt, ist dem Owner **ein separater, eng begrenzter Ausnahmevorschlag** fuer den bestehenden CAS-Holding-Zustand vorzulegen; §10.11 genehmigt noch **keine** interne AUFTRAG-Mutation. A4-Source bleibt unangetastet und A5 bleibt DCS_PENDING.
+
+
+### 10.13 AddConditionStart-Pruefung und Ausnahmegrenze (25.10.2026)
+
+**Gepruefter Kandidat:** `AUFTRAG:AddConditionStart(function() return joinedAt ~= nil end)` koennte theoretisch den CAS-Start zurueckhalten und den bereits rekrutierten FLIGHTGROUP-Owner bewahren. **Ergebnis: fuer die von LEGION/AIRWING verwaltete FLIGHTGROUP kein belastbarer Hard-Gate.**
+
+Gepinnte `Moose.lua` 2.9.18, wesentliche Stellen:
+
+- `AUFTRAG:AddConditionStart` (ca. 178981) legt den Callback in `conditionStart` ab.
+- `AUFTRAG:IsReadyToGo` (ca. 179320) wertet `conditionStart` aus und kann `false` liefern.
+- **`OPSGROUP:_GetNextMission` (ca. 224251): `local isReadyToGo=(mission:IsReadyToGo() or self.legion)`.** Bei einer FLIGHTGROUP mit gesetztem `self.legion` kann der Mission-Start daher auch erfolgen, wenn `IsReadyToGo()` noch `false` meldet. Die Missionsqueue behandelt `AddConditionStart` nicht als verpflichtende Blockade fuer diese Klasse von Gruppen.
+- `OPSGROUP:_QueueUpdate` (ca. 225369) ruft bei freiem Slot `MissionStart(mission)`; `OPSGROUP:onafterMissionStart` (ca. 224426) setzt `currentmission` und `RouteToMission` an. Damit wuerde CAS bereits ohne abgeschlossenen Departure-Join loslaufen koennen.
+
+**Nicht zulaessige Scheinloesung:** Ein ORBIT nach `COMMANDER.OnAfterOpsOnMission` einqueue-en und CAS mit `AddConditionStart` zu sichern, schafft fuer LEGION-Gruppen **keine** Quellcode-garantierte Reihenfolge. Ebenso wenig darf die `self.legion`-Mitgliedschaft zur Umgehung kuenstlich entfernt werden; sie ist fuer Ownership und physische Asset-Rueckfuehrung erforderlich.
+
+**Praezise verbleibende Loesungsoptionen (noch nicht implementiert):**
+
+1. Ein anderer, explizit belegter und racefreier oeffentlicher MOOSE-Einstieg *vor* der Queue-Eintragung des CAS-Auftrags. Die bislang geprueften OPS-/COMMANDER-/LEGION-Handoffs liefern dafuer keinen Nachweis. Weitergehende Source-Recherche ist moeglich; **kein** Negativbeweis fuer alle MOOSE-Erweiterungspunkte.
+2. **Minimaladapter nur nach neuer, ausdruecklicher Owner-Ausnahme:** A4-kompatibles einzelnes `AUFTRAG:NewCAS` beibehalten, den bereits erfolgreichen Join per `joinedAt` dauerhaft freigeben und **nach bestaetigtem Join** ausschliesslich den abgeschlossenen `AUFTRAG`-Departure-Holding-Zustand entfernen. Letzteres waere ein gezielter Eingriff in undokumentierte AUFTRAG-Interna (zum Beispiel `mission.missionHoldingCoord=nil`), **keine** oeffentliche MOOSE-API. Die MOOSE-Routen-/AAR-/FSM-/RTB-/Ressourcenlogik bleibt unveraendert. Auch hier sind Ereignisreihenfolge, Wiederaufnahme und DCS-Verhalten in einer neuen A5-Quelle zu testen.
+
+**Owner-Entscheidungsbedarf:** Die Freigabe vom 23.10. ermaechtigt die MOOSE-First-Recherche und einen oeffentlichen API-Weg, **nicht** die interne Feldmutation. Deshalb keine neue A5-Runtime und keine A4-Retrokorrektur. Status `PUBLIC_START_GATE_NOT_PROVEN / MINIMAL_INTERNAL_ADAPTER_REQUIRES_OWNER_APPROVAL / DCS_PENDING`.
