@@ -138,3 +138,8 @@ A4 ist nach vollstaendigem DCS-/Debrief-Log **FAIL**, kein Runtime-PASS: drei ec
 ## Acceptance 5 (26.10.2026, neue Testquelle)
 
 [Acceptance 5](ACCEPTANCE-5.md) fuehrt die ausdruecklich genehmigte **einmalige interne AUFTRAG-Holding-Bereinigung** nach bestaetigtem Two-Ship-Join aus und macht `AddConditionPush` danach dauerhaft wahr. Der A4-FAIL bleibt historisch unveraendert. A5-Build: `tools/build-fixed-wing-cas-response-acceptance-5.ps1`, nur in separater Test-.miz und niemals zusammen mit A1–A4 laden. Status SOURCE_IMPLEMENTED / DCS_PENDING; keine bestandene Runtime behauptet.
+
+
+## A5-2 Source-Korrektur vor Runtime-Abnahme (26.10.2026)
+
+Die A5-1-Quellinspektion erkannte einen Release-Fehler: vorzeitiges Nullsetzen des Holding-Felds verhindert MOOSE `FLIGHTGROUP:Status`-Freigabe per `flaghold:Set(1)`. A5-2 setzt das Join-Latch und wartet auf den **MOOSE-eigenen** Release, bevor die bereits genehmigte einmalige Feldbereinigung erfolgt. `tools/build-fixed-wing-cas-response-acceptance-5.ps1` traegt nun `BuilderVersion=OMW-FIXED-WING-CAS-RESPONSE-A5-2`. Neuer lokaler Build/Hash und DCS-Test notwendig; bisheriges A5-1-Bundle nicht erneut verwenden. Der Racetrack ist noch keine Runtime-Aenderung.
