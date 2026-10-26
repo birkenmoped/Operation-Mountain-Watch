@@ -184,6 +184,7 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 
 | `OMW-TEST-FIXED-WING-CAS-RESPONSE-ACCEPTANCE-1` | `mission/tests/fixed-wing-cas-response/README.md` | `PLANNED`; same-session three-flight MOOSE-C2 CAS response acceptance with two-aircraft Bagram takeoff trigger |
 
+| `OMW-EVIDENCE-RC-EAST-CAS-AAR-SPATIAL-SCHEDULE-20261026` | `docs/evidence/rc-east-cas-standby-aar-spatial-schedule-reconciliation-2026-10-26.md` | `SOURCE_REVIEWED` | AAR-GeoJSON-Endpunkte, Honaker-Test-AO und Scheduled-CAS-Geometrie-/Zeit-Gates |
 | `OMW-EVIDENCE-GRAVEYARD-ACO-CAS-COVERAGE-20261026` | `docs/evidence/graveyard-2009-2013-aco-cas-coverage-reconciliation-2026-10-26.md` | `SOURCE_REVIEWED` | Graveyard-ACO-2009–2013-Quellen und Grenzen fuer Fixed-Wing-CAS-Schedule/Trackplanung |
 | `OMW-AIR-FIXED-WING-CAS-COVERAGE-GROUND-ALERT` | `docs/air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md` | `PLANNED`; owner-approved fixed-wing CAS roles, 24h Bagram 2-ship Ground Alert, permitted airborne coverage gaps; DCS pending |
 
