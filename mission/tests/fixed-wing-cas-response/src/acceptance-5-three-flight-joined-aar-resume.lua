@@ -1,4 +1,4 @@
--- OMW Fixed-Wing CAS Response Acceptance 4
+-- OMW Fixed-Wing CAS Response Acceptance 5-3: Racetrack + native MOOSE holding push
 -- Three genuine MOOSE COMMANDER/AIRWING/AUFTRAG CAS missions, one DCS run.
 -- No DCS event handlers, manually spawned aircraft, fuel interventions or route controllers.
 -- Bagram: MOOSE holding waypoint and conditional release after two-aircraft airborne join.
@@ -10,11 +10,15 @@ local START_DELAY_S = 30
 local A10_REQUEST_DELAY_S = 60
 local OBSERVER_PERIOD_S = 15
 local JOIN_RADIUS_M = 3704 -- Two NM: release criterion, not a flight steering rule.
-local KANDAHAR_HOLD_ALT_FT = 12000
-local KANDAHAR_HOLD_SPEED_KTS = 210
-local BAGRAM_HOLD_ALT_FT = 16000 -- MSL, near departure airfield.
-local BAGRAM_HOLD_SPEED_KTS = 250
-local HOLD_MAX_S = 3600 -- Source-controlled MOOSE orbit task has a finite stop duration.
+local KANDAHAR_HOLD_ALT_FT = 6500 -- MSL minimum; terrain sampled at runtime.
+local KANDAHAR_HOLD_SPEED_KTS = 195
+local BAGRAM_HOLD_ALT_FT = 8500 -- MSL minimum; final altitude rises with measured track terrain.
+local BAGRAM_HOLD_SPEED_KTS = 230
+local HOLD_MAX_S = 3600 -- Finite MOOSE-controlled orbit task; join must release before timeout.
+local RACETRACK_STANDOFF_NM = 5
+local RACETRACK_LEG_NM = 8
+local RACETRACK_TERRAIN_CLEARANCE_FT = 2500
+local RACETRACK_ANGLES_DEG = { 45, 90, 135, 180, 225, 270, 315, 0 } -- Native MOOSE COORDINATE:Translate angles.
 local CAS_ALT_FT = 22000 -- MSL; terrain clearance must be validated in DCS.
 local CAS_SPEED_KTS = 350
 local A10_CAS_SPEED_KTS = 230
@@ -129,6 +133,7 @@ local function addObserverHooks(requestId, flight)
     airborneCount = 0,
     joinedAt = nil,
     departureHoldClearedAt = nil,
+    departureReleaseDelayedLogged = false,
     firstAo = {},
     fullAo = false,
     lastJoinDistance = nil,
@@ -314,6 +319,75 @@ local function clearCompletedDepartureHolding(requestId, record, requestRecord)
   end
 end
 
+-- Choose a near-airfield, terrain-cleared valley corridor using the actual DCS terrain.
+-- This determines only the two MOOSE-orbit points: DCS/MOOSE still fly the aircraft.
+-- Sample the outbound corridor and the full eight-NM holding leg. No 11k/16k
+-- fixed altitude is imposed on the Bagram wingman before the join.
+local function makeRacetrack(requestId, airbaseCoordinate)
+  local terrainBest, result = math.huge, nil
+  for _, angle in ipairs(RACETRACK_ANGLES_DEG) do
+    local peak = -math.huge
+    local first, last = nil, nil
+    for i = 0, 13 do
+      local point = airbaseCoordinate:Translate(UTILS.NMToMeters(i), angle, true)
+      local terrain = point:GetLandHeight()
+      if not terrain then
+        log("FATAL", { "request=" .. requestId, "reason=RACETRACK_TERRAIN_UNAVAILABLE" })
+        return nil
+      end
+      if terrain > peak then peak = terrain end
+      if i == RACETRACK_STANDOFF_NM then first = point end
+      if i == RACETRACK_STANDOFF_NM + RACETRACK_LEG_NM then last = point end
+    end
+    if peak < terrainBest then
+      terrainBest = peak
+      result = { startCoord = first, endCoord = last, angle = angle, terrainM = peak }
+    end
+  end
+  if not result then return nil end
+
+  local floor = requestId == "CAS_A10" and KANDAHAR_HOLD_ALT_FT or BAGRAM_HOLD_ALT_FT
+  result.altitudeFt = math.max(floor, UTILS.MetersToFeet(result.terrainM) + RACETRACK_TERRAIN_CLEARANCE_FT)
+  result.speedKts = requestId == "CAS_A10" and KANDAHAR_HOLD_SPEED_KTS or BAGRAM_HOLD_SPEED_KTS
+  log("DEPARTURE_RACETRACK_CONFIGURED", {
+    "request=" .. requestId, "angleDeg=" .. tostring(result.angle),
+    "standoffNm=" .. tostring(RACETRACK_STANDOFF_NM), "legNm=" .. tostring(RACETRACK_LEG_NM),
+    "peakTerrainFt=" .. tostring(UTILS.MetersToFeet(result.terrainM)),
+    "altitudeMslFt=" .. tostring(result.altitudeFt), "speedKts=" .. tostring(result.speedKts),
+    "startX=" .. tostring(result.startCoord.x), "startZ=" .. tostring(result.startCoord.z),
+    "endX=" .. tostring(result.endCoord.x), "endZ=" .. tostring(result.endCoord.z),
+  })
+  return result
+end
+
+-- Narrow, owner-approved extension at the MOOSE TaskOrbit constructor boundary.
+-- The native MOOSE RouteToMission still creates the waypoint, controlled task,
+-- stop flag, DCS route and CAS lifecycle. We only supply TaskOrbit's *public*
+-- optional second coordinate to create a genuine RACETRACK rather than CIRCLE.
+-- Install before any C2 request to avoid the LEGION mission-start queue race.
+local originalTaskOrbit = CONTROLLABLE.TaskOrbit
+CONTROLLABLE.TaskOrbit = function(controllable, coord, altitude, speed, coordRaceTrack)
+  if not coordRaceTrack and coord then
+    for requestId, request in pairs(state.requests) do
+      local track = request.racetrack
+      if track and request.mission:GetMissionHoldingCoord() == coord then
+        local name = controllable.GetName and controllable:GetName() or ""
+        local flight = state.flights[requestId]
+        -- Before FLIGHT_ASSIGNED the coordinate identity still scopes this
+        -- constructor call to this exact AUFTRAG holding waypoint.
+        if not flight or (flight.group and flight.group:GetName() == name) then
+          log("DEPARTURE_RACETRACK_TASK_CREATED", {
+            "request=" .. requestId, "group=" .. tostring(name),
+            "pattern=RACE_TRACK",
+          })
+          return originalTaskOrbit(controllable, coord, altitude, speed, track.endCoord)
+        end
+      end
+    end
+  end
+  return originalTaskOrbit(controllable, coord, altitude, speed, coordRaceTrack)
+end
+
 local function submit(requestId)
   if state.requests[requestId] then return end
   local spec = config[requestId]
@@ -348,18 +422,24 @@ local function submit(requestId)
   if spec.hold then
     -- Public MOOSE features; native orbit task is owned by FLIGHTGROUP.
     -- A 3600-s DCS task limit remains: do not silently treat timeout as a join.
-    local holdCoordinate = requestId == "CAS_A10" and state.kandaharCoordinate or state.bagramCoordinate
-    local holdAltitude = requestId == "CAS_A10" and KANDAHAR_HOLD_ALT_FT or BAGRAM_HOLD_ALT_FT
-    local holdSpeed = requestId == "CAS_A10" and KANDAHAR_HOLD_SPEED_KTS or BAGRAM_HOLD_SPEED_KTS
-    mission:SetMissionHoldingCoord(holdCoordinate, holdAltitude, holdSpeed, HOLD_MAX_S)
+    local baseCoord = requestId == "CAS_A10" and state.kandaharCoordinate or state.bagramCoordinate
+    local track = makeRacetrack(requestId, baseCoord)
+    if not track then
+      log("FATAL", { "request=" .. requestId, "reason=RACETRACK_CONFIGURATION_FAILED" })
+      return
+    end
+    mission:SetMissionHoldingCoord(track.startCoord, track.altitudeFt, track.speedKts, HOLD_MAX_S)
     mission:AddConditionPush(function() return joinedForMission(requestId) end)
+    state.racetrackPending = track
   end
 
   state.requests[requestId] = {
     mission = mission,
     requestedAt = clock(),
     spec = spec,
+    racetrack = state.racetrackPending,
   }
+  state.racetrackPending = nil
   log("REQUEST_CREATED", {
     "request=" .. requestId, "base=" .. spec.base,
     "mission=" .. mission:GetName(), "holding=" .. tostring(spec.hold),
@@ -445,6 +525,16 @@ local function observe()
       end
 
       clearCompletedDepartureHolding(requestId, record, requestRecord)
+      if record.joinedAt and not record.departureHoldClearedAt
+          and not record.departureReleaseDelayedLogged
+          and clock() - record.joinedAt > 45 then
+        record.departureReleaseDelayedLogged = true
+        log("DEPARTURE_RELEASE_DELAYED", {
+          "request=" .. requestId,
+          "holding=" .. tostring(flight.isHoldingAtHoldingPoint),
+          "holdFlag=" .. tostring(flight.flaghold and flight.flaghold:Get() or "none"),
+        })
+      end
 
       log("FLIGHT_OBSERVER", {
         "request=" .. requestId,
@@ -455,6 +545,7 @@ local function observe()
         "missionHoldingPresent=" .. tostring(requestRecord.mission:GetMissionHoldingCoord() ~= nil),
         "joinDistanceM=" .. tostring(record.lastJoinDistance),
         "holding=" .. tostring(flight.isHoldingAtHoldingPoint),
+        "holdReleaseFlag=" .. tostring(flight.flaghold and flight.flaghold:Get() or "none"),
         "fuelLow=" .. tostring(flight.fuellow),
         "fuelCritical=" .. tostring(flight.fuelcritical),
         "fuelLowRtb=" .. tostring(flight.fuellowrtb),
