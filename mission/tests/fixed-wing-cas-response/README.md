@@ -133,3 +133,8 @@ Auf den dokumentierten A1-DCS-Befund folgt [Acceptance 2](ACCEPTANCE-2.md): MOOS
 ## Realer A4-DCS-Lauf und Uebergabe (17.10.2026)
 
 A4 ist nach vollstaendigem DCS-/Debrief-Log **FAIL**, kein Runtime-PASS: drei echte C2-Requests, drei Two-Ship-Joins, A-10 PATTY `AAR_REFUELED` erfolgreich; keine bestaetigte A-10-AO-Ausfuehrung nach AAR, zwei spaetere A-10-Crashs; F-16-Wingman bei Fuel=0 verloren; beide F-15E sicher in Bagram gelandet (jedoch geringe Fuel-Reserve). Ursachen der A-10-Verluste und Missions-`success` ohne AO-Nachweis offen. **Vor A5 zuerst Lifecycle-/Log-Reconciliation**. Vollstaendige [A1–A4-Uebergabe](../../../docs/handoffs/2026-10-17-fixed-wing-cas-acceptance-1-to-4-handoff.md).
+
+
+## Acceptance 5 (26.10.2026, neue Testquelle)
+
+[Acceptance 5](ACCEPTANCE-5.md) fuehrt die ausdruecklich genehmigte **einmalige interne AUFTRAG-Holding-Bereinigung** nach bestaetigtem Two-Ship-Join aus und macht `AddConditionPush` danach dauerhaft wahr. Der A4-FAIL bleibt historisch unveraendert. A5-Build: `tools/build-fixed-wing-cas-response-acceptance-5.ps1`, nur in separater Test-.miz und niemals zusammen mit A1–A4 laden. Status SOURCE_IMPLEMENTED / DCS_PENDING; keine bestandene Runtime behauptet.
