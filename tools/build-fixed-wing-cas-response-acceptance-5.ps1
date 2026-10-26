@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $source = Join-Path $repoRoot 'mission\tests\fixed-wing-cas-response\src\acceptance-5-three-flight-joined-aar-resume.lua'
 $destination = Join-Path $repoRoot 'mission\tests\fixed-wing-cas-response\dist\OMW_FixedWing_CAS_Response_Acceptance_5.lua'
-$builderVersion = 'OMW-FIXED-WING-CAS-RESPONSE-A5-1'
+$builderVersion = 'OMW-FIXED-WING-CAS-RESPONSE-A5-2'
 $expectedMooseSha256 = 'E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915'
 
 if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw "Missing acceptance source: $source" }
@@ -23,6 +23,8 @@ foreach ($required in @(
     'A10_PRE_AO_AAR_TRIGGER_PCT', 'KANDAHAR_HOLD_ALT_FT',
     'mission.missionHoldingCoord = nil', 'if record.joinedAt then return true end',
     'DEPARTURE_HOLD_CLEARED', 'departureHoldClearedAt',
+    'flight.flaghold:Is(1)', 'flight.isHoldingAtHoldingPoint == false',
+    'clearCompletedDepartureHolding(requestId, record, requestRecord)',
     'flight:SetFuelLowThreshold(30)'
 )) {
     if (-not $sourceText.Contains($required)) { throw "Missing MOOSE mechanism: $required" }
