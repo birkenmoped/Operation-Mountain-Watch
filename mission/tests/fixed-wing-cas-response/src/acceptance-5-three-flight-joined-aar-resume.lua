@@ -280,20 +280,31 @@ local function joinedForMission(requestId)
     "separationM=" .. tostring(distanceM),
   })
 
-  local requestRecord = state.requests[requestId]
-  local mission = requestRecord and requestRecord.mission
-  if requestRecord and requestRecord.spec.hold and mission then
-    -- Explicit owner-approved exception: no public one-shot/clear holding API
-    -- exists in the pinned MOOSE 2.9.18 AUFTRAG implementation.
-    -- This affects future RouteToMission rebuilds; it does not overwrite
-    -- a current DCS waypoint, cancel a task or touch any other MOOSE field.
-    local oldHolding = mission:GetMissionHoldingCoord()
-    if oldHolding then
-      mission.missionHoldingCoord = nil
+  return true
+end
+
+-- MOOSE must first release the live controlled orbit via its own Status()
+-- transition (IsReadyToPush -> flaghold=1 -> isHoldingAtHoldingPoint=false).
+-- Clearing missionHoldingCoord before that transition masks MOOSE's release check.
+local function clearCompletedDepartureHolding(requestId, record, requestRecord)
+  if not record.joinedAt or record.departureHoldClearedAt then return end
+  if not requestRecord or not requestRecord.spec.hold then return end
+  local mission = requestRecord.mission
+  local flight = record.flight
+  if not mission or not flight then return end
+
+  -- USERFLAG:Is(1) is the pinned public MOOSE flag accessor.
+  -- The additional holding-state check proves that MOOSE, not OMW,
+  -- performed the release before the approved internal field clear.
+  if flight.isHoldingAtHoldingPoint == false
+      and flight.flaghold and flight.flaghold:Is(1) then
+    if mission:GetMissionHoldingCoord() then
+      mission.missionHoldingCoord = nil -- Owner-approved single internal exception.
       record.departureHoldClearedAt = clock()
       log("DEPARTURE_HOLD_CLEARED", {
         "request=" .. requestId, "mission=" .. mission:GetName(),
         "holdingPresentAfter=" .. tostring(mission:GetMissionHoldingCoord() ~= nil),
+        "releaseFlag=" .. tostring(flight.flaghold:Get()),
       })
     else
       log("DEPARTURE_HOLD_ALREADY_ABSENT", {
@@ -301,7 +312,6 @@ local function joinedForMission(requestId)
       })
     end
   end
-  return true
 end
 
 local function submit(requestId)
@@ -433,6 +443,8 @@ local function observe()
           end
         end
       end
+
+      clearCompletedDepartureHolding(requestId, record, requestRecord)
 
       log("FLIGHT_OBSERVER", {
         "request=" .. requestId,
