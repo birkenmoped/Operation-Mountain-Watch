@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $source = Join-Path $repoRoot 'mission\tests\fixed-wing-cas-response\src\acceptance-5-three-flight-joined-aar-resume.lua'
 $destination = Join-Path $repoRoot 'mission\tests\fixed-wing-cas-response\dist\OMW_FixedWing_CAS_Response_Acceptance_5.lua'
-$builderVersion = 'OMW-FIXED-WING-CAS-RESPONSE-A5-2'
+$builderVersion = 'OMW-FIXED-WING-CAS-RESPONSE-A5-3'
 $expectedMooseSha256 = 'E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915'
 
 if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw "Missing acceptance source: $source" }
@@ -25,11 +25,16 @@ foreach ($required in @(
     'DEPARTURE_HOLD_CLEARED', 'departureHoldClearedAt',
     'flight.flaghold:Is(1)', 'flight.isHoldingAtHoldingPoint == false',
     'clearCompletedDepartureHolding(requestId, record, requestRecord)',
-    'flight:SetFuelLowThreshold(30)'
+    'flight:SetFuelLowThreshold(30)',
+    'CONTROLLABLE.TaskOrbit = function(', 'originalTaskOrbit(controllable, coord, altitude, speed, track.endCoord)',
+    'DEPARTURE_RACETRACK_CONFIGURED', 'DEPARTURE_RACETRACK_TASK_CREATED',
+    'RACETRACK_TERRAIN_CLEARANCE_FT', 'DEPARTURE_RELEASE_DELAYED'
 )) {
     if (-not $sourceText.Contains($required)) { throw "Missing MOOSE mechanism: $required" }
 }
 if (($sourceText.Split([string[]]@('mission.missionHoldingCoord = nil'), [System.StringSplitOptions]::None).Length - 1) -ne 1) { throw 'Approved internal holding clear must occur exactly once' }
+if (($sourceText.Split([string[]]@('CONTROLLABLE.TaskOrbit = function('), [System.StringSplitOptions]::None).Length - 1) -ne 1) { throw 'Racetrack constructor adapter must be unique' }
+if ($sourceText.Contains('flight.flaghold:Set(')) { throw 'OMW may not directly signal MOOSE hold release' }
 foreach ($forbidden in @(
     'world.addEventHandler', 'timer.scheduleFunction', 'trigger.action',
     'controller:setTask', 'Controller.setTask', 'SPAWN:New(', ':Teleport(',
