@@ -143,3 +143,8 @@ A4 ist nach vollstaendigem DCS-/Debrief-Log **FAIL**, kein Runtime-PASS: drei ec
 ## A5-2 Source-Korrektur vor Runtime-Abnahme (26.10.2026)
 
 Die A5-1-Quellinspektion erkannte einen Release-Fehler: vorzeitiges Nullsetzen des Holding-Felds verhindert MOOSE `FLIGHTGROUP:Status`-Freigabe per `flaghold:Set(1)`. A5-2 setzt das Join-Latch und wartet auf den **MOOSE-eigenen** Release, bevor die bereits genehmigte einmalige Feldbereinigung erfolgt. `tools/build-fixed-wing-cas-response-acceptance-5.ps1` traegt nun `BuilderVersion=OMW-FIXED-WING-CAS-RESPONSE-A5-2`. Neuer lokaler Build/Hash und DCS-Test notwendig; bisheriges A5-1-Bundle nicht erneut verwenden. Der Racetrack ist noch keine Runtime-Aenderung.
+
+
+## A5-3 gebuendelte Acceptance (26.10.2026)
+
+Owner-Beschluss: Keine einzelnen Tippelschritt-DCS-Laeufe. A5-3 testet gemeinsam MOOSE-Racetrack (kein Circle), DCS-Terrain-gestuetzte niedrigere Sammelhoehe, 2NM Two-Ship-Join, **MOOSE-native** sofortige Holding-Push-Freigabe, dann nur die genehmigte Feldbereinigung, fortgesetzte CAS-Mission nach AAR und physische Rueckkehr. First-run A5-1 am 26.10. FAIL; siehe `ACCEPTANCE-5.md` und Design §10.17. BuilderVersion `OMW-FIXED-WING-CAS-RESPONSE-A5-3`; neuer lokaler Bundle/MIZ/embedded-MOOSE-Hash vor einem weiteren DCS-Lauf. Kein Owner-.miz-Eingriff durch ChatGPT.
