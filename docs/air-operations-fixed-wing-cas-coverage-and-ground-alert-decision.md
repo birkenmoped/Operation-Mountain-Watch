@@ -375,3 +375,12 @@ Gepinnte `Moose.lua` 2.9.18, wesentliche Stellen:
 2. **Minimaladapter nur nach neuer, ausdruecklicher Owner-Ausnahme:** A4-kompatibles einzelnes `AUFTRAG:NewCAS` beibehalten, den bereits erfolgreichen Join per `joinedAt` dauerhaft freigeben und **nach bestaetigtem Join** ausschliesslich den abgeschlossenen `AUFTRAG`-Departure-Holding-Zustand entfernen. Letzteres waere ein gezielter Eingriff in undokumentierte AUFTRAG-Interna (zum Beispiel `mission.missionHoldingCoord=nil`), **keine** oeffentliche MOOSE-API. Die MOOSE-Routen-/AAR-/FSM-/RTB-/Ressourcenlogik bleibt unveraendert. Auch hier sind Ereignisreihenfolge, Wiederaufnahme und DCS-Verhalten in einer neuen A5-Quelle zu testen.
 
 **Owner-Entscheidungsbedarf:** Die Freigabe vom 23.10. ermaechtigt die MOOSE-First-Recherche und einen oeffentlichen API-Weg, **nicht** die interne Feldmutation. Deshalb keine neue A5-Runtime und keine A4-Retrokorrektur. Status `PUBLIC_START_GATE_NOT_PROVEN / MINIMAL_INTERNAL_ADAPTER_REQUIRES_OWNER_APPROVAL / DCS_PENDING`.
+
+
+### 10.14 Owner-Freigabe und A5-Implementierung (26.10.2026)
+
+Der Owner hat die in §10.13 einzeln benannte Ausnahme **ausdruecklich genehmigt**: `mission.missionHoldingCoord = nil` **einmalig nach tatsaechlich bestaetigtem Two-Ship-Join**, sonst keine interne MOOSE-Mutation. Die fruehere ORBIT-vor-CAS-Queue-Variante bleibt wegen des belegten COMMANDER-/LEGION-Handoff-Rennens ausgeschlossen, bis eine gesondert belegte MOOSE-Loesung vorliegt. Die A5-Folge ist keine Freigabe fuer eigene Routing- oder Recovery-FSMs.
+
+Eigene A5-Testquelle `mission/tests/fixed-wing-cas-response/src/acceptance-5-three-flight-joined-aar-resume.lua` und PowerShell-Builder `tools/build-fixed-wing-cas-response-acceptance-5.ps1`; A4 bleibt unveraendert. Implementierte Differenz: Join-Latch aus `joinedAt`; danach gezieltes Nullsetzen **nur** von `missionHoldingCoord`; eigene Logs `DEPARTURE_HOLD_CLEARED` und `missionHoldingPresent`; genehmigtes `FLIGHTGROUP:SetFuelLowThreshold(30)` nur fuer Fixed-Wing-CAS. A4-65%-A10-AAR bleibt als explizite **Testbedingung**, nicht Produktionsentscheidung. Vollstaendige Risiken, Schritte und DCS-Gates in `mission/tests/fixed-wing-cas-response/ACCEPTANCE-5.md`.
+
+**Review-Trigger:** spaetere MOOSE-Discord-/Upstream-Antwort, neuer MOOSE-Stand, DCS-Route-Reentry, nicht erwartetes Holding nach Resume oder Regression bei Fuel/RTB/Asset-Return. Status: OWNER_EXCEPTION_APPROVED / SOURCE_IMPLEMENTED / DCS_PENDING; A4 FAIL unveraendert.
