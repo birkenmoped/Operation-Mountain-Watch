@@ -206,3 +206,6 @@ merge commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
 accepted branch head: 065ded12cffd987b3458bb661025f6cd9c669da5
 A11: ACCEPTED_TECHNICAL_BASELINE
 ```
+
+
+**Stand 26.10.2026 (Draft PR #151, A5):** Der Owner hat ausschliesslich den internen A5-CAS-Holding-Clear nach bestaetigtem Two-Ship-Join genehmigt. Neue A5-Quelle `mission/tests/fixed-wing-cas-response/src/acceptance-5-three-flight-joined-aar-resume.lua`, Builder `tools/build-fixed-wing-cas-response-acceptance-5.ps1`, Testvertrag `mission/tests/fixed-wing-cas-response/ACCEPTANCE-5.md`. A4 bleibt FAIL und unveraendert, A5 `SOURCE_IMPLEMENTED / DCS_PENDING`, keine produktive Freigabe. Vollstaendige MOOSE-Reconciliation in `docs/air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md` §§10.11–10.14. Keine lokale Build-/Hash- oder DCS-Evidenz vor Owner-Ausgabe.
