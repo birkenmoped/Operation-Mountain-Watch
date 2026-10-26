@@ -174,6 +174,7 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 
 | `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-7` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-7.md` | `PLANNED`; Joyce production QRF plus MOOSE-selected attack-helicopter CAS with fail-closed owner-route binding, supported-element/no-contact release and physical recovery |
 
+| `OMW-RESULT-FIXED-WING-CAS-A5-1-20261026` | `mission/tests/fixed-wing-cas-response/results/2026-10-26-acceptance-5-first-runtime-fail.md` | `FAILED_RUNTIME_EVIDENCE`; A5-1 join without MOOSE hold release, exact mission/log SHA256 |
 | `OMW-TEST-FIXED-WING-CAS-RESPONSE-ACCEPTANCE-5` | `mission/tests/fixed-wing-cas-response/ACCEPTANCE-5.md` | `PLANNED / DCS_PENDING`; owner-approved one-shot departure holding clear, AAR resume and CAS physical recovery regression |
 | `OMW-TEST-FIXED-WING-CAS-RESPONSE-ACCEPTANCE-4` | `mission/tests/fixed-wing-cas-response/ACCEPTANCE-4.md` | `PLANNED`; three-flight MOOSE CAS/AAR and A-10 join acceptance |
 
