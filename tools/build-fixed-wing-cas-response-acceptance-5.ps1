@@ -50,8 +50,8 @@ $header = @(
     "-- GitCommit: $commit",
     "-- GeneratedUtc: $([DateTime]::UtcNow.ToString('o'))",
     '-- Test: fixed-wing CAS response acceptance 5, sticky two-ship join, one-shot holding and AAR resume',
-    '-- Scope: MOOSE C2 mission creation plus passive events/telemetry',
-    '-- Exclusions: no MIZ mutation; no route, tanker, fuel, ATC or RTB overrides',
+    '-- Scope: MOOSE C2, owner-approved post-join holding clear, test-only AAR and observer telemetry',
+    '-- Exclusions: no MIZ mutation; no native DCS flight/ATC controller; no MOOSE FSM or recovery override',
     '-- MooseCommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54',
     "-- MooseSha256: $expectedMooseSha256"
 ) -join $nl
