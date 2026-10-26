@@ -419,6 +419,7 @@ local function submit(requestId)
   mission:SetRequiredAssets(1, 1)
   mission:AssignSquadrons({ squadron })
 
+  local departureTrack = nil
   if spec.hold then
     -- Public MOOSE features; native orbit task is owned by FLIGHTGROUP.
     -- A 3600-s DCS task limit remains: do not silently treat timeout as a join.
@@ -430,16 +431,15 @@ local function submit(requestId)
     end
     mission:SetMissionHoldingCoord(track.startCoord, track.altitudeFt, track.speedKts, HOLD_MAX_S)
     mission:AddConditionPush(function() return joinedForMission(requestId) end)
-    state.racetrackPending = track
+    departureTrack = track
   end
 
   state.requests[requestId] = {
     mission = mission,
     requestedAt = clock(),
     spec = spec,
-    racetrack = state.racetrackPending,
+    racetrack = departureTrack,
   }
-  state.racetrackPending = nil
   log("REQUEST_CREATED", {
     "request=" .. requestId, "base=" .. spec.base,
     "mission=" .. mission:GetName(), "holding=" .. tostring(spec.hold),
