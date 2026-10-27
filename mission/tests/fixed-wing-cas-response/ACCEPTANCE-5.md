@@ -92,3 +92,24 @@ Die Test-.miz wird **nur** vom Projektinhaber in einer separaten Kopie angepasst
 5. AAR-Ausloeser/Trackfilter aus A4 bleiben ausschliesslich Testlogik, FuelLowThreshold 30 nur pro CAS-FLIGHTGROUP. AAR im Transit, AAR-Resume zum CAS-AO, CAS und sicherer Return sind zu pruefen; AAR nach MOOSE-RTB weiterhin explizites separates Lifecycle-Risiko, nicht automatisch bestanden.
 
 **Vor der naechsten DCS-Abnahme:** Neuer A5-3-Build, echter Git-Commit + Bundle-/MIZ-/embedded-Moose-Hash; in der Owner-MIZ ausschliesslich das A5-Testbundle austauschen, keine parallelen A4/A5-Kopien. `BuilderVersion=OMW-FIXED-WING-CAS-RESPONSE-A5-3`. **Status SOURCE_IMPLEMENTED / STATIC_CHECKS_PENDING / DCS_PENDING**; die A5-1-Hashkette gilt ausschliesslich fuer den fehlgeschlagenen Erstlauf. Kein PASS vor positiver realer DCS-Evidenz.
+
+
+## A5-4 – Verbindliche Sortie-/On-Station-Grenzen (27.10.2026)
+
+**Owner-Beschluss (Chat nach A5-3-Abbruch):** Geplante Standby-/CAS-Zeit getrennt von der gesamten Flugzeit behandeln. Bagram-Jets haben eine eigenstaendige On-Station-Grenze, Kandahar-A-10 erhalten wegen >330 NM Transit laengere Gesamtsorties. Fuer A-10 regulär max. 8 h, 10 h absolute Ausnahmeobergrenze; ohne neue Owner-Ausnahme wird die Achtstundenplanung angewandt, nicht automatisch auf zehn Stunden ausgedehnt. Vier belegte AAR-Zyklen im A5-3-Lauf sind keine Erlaubnis zu unbegrenzter Missionsdauer.
+
+**A5-4-Testparameter (vorgeschlagene operative Defaults des fuer diesen Branch freigegebenen Owner-Gates, noch nicht DCS-validiert):**
+
+| Muster | Zielzeit tatsaechlich im CAS-AO | geplante Gesamtflugzeit | absolute Obergrenze |
+|---|---:|---:|---:|
+| F-16C Bagram | 150 min | 4 h | 5 h |
+| F-15E Bagram | 180 min | 5 h | 6 h |
+| A-10C II Kandahar | 240 min | 8 h | 10 h (nur Ausnahmedecke) |
+
+Die beiden Uhren werden **nicht** gleichgesetzt: Der erste `OnAfterElementTakeoff` startet die monotone Sortieuhr via `timer.getTime()`; erst `TWO_SHIP_IN_AO` setzt `onStationAtS`. Standby-Racetracks sind noch nicht implementiert, daher gilt On-Station in A5-4 ausdruecklich nur fuer die **aktuelle CAS-AO**. Die geplante Gesamtflugzeit beinhaltet Start, Join, alle AAR, Transit, CAS, Rueckflug und Landung. Die absolute Obergrenze ist keine Garantie fuer rechtzeitiges physisches Landing ohne DCS-Verifikation.
+
+**RTB-Vorhaltung:** Schon vor der geplanten Gesamtgrenze wird anhand der **aktuellen** MOOSE-Flugkoordinate und der DCS-AIRBASE-Koordinate eine Rueckkehrzeit berechnet: `max(60 min, distance/base-cruise-speed + 45 min approach/vectoring buffer)`. Diese konservative Entfernungsschaetzung ist keine Terrain-, ATC- oder DCS-Taxi-Garantie. Bei Erreichen der On-Station-Dauer oder `elapsed + estimatedReturn >= plannedLimit` wird einmalig `FLIGHTGROUP:RTB(homebase)` aufgerufen. Die zehnstuendige A-10-Grenze ist ein zusaetzlicher harter Schutz vor spaeteren Missionsverlaengerungen; laufende MOOSE-AAR wird normalerweise erst zu Ende gefuehrt, bevor RTB angefordert wird, **ausser** wenn die absolute Rueckkehrgrenze bereits erreicht ist. A5-4 darf niemals als Garantie betrachtet werden, dass ein kritisch betankendes Flugzeug dadurch sicher landet.
+
+**Final-RTB-Latch:** Nach `SORTIE_FINAL_RTB_ORDERED` oder normalem MOOSE-/FuelLow-RTB blockiert der Adapter weitere selbst ausgelöste AAR-Aufrufe und den A-10-65%-Fruehtanktest. Keine parallele Routing-Engine, kein direkter DCS-Controller, keine AAR-Nachladung als Neustart der Sortieuhr. Die unveraenderte MOOSE-RTB-FSM uebernimmt die echte Flugausfuehrung.
+
+**Verbindliche Folge-Acceptance im gemeinsamen DCS-Lauf:** `SORTIE_CLOCK_STARTED` nur einmal pro Two-Ship; `SORTIE_ON_STATION_STARTED` erst bei beiden Flugzeugen im AO; abgelaufener On-Station-/Sortie-Horizont erzeugt genau ein `SORTIE_FINAL_RTB_ORDERED`; anschliessend keine neue `AAR_SELECTED` und kein weiterer CAS-Execute fuer diesen Flight; DCS-Landung vor der jeweiligen absoluten Obergrenze nach realen Flugzeiten, sichere gemeinsame Rueckkehr, MOOSE-AIRWING/Legion-Asset-Lifecycle, AAR-Unterbrechung und Fehlerlogs pruefen. F-16/F-15E-AAR-Verfuegbarkeit separat beurteilen: Im A5-3-Lauf fanden beide keinen geeigneten Tanker und gingen vorzeitig RTB. **Status: SOURCE_IMPLEMENTED / STATIC_REVIEW_PENDING / DCS_PENDING.**
