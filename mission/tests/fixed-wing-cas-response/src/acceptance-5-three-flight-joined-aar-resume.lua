@@ -152,6 +152,8 @@ local function addObserverHooks(requestId, flight)
     aarCount = 0,
     firstTakeoffS = nil,
     onStationAtS = nil,
+    stationSeconds = 0,
+    lastStationSampleS = nil,
     finalRtbAtS = nil,
     finalRtbReason = nil,
     sortieAarDeferredLogged = false,
@@ -511,8 +513,7 @@ local function enforceSortieLimit(requestId, record, requestRecord)
   local speedMps = UTILS.KnotsToMps(CRUISE_SPEED_KTS[requestId])
   local returnEstimateS = math.max(RTB_MIN_ESTIMATE_S,
     rangeM / speedMps + RTB_APPROACH_RESERVE_S)
-  local stationElapsedS = record.onStationAtS
-    and timer.getTime() - record.onStationAtS or nil
+  local stationElapsedS = record.onStationAtS and record.stationSeconds or nil
   local stationExpired = stationElapsedS and stationElapsedS >= policy.stationS
   local plannedReturnDue = elapsedS + returnEstimateS >= policy.plannedS
   local absoluteReturnDue = elapsedS + returnEstimateS >= policy.absoluteS
@@ -590,6 +591,18 @@ local function observe()
           })
         end
       end
+      -- Accumulate true full-two-ship AO occupancy, not wall-clock time
+      -- spent outside the AO during repeated AAR excursions.
+      local sampleS = timer.getTime()
+      if alive == 2 and inside == 2 then
+        if record.lastStationSampleS then
+          record.stationSeconds = record.stationSeconds
+            + math.max(0, sampleS - record.lastStationSampleS)
+        end
+        record.lastStationSampleS = sampleS
+      else
+        record.lastStationSampleS = nil
+      end
       if alive == 2 and inside == 2 and not record.fullAo then
         record.fullAo = true
         record.onStationAtS = timer.getTime()
@@ -650,7 +663,7 @@ local function observe()
         "holding=" .. tostring(flight.isHoldingAtHoldingPoint),
         "holdReleaseFlag=" .. tostring(flight.flaghold and flight.flaghold:Get() or "none"),
         "sortieElapsedS=" .. tostring(record.firstTakeoffS and timer.getTime() - record.firstTakeoffS or "none"),
-        "stationElapsedS=" .. tostring(record.onStationAtS and timer.getTime() - record.onStationAtS or "none"),
+        "stationElapsedS=" .. tostring(record.onStationAtS and record.stationSeconds or "none"),
         "finalRtb=" .. tostring(record.finalRtbReason),
         "fuelLow=" .. tostring(flight.fuellow),
         "fuelCritical=" .. tostring(flight.fuelcritical),
