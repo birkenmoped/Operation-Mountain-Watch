@@ -153,3 +153,5 @@ Owner-Beschluss: Keine einzelnen Tippelschritt-DCS-Laeufe. A5-3 testet gemeinsam
 ## A5-4 – Sortiedauer und On-Station-Grenze (27.10.2026)
 
 Der abgebrochene A5-3-Test bestaetigte vier A-10-AAR-Zyklen und den CAS-AO-Eintritt, aber keine Abschlussschranke. A5-4 ergaenzt eine monotone Uhr ab **erstem realem Takeoff**, gesonderte On-Station-Zeit ab **vollstaendigem Two-Ship-Eintritt in CAS-AO**, und einmalige **MOOSE-native RTB-Anforderung** vor dem geplanten Sortielimit einschliesslich geschaetzter Rueckkehr. F16 150min/4h/5h; F15E 180min/5h/6h; A10 240min/8h/10h (AO/planned/absolute). Neue OMW-AAR wird nach finalem RTB-Latch gesperrt. Standby-Racetrack-Scheduling ist noch nicht Bestandteil von A5, daher bedeutet On-Station hier CAS-AO. Builder `OMW-FIXED-WING-CAS-RESPONSE-A5-4`; DCS-Abnahme offen.
+
+Die On-Station-Uhr summiert nur Intervalle, in denen beide Luftfahrzeuge tatsaechlich in der CAS-AO sind; AAR-Abwesenheit stoppt lediglich diese AO-Zaehlung, nicht die Sortieuhr.
