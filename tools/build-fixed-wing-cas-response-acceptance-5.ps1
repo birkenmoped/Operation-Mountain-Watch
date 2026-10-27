@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $source = Join-Path $repoRoot 'mission\tests\fixed-wing-cas-response\src\acceptance-5-three-flight-joined-aar-resume.lua'
 $destination = Join-Path $repoRoot 'mission\tests\fixed-wing-cas-response\dist\OMW_FixedWing_CAS_Response_Acceptance_5.lua'
-$builderVersion = 'OMW-FIXED-WING-CAS-RESPONSE-A5-3'
+$builderVersion = 'OMW-FIXED-WING-CAS-RESPONSE-A5-4'
 $expectedMooseSha256 = 'E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915'
 
 if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw "Missing acceptance source: $source" }
@@ -28,7 +28,12 @@ foreach ($required in @(
     'flight:SetFuelLowThreshold(30)',
     'CONTROLLABLE.TaskOrbit = function(', 'originalTaskOrbit(controllable, coord, altitude, speed, track.endCoord)',
     'DEPARTURE_RACETRACK_CONFIGURED', 'DEPARTURE_RACETRACK_TASK_CREATED',
-    'RACETRACK_TERRAIN_CLEARANCE_FT', 'DEPARTURE_RELEASE_DELAYED'
+    'RACETRACK_TERRAIN_CLEARANCE_FT', 'DEPARTURE_RELEASE_DELAYED',
+    'SORTIE_POLICY', 'SORTIE_CLOCK_STARTED', 'SORTIE_ON_STATION_STARTED',
+    'SORTIE_FINAL_RTB_ORDERED', 'SORTIE_RTB_WAITING_FOR_AAR',
+    'AAR_BLOCKED_FINAL_RTB', 'enforceSortieLimit(requestId, record, requestRecord)',
+    'RTB_APPROACH_RESERVE_S', 'RTB_MIN_ESTIMATE_S', 'timer.getTime()',
+    'record.finalRtbAtS = timer.getTime()', 'flight:RTB(base)'
 )) {
     if (-not $sourceText.Contains($required)) { throw "Missing MOOSE mechanism: $required" }
 }
