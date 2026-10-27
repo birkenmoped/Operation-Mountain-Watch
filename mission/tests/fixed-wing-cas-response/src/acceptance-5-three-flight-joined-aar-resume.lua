@@ -28,6 +28,16 @@ local AAR_SEARCH_MAX_NM = 500
 local A10_MISSION_RANGE_NM = 400 -- >330 NM one-way; eligibility only, not a fuel guarantee.
 local CRUISE_ALT_FT = 22000 -- Also used by MOOSE for RTB intermediate waypoints.
 local CRUISE_SPEED_KTS = { CAS_F16 = 450, CAS_F15E = 460, CAS_A10 = 260 }
+-- A5-4 owner-approved sortie ceilings: clocks run from first aircraft takeoff.
+-- Long-range A-10 normal eight hours; ten hours is an exceptional ceiling,
+-- not automatic permission to extend any scheduled flight.
+local SORTIE_POLICY = {
+  CAS_F16 = { stationS = 150 * 60, plannedS = 4 * 3600, absoluteS = 5 * 3600 },
+  CAS_F15E = { stationS = 180 * 60, plannedS = 5 * 3600, absoluteS = 6 * 3600 },
+  CAS_A10 = { stationS = 240 * 60, plannedS = 8 * 3600, absoluteS = 10 * 3600 },
+}
+local RTB_APPROACH_RESERVE_S = 45 * 60 -- Approach, vectoring and landing planning allowance.
+local RTB_MIN_ESTIMATE_S = 60 * 60 -- Do not assume even a short return is instantaneous.
 
 local function clock()
   return UTILS.SecondsOfToday()
@@ -140,6 +150,11 @@ local function addObserverHooks(requestId, flight)
     holdTimeoutSeen = false,
     aarPhase = nil,
     aarCount = 0,
+    firstTakeoffS = nil,
+    onStationAtS = nil,
+    finalRtbAtS = nil,
+    finalRtbReason = nil,
+    sortieAarDeferredLogged = false,
   }
   state.flights[requestId] = record
 
@@ -157,6 +172,15 @@ local function addObserverHooks(requestId, flight)
   local beforeTakeoff = flight.OnAfterElementTakeoff
   flight.OnAfterElementTakeoff = function(self, from, event, to, element, airbase)
     if beforeTakeoff then beforeTakeoff(self, from, event, to, element, airbase) end
+    if not record.firstTakeoffS then
+      record.firstTakeoffS = timer.getTime()
+      log("SORTIE_CLOCK_STARTED", {
+        "request=" .. requestId, "flight=" .. record.name,
+        "firstElement=" .. tostring(element and element.name),
+        "plannedS=" .. tostring(SORTIE_POLICY[requestId].plannedS),
+        "absoluteS=" .. tostring(SORTIE_POLICY[requestId].absoluteS),
+      })
+    end
     log("ELEMENT_TAKEOFF", { "request=" .. requestId, "element=" .. tostring(element and element.name) })
   end
 
@@ -187,6 +211,10 @@ local function addObserverHooks(requestId, flight)
   end
 
   local function requestAar(reason)
+    if record.finalRtbAtS then
+      log("AAR_BLOCKED_FINAL_RTB", { "request=" .. requestId, "reason=" .. reason })
+      return false
+    end
     if record.aarPhase == "REFUELING" then return false end
     local selected, selectionReason = tankerCandidate(requestId, flight)
     if not selected then
@@ -232,10 +260,12 @@ local function addObserverHooks(requestId, flight)
       "fuellowrefuel=" .. tostring(self.fuellowrefuel),
       "homebase=" .. tostring(self.homebase ~= nil),
     })
-    -- Without suitable tanker, let MOOSE execute the standard RTB lifecycle.
-    if not requestAar("FUEL_LOW") then
+    -- Without a tanker, MOOSE alone owns the RTB lifecycle.
+    if not record.finalRtbAtS and not requestAar("FUEL_LOW") then
       local destination = self.destbase or self.homebase
       if destination then
+        record.finalRtbAtS = timer.getTime()
+        record.finalRtbReason = "AAR_UNAVAILABLE"
         log("AAR_FALLBACK_MOOSE_RTB", { "request=" .. requestId })
         self:RTB(destination)
       else
@@ -260,6 +290,10 @@ local function addObserverHooks(requestId, flight)
 
   local beforeRTB = flight.OnAfterRTB
   flight.OnAfterRTB = function(self, from, event, to, ...)
+    if not record.finalRtbAtS then
+      record.finalRtbAtS = timer.getTime()
+      record.finalRtbReason = "MOOSE_RTB_EVENT"
+    end
     log("MOOSE_RTB", { "request=" .. requestId })
     if beforeRTB then return beforeRTB(self, from, event, to, ...) end
   end
@@ -454,6 +488,67 @@ local function submit(requestId)
 end
 state.Submit = submit
 
+-- Bound each flight's fuel-dependent endurance by a monotonic sortie clock.
+-- The observer only requests the existing MOOSE FLIGHTGROUP:RTB lifecycle;
+-- it does not issue waypoints, refueling tasks or controller commands.
+local function enforceSortieLimit(requestId, record, requestRecord)
+  if not record.firstTakeoffS or record.finalRtbAtS then return end
+  local policy = SORTIE_POLICY[requestId]
+  if not policy then return end
+  local elapsedS = timer.getTime() - record.firstTakeoffS
+  local flight = record.flight
+  local base = flight.destbase or flight.homebase
+  local current = flight:GetCoordinate()
+  local home = base and base:GetCoordinate()
+  if not home or not current then
+    log("SORTIE_RETURN_ESTIMATE_UNAVAILABLE", {
+      "request=" .. requestId, "elapsedS=" .. tostring(elapsedS),
+    })
+    return
+  end
+
+  local rangeM = current:Get2DDistance(home)
+  local speedMps = UTILS.KnotsToMps(CRUISE_SPEED_KTS[requestId])
+  local returnEstimateS = math.max(RTB_MIN_ESTIMATE_S,
+    rangeM / speedMps + RTB_APPROACH_RESERVE_S)
+  local stationElapsedS = record.onStationAtS
+    and timer.getTime() - record.onStationAtS or nil
+  local stationExpired = stationElapsedS and stationElapsedS >= policy.stationS
+  local plannedReturnDue = elapsedS + returnEstimateS >= policy.plannedS
+  local absoluteReturnDue = elapsedS + returnEstimateS >= policy.absoluteS
+  if not stationExpired and not plannedReturnDue and not absoluteReturnDue then return end
+
+  local reason = absoluteReturnDue and "ABSOLUTE_SORTIE_CEILING"
+    or plannedReturnDue and "PLANNED_SORTIE_LIMIT" or "ON_STATION_LIMIT"
+
+  -- Do not repeatedly abort an ongoing MOOSE refueling task merely because
+  -- the planned duty window has elapsed. The hard ceiling remains mandatory.
+  if record.aarPhase == "REFUELING" and not absoluteReturnDue then
+    if not record.sortieAarDeferredLogged then
+      record.sortieAarDeferredLogged = true
+      log("SORTIE_RTB_WAITING_FOR_AAR", {
+        "request=" .. requestId, "reason=" .. reason,
+        "elapsedS=" .. tostring(elapsedS),
+        "returnEstimateS=" .. tostring(returnEstimateS),
+      })
+    end
+    return
+  end
+
+  record.finalRtbAtS = timer.getTime()
+  record.finalRtbReason = reason
+  log("SORTIE_FINAL_RTB_ORDERED", {
+    "request=" .. requestId, "reason=" .. reason,
+    "elapsedS=" .. tostring(elapsedS),
+    "stationElapsedS=" .. tostring(stationElapsedS),
+    "returnEstimateS=" .. tostring(returnEstimateS),
+    "plannedLimitS=" .. tostring(policy.plannedS),
+    "absoluteLimitS=" .. tostring(policy.absoluteS),
+    "fuelPct=" .. tostring(flight:GetFuelMin()),
+  })
+  flight:RTB(base)
+end
+
 local function observe()
   tryCreateF15()
 
@@ -497,13 +592,21 @@ local function observe()
       end
       if alive == 2 and inside == 2 and not record.fullAo then
         record.fullAo = true
+        record.onStationAtS = timer.getTime()
+        log("SORTIE_ON_STATION_STARTED", {
+          "request=" .. requestId,
+          "targetS=" .. tostring(SORTIE_POLICY[requestId].stationS),
+        })
         log("TWO_SHIP_IN_AO", {
           "request=" .. requestId,
           "elapsedS=" .. tostring(clock() - requestRecord.requestedAt),
         })
       end
 
-      if requestId == "CAS_A10" and not record.aarPhase and record.joinedAt
+      enforceSortieLimit(requestId, record, requestRecord)
+
+      if requestId == "CAS_A10" and not record.finalRtbAtS
+          and not record.aarPhase and record.joinedAt
           and not record.fullAo and record.aarCount == 0 and record.airborneCount == 2
           and record.flight:GetFuelMin() <= A10_PRE_AO_AAR_TRIGGER_PCT then
         record.requestAar("A10_EARLY_AAR_TEST_THRESHOLD")
@@ -546,6 +649,9 @@ local function observe()
         "joinDistanceM=" .. tostring(record.lastJoinDistance),
         "holding=" .. tostring(flight.isHoldingAtHoldingPoint),
         "holdReleaseFlag=" .. tostring(flight.flaghold and flight.flaghold:Get() or "none"),
+        "sortieElapsedS=" .. tostring(record.firstTakeoffS and timer.getTime() - record.firstTakeoffS or "none"),
+        "stationElapsedS=" .. tostring(record.onStationAtS and timer.getTime() - record.onStationAtS or "none"),
+        "finalRtb=" .. tostring(record.finalRtbReason),
         "fuelLow=" .. tostring(flight.fuellow),
         "fuelCritical=" .. tostring(flight.fuelcritical),
         "fuelLowRtb=" .. tostring(flight.fuellowrtb),
