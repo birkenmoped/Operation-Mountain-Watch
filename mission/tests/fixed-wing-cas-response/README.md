@@ -148,3 +148,8 @@ Die A5-1-Quellinspektion erkannte einen Release-Fehler: vorzeitiges Nullsetzen d
 ## A5-3 gebuendelte Acceptance (26.10.2026)
 
 Owner-Beschluss: Keine einzelnen Tippelschritt-DCS-Laeufe. A5-3 testet gemeinsam MOOSE-Racetrack (kein Circle), DCS-Terrain-gestuetzte niedrigere Sammelhoehe, 2NM Two-Ship-Join, **MOOSE-native** sofortige Holding-Push-Freigabe, dann nur die genehmigte Feldbereinigung, fortgesetzte CAS-Mission nach AAR und physische Rueckkehr. First-run A5-1 am 26.10. FAIL; siehe `ACCEPTANCE-5.md` und Design §10.17. BuilderVersion `OMW-FIXED-WING-CAS-RESPONSE-A5-3`; neuer lokaler Bundle/MIZ/embedded-MOOSE-Hash vor einem weiteren DCS-Lauf. Kein Owner-.miz-Eingriff durch ChatGPT.
+
+
+## A5-4 – Sortiedauer und On-Station-Grenze (27.10.2026)
+
+Der abgebrochene A5-3-Test bestaetigte vier A-10-AAR-Zyklen und den CAS-AO-Eintritt, aber keine Abschlussschranke. A5-4 ergaenzt eine monotone Uhr ab **erstem realem Takeoff**, gesonderte On-Station-Zeit ab **vollstaendigem Two-Ship-Eintritt in CAS-AO**, und einmalige **MOOSE-native RTB-Anforderung** vor dem geplanten Sortielimit einschliesslich geschaetzter Rueckkehr. F16 150min/4h/5h; F15E 180min/5h/6h; A10 240min/8h/10h (AO/planned/absolute). Neue OMW-AAR wird nach finalem RTB-Latch gesperrt. Standby-Racetrack-Scheduling ist noch nicht Bestandteil von A5, daher bedeutet On-Station hier CAS-AO. Builder `OMW-FIXED-WING-CAS-RESPONSE-A5-4`; DCS-Abnahme offen.
