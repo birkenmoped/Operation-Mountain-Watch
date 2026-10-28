@@ -428,3 +428,15 @@ Nach dem realen A5-3-Abbruch bei **vier** abgeschlossenen A-10-Betankungen legte
 Der A5-3-Lauf aus `dcs(6).log`/ `debrief(6).log` bestaetigt Departure-Racetrack, Join/holdFlag=1 und CAS-AO fuer das A-10-Two-Ship nach AAR; AAR `AAR_REFUELED` 4x. F-16/F-15E: kein geeigneter kompatibler Tanker vor FuelLow-RTB. A5-4-DCS-Reaktion, sichere Zeitlimits, Landung und Asset-Settlement sind ungeprueft. **Status DCS_PENDING.**
 
 **A5-4 Messpraezisierung:** `stationSeconds` summiert die vollen Two-Ship-CAS-AO-Intervalle im vorhandenen 15-s-Observer; Betankung ausserhalb AO zaehlt nicht als On-Station-Zeit. Die gesamte Sortiedauer seit dem ersten Takeoff laeuft dabei weiter. Es handelt sich weiterhin **nicht** um den noch nicht implementierten produktiven On-Call-Standby-Racetrack.
+
+
+
+## 10.19 A5-5 – konsolidierte Korrektur nach A5-4 FAIL, 28.10.2026
+
+A5-4 bleibt historische FAIL-Evidenz. Der Owner hat die im [Korrekturvertrag](moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md) konkret benannten minimalen Ergaenzungen bedingt freigegeben, wenn die gezielte Pruefung von MOOSE-GitHub, Webdokumentation und Beispielen keinen passenden oeffentlichen Weg ergibt. Diese Pruefung ist fuer variable Receiver-Reserve und Same-base-Post-RTB-AAR dokumentiert. Kein allgemeiner Freibrief fuer MOOSE-Interna.
+
+A5-5 komponiert drei gemeinsame Fuel-/Profil-/Recovery-Module, individuelle dynamische Fuel-Margen mit 45-Minuten-Testzuschlag, fruehe Joker-/Bingo-Entscheidung, kapazitaets-/zeitgeprueften aktiven Tankerzugang einschliesslich KRUSTY, oeffentliche CAS-Closure vor RTB und weiterhin moegliche Safety-AAR nach Final-Recovery. Einmalige begrenzte currbase-Bereinigung nach realer Post-RTB-AAR ermoeglicht anschliessendes oeffentliches RTB. Native MOOSE-FSMs besitzen alle Flugbewegungen und Asset-Returns.
+
+Feste basisbezogene Departure-Kandidaten ersetzen die Minimum-Terrain-Richtungswahl; reduzierte CAS-IAS und oeffentliche Afterburner-Restriktion nur bis bestaetigtem Departure-Abschluss sind Testparameter. Terrain-/Turn-/ATC-Sicherheit und native RTB-Holding-Geometrie sind nicht damit abgenommen. Individuelle aktuelle Position/AGL/Fuel/Separation und exakte Land-/Asset-Ereignisse werden beobachtet. Bei FAIL/STOP bleibt die physische Recovery-Beobachtung aktiv.
+
+Status `SOURCE_IMPLEMENTED / STATIC_TESTED / DCS_PENDING`: 23 Lua-5.1-Vertragstests, kein neuer DCS-PASS. Vor dem integrierten Drei-Two-Ship-Test: Remote-Commit, realer Owner-Pull/PowerShell-Build und SHA256-Kette. Keine automatische MIZ-Aenderung oder Uebernahme als Produktionsbaseline. Vollstaendiger Testvertrag in [Acceptance 5](../mission/tests/fixed-wing-cas-response/ACCEPTANCE-5.md).

@@ -20,7 +20,7 @@ validated_in_dcs: false
 
 # Fixed-Wing CAS Response – Acceptance 1
 
-**Aktueller Stand 28.10.2026: A5-4 Runtime FAIL, kein sicherer neuer DCS-Kandidat.** Drei Flugzeuge verloren; originale A5-4-RTB-/AAR-Sperren sind nicht abgenommen. [Individuelle Verlustrekonstruktion](results/2026-10-28-acceptance-5-4-loss-reconstruction.md) und [konkreter Korrektur-/Owner-Gate-Entwurf](../../../docs/moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md). Die untenstehenden A5-4-Anforderungen, insbesondere das pauschale AAR-Verbot nach Final-RTB, beschreiben den fehlgeschlagenen historischen Testvertrag und sind keine Freigabe fuer einen erneuten Lauf. A5-5 ist noch nicht implementiert.
+**Aktueller Stand 28.10.2026: A5-4 Runtime FAIL; A5-5 SOURCE_IMPLEMENTED / STATIC_TESTED / DCS_PENDING.** Die bedingte Owner-Freigabe fuer die minimalen Fuel-/Recovery-Ergaenzungen ist nach gezielter MOOSE-Pruefung umgesetzt. [Verlustrekonstruktion](results/2026-10-28-acceptance-5-4-loss-reconstruction.md) und [aktueller Korrekturvertrag](../../../docs/moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md). Aeltere A5-1 bis A5-4-Abschnitte sind historische Entwicklungsstaende; insbesondere das AAR-Verbot nach Final-RTB und die 65-%-Testschwelle gelten NICHT fuer A5-5. Vor neuem DCS-Test sind realer Owner-Pull, Build und Hashpruefung erforderlich.
 
 ## Ziel und unveraenderte Eingangsmission
 
@@ -158,3 +158,7 @@ Der abgebrochene A5-3-Test bestaetigte vier A-10-AAR-Zyklen und den CAS-AO-Eintr
 
 Die On-Station-Uhr summiert nur Intervalle, in denen beide Luftfahrzeuge tatsaechlich in der CAS-AO sind; AAR-Abwesenheit stoppt lediglich diese AO-Zaehlung, nicht die Sortieuhr.
 
+
+## A5-5 – aktueller Source-Kandidat
+
+Der [aktuelle A5-5-Vertrag](ACCEPTANCE-5.md) ersetzt die historischen A5-4-Fuel-/AAR-Sperren. Drei gemeinsame Module fuer individuelle Fuel-Bilanz, explizite Testprofile und MOOSE-Recovery-Anfragen werden vom bestehenden Acceptance-5-Builder eingebettet. 45-Minuten-Fuel-Testzuschlag, frueher Joker/Bingo, KRUSTY-Zugang und streng begrenzte Post-RTB-AAR-Ausnahme sind bedingt owner-freigegeben und source-implementiert. 23 Lua-5.1-Vertragstests bestanden; DCS_PENDING. Erster naechster Schritt bleibt echter lokaler Pull/PowerShell-Build mit realer Commit-/Hashausgabe; keine MIZ-/DCS-Anweisung vor diesem Nachweis.

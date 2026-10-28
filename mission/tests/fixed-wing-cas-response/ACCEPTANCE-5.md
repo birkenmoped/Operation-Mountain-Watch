@@ -18,7 +18,7 @@ validated_in_dcs: false
 
 # Fixed-Wing CAS Response – Acceptance 5
 
-**Aktueller Stand 28.10.2026: A5-4 Runtime FAIL, kein sicherer neuer DCS-Kandidat.** Drei Flugzeuge verloren; originale A5-4-RTB-/AAR-Sperren sind nicht abgenommen. [Individuelle Verlustrekonstruktion](results/2026-10-28-acceptance-5-4-loss-reconstruction.md) und [Korrektur-/Owner-Gate](../../../docs/moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md). Die untenstehenden A5-4-Anforderungen, insbesondere das pauschale AAR-Verbot nach Final-RTB, beschreiben den fehlgeschlagenen historischen Testvertrag und sind keine Freigabe fuer einen erneuten Lauf. A5-5 ist noch nicht implementiert.
+**Aktueller Stand 28.10.2026: A5-4 Runtime FAIL; A5-5 SOURCE_IMPLEMENTED / STATIC_TESTED / DCS_PENDING.** Die bedingte Owner-Freigabe fuer die minimalen Fuel-/Recovery-Ergaenzungen ist nach gezielter MOOSE-Pruefung umgesetzt. [Verlustrekonstruktion](results/2026-10-28-acceptance-5-4-loss-reconstruction.md) und [aktueller Korrekturvertrag](../../../docs/moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md). Aeltere A5-1 bis A5-4-Abschnitte sind historische Entwicklungsstaende; insbesondere das AAR-Verbot nach Final-RTB und die 65-%-Testschwelle gelten NICHT fuer A5-5. Vor neuem DCS-Test sind realer Owner-Pull, Build und Hashpruefung erforderlich.
 
 ## Ausgangslage und Owner-Ausnahme
 
@@ -118,3 +118,30 @@ Die beiden Uhren werden **nicht** gleichgesetzt: Der erste `OnAfterElementTakeof
 
 **A5-4 Prazisierung der tatsaechlichen AO-Zeit:** Die Time-on-Station-Grenze zaehlt ausschliesslich beobachtete Intervalle, in denen **beide** lebenden Luftfahrzeuge innerhalb der CAS-AO sind. Waerend AAR-Abwesenheit wird kein AO-Zeitkontingent verbraucht; die davon unabhaengige gesamte Sortieuhr laeuft jedoch unveraendert weiter. Der 15-s-Observer ist die zeitliche Aufloesung. Das erste volle AO-Eintreten setzt `onStationAtS`; `stationSeconds` summiert nur aufeinanderfolgende valide AO-Samples. Eine spaetere AAR-Rueckkehr setzt die stationierte Zeit **nicht** wieder auf null.
 
+
+## A5-5 – aktueller integrierter Korrekturtest, DCS_PENDING
+
+Dieser Abschnitt und der [Korrekturvertrag](../../../docs/moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md) ersetzen fuer A5-5 die obigen historischen A5-4-Fuel-/Final-RTB-Sperren. Bedingte Owner-Freigabe 28.10.2026 nach gezielter Quellen-/Web-/Demo-Pruefung. Builder-Version `OMW-FIXED-WING-CAS-RESPONSE-A5-5`. Keine bisherige Laufkopie wird als A5-5 umetikettiert.
+
+### Quellen und Preflight
+
+- Gemeinsame Module `scripts/air-operations/OMW_FixedWingCasFuelPolicy.lua`, `OMW_FixedWingCasProfiles.lua`, `OMW_FixedWingCasRecovery.lua`; Harness bleibt Trigger/Observer/Komposition. Der Builder bettet die Module lexikalisch ein; es ist keine zusaetzliche MIZ-Script-Reihenfolge erforderlich.
+- 23 Vertrags-/Policytests unter echter Lua 5.1; drei Module, Harness und komponierter Quelltext syntaxgeprueft. Test-Doubles belegen API-Anforderungsreihenfolge und Guards, keine DCS-Flugphysik. CI erhaelt A5-5 mit echtem PowerShell-Build; CI-/Owner-Build-Ergebnis separat dokumentieren.
+- Vor MIZ-/DCS-Schritten muss der Owner den publizierten Commit lokal pullen, den PowerShell-Builder ausfuehren und reale Konsolenausgabe mit Commit, BuilderVersion und SHA256 zurueckgeben. Kein konstruierter Bundle-Hash. Danach die tatsaechliche Testkopie und eingebetteten Dateien read-only pruefen.
+- MOOSE unveraendert 2.9.18 / `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`, SHA256 `E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`. Source-MIZ bleibt unveraendert; kein automatischer MIZ-Umbau.
+
+### Ein gemeinsamer End-to-End-Lauf
+
+1. Alle drei echten COMMANDER/AIRWING/AUFTRAG-Two-Ships rekrutiert; sechs individuelle Takeoffs. Bagram westlicher und Kandahar nordwestlicher Departure-Kandidat mit gesampelter Terrainmarge; tatsächlichen Zubringer, Turns und Racetrack visuell und anhand Position/AGL pruefen. Konfiguration/Task-Konstruktion allein ist kein Geometrie-PASS.
+2. Zwei Elemente tatsaechlich airborne und Join bestaetigt; nativer Holding-Flag-Release zuerst, einmaliges Holding-Clear danach. Afterburner-Verbot an Mission und Flight nur bis diesem Abschluss, danach `DEPARTURE_AFTERBURNER_RESTRICTION_RELEASED`. Wirkung, Wingman-Joinverbrauch und aktuelle Separation auswerten; keine Behauptung ueber tatsaechliche Triebwerksstellung nur anhand Fuel.
+3. Weiterflug-/Recovery-Budget je Element: kg, Verbrauchsrate, Trip-/Allowance-/Margin getrennt. Schlechtestes Element entscheidet. Joker/Bingo vor ungesicherter Home-Marge, keine alleinige 30-%-Entscheidung. Beide aktuelle Airborne-/AO-Zustaende pruefen; `MISSION_EXECUTE` ist kein Nachweis fuer beide im AO. Keine reine Transitzeit aus der alten F-15E-Differenz ableiten.
+4. Falls benoetigt native AAR an aktivem kompatiblem Tanker mit gepruefter Zugangs-/Zeit-/Offload-Schaetzung. KRUSTY ist fuer A-10 erlaubt; keine Bedingung Tanker naeher als Home. Reale Tankerwahl, sechs Positionsspuren, Formation und individuelle Fuel-Zunahme pruefen. Zwei-Ship-Aufenthaltszeit stoppt waehrend AAR, Sortieuhr laeuft weiter. CAS-Resume ohne Departure-Reorbit nur solange keine finale Recovery besteht.
+5. Bei Endabsicht getrennt `FINAL_RECOVERY_INTENT`, `CAS_CLOSURE_REQUESTED`, `MOOSE_RTB_REQUESTED` und bestaetigtes `MOOSE_RTB`. Keine 17-minuetige unbemerkte RTB-Anforderungswartezeit; fehlender Uebergang nach zwei Observer-Intervallen wird FAIL/STOP. CAS darf nach Final-Absicht nicht neu starten.
+6. Safety-AAR bleibt auch nach finaler Absicht oder begonnenem RTB moeglich. Ein realer Post-RTB-AAR-Fall muss die streng begrenzte `RECOVERY_AAR_CURRBASE_RESET`-Ausnahme und anschliessendes neues MOOSE-RTB belegen. Wird dieser Pfad im Lauf nicht benoetigt, bleibt gerade dieser Teil DCS_UNPROVEN; kein pauschaler PASS durch den Lua-Test.
+7. Sechs individuelle Landungen an der vorgesehenen Base und je Flight exaktes `EXACT_ASSET_RETURNED` (passende `asset.flightgroup`, zwei Home-Landungen, keine vorherigen Fehler). MOOSE-Landing/Holding/Terrain tatsaechlich pruefen. Landung, MissionDone, Despawn oder historischer Airborne-Zaehler sind jeweils kein Ersatz fuer den vollstaendigen Return. Keine vorzeitige strategische Recredit-Annahme.
+
+### Fruehe FAIL-/Stop-Kriterien
+
+`SAFETY_FAIL_STOP` wird sichtbar mit MESSAGE gemeldet: ungueltige/ungesicherte Recovery-/AAR-Marge, verlorener ausgewaehlter Tanker, fehlender RTB-Uebergang, fehlendes/verlorenes Element vor Landung, Landung nach geplanter Sortiegrenze oder drohendes absolutes Return-Limit. Auch ungeeignete Departure-/Recovery-Geometrie, gefaehrliche Trennung, unerwartetes langes Holding oder Sinkflug ins Terrain sind sofort FAIL; kein stundenlanges Weiterlaufen zur erzwungenen Verlustbestaetigung. Die Diagnose deaktiviert keinen weiter benoetigten Recovery-Observer und despawnt keine Gruppe.
+
+PASS ist erst nach vollstaendiger realer Provenienz und Owner-Auswertung moeglich. Nicht ausgeloeste AAR-/Recovery-AAR-Pfade bleiben einzeln offen. AAR-7 ist keine Abnahme dieses Receiver-Lifecycles. Nach normalem Asset-Return entstehendes Cleanup ist kein neuer Flugverlust.

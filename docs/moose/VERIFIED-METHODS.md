@@ -1090,3 +1090,20 @@ Source-/Projektgrenzen:
 Die neue allgemeine Base-Bindung ist `SOURCE_IMPLEMENTED / CI_PENDING /
 DCS_REVALIDATION_PENDING`. Historische Stage-3-Evidenz wird nicht pauschal auf A11
 hochgestuft.
+
+
+
+## Fixed-Wing CAS A5-5 – 28.10.2026, Source geprueft, DCS ausstehend
+
+`SOURCE_REVIEWED / CONTRACT_TESTED`, **nicht VALIDATED**: MOOSE 2.9.18 / `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`, SHA256 `E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`. [Korrekturvertrag](FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md) und [Klassenindex](PROJECT-CLASS-INDEX.md) erfassen den vollstaendigen Scope.
+
+| Methode/Ereignis | Source-Befund / neue Nutzung |
+|---|---|
+| UNIT `GetCurrentFuelKgs`, `GetFuelMassMax`, `InAir` | individuelle kg-Bilanz; ZWEITER GetFuelMassMax-Wert ist im gepinnten Code Descriptor-Referenzmasse; Fraktionen >1 bleiben erhalten |
+| FLIGHTGROUP/AUFTRAG `SetProhibitAfterburner`, `SetAllowAfterburner` | oeffentliche Departure-/Join-Konfiguration und anschliessende Wiederfreigabe |
+| FLIGHTGROUP `MissionCancel`, `OnBeforeMissionStart`, `OnBeforeRTB`, `RTB`, `Refuel` | Closure vor RTB; keine neue CAS nach Final-Absicht; RTB-Retry waehrend AAR veto; physische Aktionen allein MOOSE |
+| FLIGHTGROUP ElementLanded/ElementDead, LEGION LegionAssetReturned | sechs individuelle Landungen und exact `asset.flightgroup` zu korrelieren; Despawn kein Return-Beweis |
+| COORDINATE Wind/Distance/Intermediate/LandHeight, AIRBASE GetZone | profilspezifische Schaetzwerte, keine bewiesene DCS-Trajektorie |
+| MESSAGE New/ToAll | sichtbares FAIL/STOP; Recovery-Observer bleibt aktiv |
+
+Quellen `scripts/air-operations/OMW_FixedWingCas{FuelPolicy,Profiles,Recovery}.lua`; Vertragspruefung `mission/tests/fixed-wing-cas-response/unit/test-fuel-recovery.lua`: 23 Tests unter Lua 5.1. Reale DCS-Testevidenz fuer A5-5 fehlt. AAR-7-Tanker-PASS wird nicht auf diesen Receiver-Adapter uebertragen.
