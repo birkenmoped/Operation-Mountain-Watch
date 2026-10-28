@@ -20,6 +20,8 @@ validated_in_dcs: false
 
 # Fixed-Wing CAS Response – Acceptance 1
 
+**Aktueller Stand 28.10.2026: A5-4 Runtime FAIL, kein sicherer neuer DCS-Kandidat.** Drei Flugzeuge verloren; originale A5-4-RTB-/AAR-Sperren sind nicht abgenommen. [Individuelle Verlustrekonstruktion](results/2026-10-28-acceptance-5-4-loss-reconstruction.md) und [konkreter Korrektur-/Owner-Gate-Entwurf](../../../docs/moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md). Die untenstehenden A5-4-Anforderungen, insbesondere das pauschale AAR-Verbot nach Final-RTB, beschreiben den fehlgeschlagenen historischen Testvertrag und sind keine Freigabe fuer einen erneuten Lauf. A5-5 ist noch nicht implementiert.
+
 ## Ziel und unveraenderte Eingangsmission
 
 Ein DCS-Lauf mit drei tatsaechlichen MOOSE-`AUFTRAG:NewCAS`-Anforderungen, demselben `COMMANDER`, bestehenden AIRWING-/SQUADRON-Objekten und drei vorhandenen Two-Ship-Templates:
@@ -155,3 +157,4 @@ Owner-Beschluss: Keine einzelnen Tippelschritt-DCS-Laeufe. A5-3 testet gemeinsam
 Der abgebrochene A5-3-Test bestaetigte vier A-10-AAR-Zyklen und den CAS-AO-Eintritt, aber keine Abschlussschranke. A5-4 ergaenzt eine monotone Uhr ab **erstem realem Takeoff**, gesonderte On-Station-Zeit ab **vollstaendigem Two-Ship-Eintritt in CAS-AO**, und einmalige **MOOSE-native RTB-Anforderung** vor dem geplanten Sortielimit einschliesslich geschaetzter Rueckkehr. F16 150min/4h/5h; F15E 180min/5h/6h; A10 240min/8h/10h (AO/planned/absolute). Neue OMW-AAR wird nach finalem RTB-Latch gesperrt. Standby-Racetrack-Scheduling ist noch nicht Bestandteil von A5, daher bedeutet On-Station hier CAS-AO. Builder `OMW-FIXED-WING-CAS-RESPONSE-A5-4`; DCS-Abnahme offen.
 
 Die On-Station-Uhr summiert nur Intervalle, in denen beide Luftfahrzeuge tatsaechlich in der CAS-AO sind; AAR-Abwesenheit stoppt lediglich diese AO-Zaehlung, nicht die Sortieuhr.
+

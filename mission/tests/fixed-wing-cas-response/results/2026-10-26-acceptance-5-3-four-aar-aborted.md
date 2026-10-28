@@ -1,6 +1,10 @@
 ---
 document_id: OMW-RESULT-FIXED-WING-CAS-A5-3-20261026
-status: FAILED_RUNTIME_EVIDENCE
+status: HISTORICAL_TEST_FIXTURE
+evidence_status: FAILED_RUNTIME_EVIDENCE
+runtime_result: FAIL
+document_class: TEST_RESULT
+owning_policy: OMW-GOV-001
 authoritative_for:
   - exact A5-3 real flight observations
 scenario_period: 2010-08-01/2011-12-31
@@ -37,3 +41,4 @@ validated_in_dcs: false
 | A-10 4. `AAR_REFUELED` | 22:25:32 | 23:47:37 |
 
 **Ergebnis:** Drei native MOOSE-Racetracks generiert; alle drei Two-Ship-Join-Latches und native Holding-Flag-Releases bestaetigt. A-10 nach initialer AAR mit beiden Flugzeugen im CAS-AO, danach vier AAR-Resume-Zyklen. Owner beendete Test nach vierter Betankung. Keine zeitabhaengige Sortie-/Station-Endgrenze im getesteten A5-3-Code. F-16 und F-15E wechselten bei fehlendem verfuegbaren kompatiblen Tanker bereits durch MOOSE FuelLow-Fallback nach RTB (keine generelle CAS-Dauer-Abnahme). A5-4 fuegt die gemeinsame zeitbasierte Endentscheidung hinzu; **DCS-Landung innerhalb Limits ist ausstehend**.
+

@@ -174,8 +174,10 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 
 | `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-7` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-7.md` | `PLANNED`; Joyce production QRF plus MOOSE-selected attack-helicopter CAS with fail-closed owner-route binding, supported-element/no-contact release and physical recovery |
 
-| `OMW-RESULT-FIXED-WING-CAS-A5-3-20261026` | `mission/tests/fixed-wing-cas-response/results/2026-10-26-acceptance-5-3-four-aar-aborted.md` | `FAILED_RUNTIME_EVIDENCE`; first A5-3 real racetrack, native holding release, four A-10 AAR; aborted by owner |
-| `OMW-RESULT-FIXED-WING-CAS-A5-1-20261026` | `mission/tests/fixed-wing-cas-response/results/2026-10-26-acceptance-5-first-runtime-fail.md` | `FAILED_RUNTIME_EVIDENCE`; A5-1 join without MOOSE hold release, exact mission/log SHA256 |
+| `OMW-RESULT-FIXED-WING-CAS-A5-4-20261028` | `mission/tests/fixed-wing-cas-response/results/2026-10-28-acceptance-5-4-loss-reconstruction.md` | `HISTORICAL_TEST_FIXTURE`; runtime FAIL, individual fuel/loss/landing reconstruction and supplied artifact hashes |
+| `OMW-MOOSE-FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION` | `docs/moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md` | `DRAFT`; concrete fuel-policy/reserve/post-RTB-AAR exception request, NOT_IMPLEMENTED |
+| `OMW-RESULT-FIXED-WING-CAS-A5-3-20261026` | `mission/tests/fixed-wing-cas-response/results/2026-10-26-acceptance-5-3-four-aar-aborted.md` | `HISTORICAL_TEST_FIXTURE / runtime FAIL`; first A5-3 real racetrack, native holding release, four A-10 AAR; aborted by owner |
+| `OMW-RESULT-FIXED-WING-CAS-A5-1-20261026` | `mission/tests/fixed-wing-cas-response/results/2026-10-26-acceptance-5-first-runtime-fail.md` | `HISTORICAL_TEST_FIXTURE / runtime FAIL`; A5-1 join without MOOSE hold release, exact mission/log SHA256 |
 | `OMW-TEST-FIXED-WING-CAS-RESPONSE-ACCEPTANCE-5` | `mission/tests/fixed-wing-cas-response/ACCEPTANCE-5.md` | `PLANNED / DCS_PENDING`; owner-approved one-shot departure holding clear, AAR resume and CAS physical recovery regression |
 | `OMW-TEST-FIXED-WING-CAS-RESPONSE-ACCEPTANCE-4` | `mission/tests/fixed-wing-cas-response/ACCEPTANCE-4.md` | `PLANNED`; three-flight MOOSE CAS/AAR and A-10 join acceptance |
 
@@ -203,3 +205,4 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 | `OMW-RESULT-FSSR-PRODUCTION-BASE-A11-DCS-PASS-20261006` | `results/2026-10-06-production-base-acceptance11-dcs-pass.md` | `ACCEPTED_TECHNICAL_BASELINE`; realer kombinierter A11-DCS-PASS mit vollständiger technischer Acceptance-Provenienz |
 
 | `OMW-HANDOFF-FIXED-WING-CAS-2026-10-17` | `docs/handoffs/2026-10-17-fixed-wing-cas-acceptance-1-to-4-handoff.md` | `DRAFT`; A1–A4 source-/DCS-evidence, A4 failed 3/6 return and separate next-chat handoff |
+

@@ -18,6 +18,8 @@ validated_in_dcs: false
 
 # Fixed-Wing CAS Response – Acceptance 5
 
+**Aktueller Stand 28.10.2026: A5-4 Runtime FAIL, kein sicherer neuer DCS-Kandidat.** Drei Flugzeuge verloren; originale A5-4-RTB-/AAR-Sperren sind nicht abgenommen. [Individuelle Verlustrekonstruktion](results/2026-10-28-acceptance-5-4-loss-reconstruction.md) und [Korrektur-/Owner-Gate](../../../docs/moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md). Die untenstehenden A5-4-Anforderungen, insbesondere das pauschale AAR-Verbot nach Final-RTB, beschreiben den fehlgeschlagenen historischen Testvertrag und sind keine Freigabe fuer einen erneuten Lauf. A5-5 ist noch nicht implementiert.
+
 ## Ausgangslage und Owner-Ausnahme
 
 A4 ist FAIL fuer genau seinen dokumentierten Teststand. Der A-10-Two-Ship erhielt bei PATTY eine bestaetigte Luftbetankung, erreichte aber den Honaker-CAS-Raum danach nicht nachweislich; zwei A-10 gingen spaeter verloren. Das in A4 auf `AUFTRAG` gespeicherte Departure-Holding wird in `OPSGROUP:RouteToMission` bei erneutem Route-Build beruecksichtigt; `joinedForMission` wertete ausserdem den jeweils aktuellen Abstand statt des schon bestaetigten Join aus.
@@ -115,3 +117,4 @@ Die beiden Uhren werden **nicht** gleichgesetzt: Der erste `OnAfterElementTakeof
 **Verbindliche Folge-Acceptance im gemeinsamen DCS-Lauf:** `SORTIE_CLOCK_STARTED` nur einmal pro Two-Ship; `SORTIE_ON_STATION_STARTED` erst bei beiden Flugzeugen im AO; abgelaufener On-Station-/Sortie-Horizont erzeugt genau ein `SORTIE_FINAL_RTB_ORDERED`; anschliessend keine neue `AAR_SELECTED` und kein weiterer CAS-Execute fuer diesen Flight; DCS-Landung vor der jeweiligen absoluten Obergrenze nach realen Flugzeiten, sichere gemeinsame Rueckkehr, MOOSE-AIRWING/Legion-Asset-Lifecycle, AAR-Unterbrechung und Fehlerlogs pruefen. F-16/F-15E-AAR-Verfuegbarkeit separat beurteilen: Im A5-3-Lauf fanden beide keinen geeigneten Tanker und gingen vorzeitig RTB. **Status: SOURCE_IMPLEMENTED / STATIC_REVIEW_PENDING / DCS_PENDING.**
 
 **A5-4 Prazisierung der tatsaechlichen AO-Zeit:** Die Time-on-Station-Grenze zaehlt ausschliesslich beobachtete Intervalle, in denen **beide** lebenden Luftfahrzeuge innerhalb der CAS-AO sind. Waerend AAR-Abwesenheit wird kein AO-Zeitkontingent verbraucht; die davon unabhaengige gesamte Sortieuhr laeuft jedoch unveraendert weiter. Der 15-s-Observer ist die zeitliche Aufloesung. Das erste volle AO-Eintreten setzt `onStationAtS`; `stationSeconds` summiert nur aufeinanderfolgende valide AO-Samples. Eine spaetere AAR-Rueckkehr setzt die stationierte Zeit **nicht** wieder auf null.
+

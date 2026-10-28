@@ -1,6 +1,7 @@
 ---
 document_id: OMW-EVIDENCE-GRAVEYARD-ACO-CAS-COVERAGE-20261026
-status: SOURCE_REVIEWED
+status: DRAFT
+source_status: SOURCE_REVIEWED
 document_class: RESEARCH_NOTE
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -10,6 +11,9 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fixed-wing-cas-coverage-ground-alert-decision
+source_commit: 0fa37a82b71512a212de7ce49ab40a6a1bbfe995
+supersedes:
+superseded_by:
 validated_in_dcs: false
 ---
 
@@ -56,3 +60,4 @@ ATO-Konsequenz (Empfehlung, keine eigenstaendige Owner-Freigabe): CAS-Coverage-S
 2. Das geplante CAS-Standby als eigenes, mit ACO zeitlich/vertikal abgestimmtes Airspace-Control-Objekt definieren; kein AAR-/ISR-Area-Rebranding.
 3. Echte CAS-Verfuegbarkeitszeit und Tankunterbrechung messen statt gleichzeitiger On-Station- und AAR-Verfuegbarkeit.
 4. Sortie-/Relief-Policy mit Owner-Entscheidung dokumentieren, erst danach MOOSE-First-Lifecycle-, ATO- und DCS-Acceptance-Implementierung.
+

@@ -1,6 +1,8 @@
 ---
 document_id: OMW-RESULT-FIXED-WING-CAS-A5-1-20261026
-status: FAILED_RUNTIME_EVIDENCE
+status: HISTORICAL_TEST_FIXTURE
+evidence_status: FAILED_RUNTIME_EVIDENCE
+runtime_result: FAIL
 document_class: TEST_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -9,6 +11,10 @@ not_authoritative_for:
   - A5-2/A5-3 results or future DCS validation
 source_branch: agent/fixed-wing-cas-coverage-ground-alert-decision
 source_commit: f347aeb13f78e16c6c0c815c89d51b46a50d7702
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 validated_in_dcs: false
 ---
 
@@ -46,3 +52,4 @@ Fuel-Beispiel aus 20:16:01.389: F-16 Lead `fuelFraction=0.9539704323`, Wingman `
 ## Korrektur und naechstes freigegebenes Gate
 
 A5-3 integriert **in einem neuen Gesamtstand**: `joinedAt`-Latch, MOOSE-native Release-Flag vor einmaliger Clearing-Mutation, MOOSE-`TaskOrbit`-Racetrack-Konstruktor-Adapter nur fuer identische A5-Departure-Coordinates, DCS-Terrain-Sampling und niedrigeres Initialprofil, vollstaendige CAS-/AAR-/RTB-Telemetrie. Alle A5-3-Aussagen bleiben DCS_PENDING; die vorliegenden Logs testen nur A5-1. Die MIZ wird ausschliesslich vom Owner angepasst, kein nachtraegliches Ueberschreiben der A5-1-Provenienz.
+

@@ -1,6 +1,7 @@
 ---
 document_id: OMW-EVIDENCE-RC-EAST-CAS-AAR-SPATIAL-SCHEDULE-20261026
-status: SOURCE_REVIEWED
+status: DRAFT
+source_status: SOURCE_REVIEWED
 document_class: RESEARCH_NOTE
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -10,6 +11,9 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fixed-wing-cas-coverage-ground-alert-decision
+source_commit: 0fa37a82b71512a212de7ce49ab40a6a1bbfe995
+supersedes:
+superseded_by:
 validated_in_dcs: false
 ---
 
@@ -83,3 +87,4 @@ Die gesamte verfuegbare ON_STATION-Zeit muss AAR-Abwesenheit und andere Nichtver
 5. Owner-Freigabe konkreter Standby-Geometrie und Sortie-Policy; dann MOOSE-First-Pruefung von ORBIT/AUFTRAG/FLIGHTGROUP/COMMANDER und ein integrierter statt stueckweiser DCS-Acceptance-Test.
 
 **Keine Runtime-/MIZ-/AAR-Track-Aenderung aus diesem Dokument.** Status `SOURCE_REVIEWED / GEO_ALIGNMENT_INCOMPLETE / OWNER_DECISION_PENDING / DCS_PENDING`.
+
