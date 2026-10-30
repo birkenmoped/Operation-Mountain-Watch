@@ -174,6 +174,24 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 
 | `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-7` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-7.md` | `PLANNED`; Joyce production QRF plus MOOSE-selected attack-helicopter CAS with fail-closed owner-route binding, supported-element/no-contact release and physical recovery |
 
+| `OMW-RESULT-FIXED-WING-CAS-A5-4-20261028` | `mission/tests/fixed-wing-cas-response/results/2026-10-28-acceptance-5-4-loss-reconstruction.md` | `HISTORICAL_TEST_FIXTURE`; runtime FAIL, individual fuel/loss/landing reconstruction and supplied artifact hashes |
+| `OMW-RESULT-FIXED-WING-CAS-A5-5-20261030` | `mission/tests/fixed-wing-cas-response/results/2026-10-30-acceptance-5-5-premature-recovery-fail.md` | `HISTORICAL_TEST_FIXTURE`; A5-5 Runtime FAIL, A5-6 source correction and unresolved departure release block |
+| `OMW-MOOSE-FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION` | `docs/moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md` | `DRAFT / SOURCE_IMPLEMENTED / STATIC_TESTED / DCS_PENDING`; owner-approved conditional A5-5 fuel-policy, 45-minute test allowance and bounded post-RTB-AAR exception |
+| `OMW-RESULT-FIXED-WING-CAS-A5-3-20261026` | `mission/tests/fixed-wing-cas-response/results/2026-10-26-acceptance-5-3-four-aar-aborted.md` | `HISTORICAL_TEST_FIXTURE / runtime FAIL`; first A5-3 real racetrack, native holding release, four A-10 AAR; aborted by owner |
+| `OMW-RESULT-FIXED-WING-CAS-A5-1-20261026` | `mission/tests/fixed-wing-cas-response/results/2026-10-26-acceptance-5-first-runtime-fail.md` | `HISTORICAL_TEST_FIXTURE / runtime FAIL`; A5-1 join without MOOSE hold release, exact mission/log SHA256 |
+| `OMW-TEST-FIXED-WING-CAS-RESPONSE-ACCEPTANCE-5` | `mission/tests/fixed-wing-cas-response/ACCEPTANCE-5.md` | `PLANNED / DCS_PENDING`; owner-approved one-shot departure holding clear, AAR resume and CAS physical recovery regression |
+| `OMW-TEST-FIXED-WING-CAS-RESPONSE-ACCEPTANCE-4` | `mission/tests/fixed-wing-cas-response/ACCEPTANCE-4.md` | `PLANNED`; three-flight MOOSE CAS/AAR and A-10 join acceptance |
+
+| `OMW-TEST-FIXED-WING-CAS-RESPONSE-ACCEPTANCE-3` | `mission/tests/fixed-wing-cas-response/ACCEPTANCE-3.md` | `PLANNED`; MOOSE RTB cruise altitude, fast-CAS speeds, A-10 range and airspeed telemetry |
+
+| `OMW-TEST-FIXED-WING-CAS-RESPONSE-ACCEPTANCE-2` | `mission/tests/fixed-wing-cas-response/ACCEPTANCE-2.md` | `PLANNED`; same-session three-flight MOOSE C2 with Bagram join holding, CAS-altitude and fuel-reaction diagnostics |
+
+| `OMW-TEST-FIXED-WING-CAS-RESPONSE-ACCEPTANCE-1` | `mission/tests/fixed-wing-cas-response/README.md` | `PLANNED`; same-session three-flight MOOSE-C2 CAS response acceptance with two-aircraft Bagram takeoff trigger |
+
+| `OMW-EVIDENCE-RC-EAST-CAS-AAR-SPATIAL-SCHEDULE-20261026` | `docs/evidence/rc-east-cas-standby-aar-spatial-schedule-reconciliation-2026-10-26.md` | `SOURCE_REVIEWED` | AAR-GeoJSON-Endpunkte, Honaker-Test-AO und Scheduled-CAS-Geometrie-/Zeit-Gates |
+| `OMW-EVIDENCE-GRAVEYARD-ACO-CAS-COVERAGE-20261026` | `docs/evidence/graveyard-2009-2013-aco-cas-coverage-reconciliation-2026-10-26.md` | `SOURCE_REVIEWED` | Graveyard-ACO-2009–2013-Quellen und Grenzen fuer Fixed-Wing-CAS-Schedule/Trackplanung |
+| `OMW-AIR-FIXED-WING-CAS-COVERAGE-GROUND-ALERT` | `docs/air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md` | `PLANNED`; owner-approved fixed-wing CAS roles, 24h Bagram 2-ship Ground Alert, permitted airborne coverage gaps; DCS pending |
+
 | `OMW-MOOSE-ACCEPTED-LIFECYCLE-PRESERVATION-LAW` | `docs/moose/ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md` | `BINDING`; mandatory anti-regression law for inherited accepted/binding runtime lifecycles and Acceptance harness boundaries |
 
 | `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-9` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-9.md` | `PLANNED`; observer-only validation of shared production CAS lifecycle after lifecycle-preservation reconciliation |
@@ -186,3 +204,6 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 
 | `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-11` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-11.md` | `ACCEPTED_TECHNICAL_BASELINE`; kombinierter A11-DCS-PASS mit vollständiger Commit-/Bundle-/MIZ-/DCS-/MOOSE-Provenienz |
 | `OMW-RESULT-FSSR-PRODUCTION-BASE-A11-DCS-PASS-20261006` | `results/2026-10-06-production-base-acceptance11-dcs-pass.md` | `ACCEPTED_TECHNICAL_BASELINE`; realer kombinierter A11-DCS-PASS mit vollständiger technischer Acceptance-Provenienz |
+
+| `OMW-HANDOFF-FIXED-WING-CAS-2026-10-17` | `docs/handoffs/2026-10-17-fixed-wing-cas-acceptance-1-to-4-handoff.md` | `DRAFT`; A1–A4 source-/DCS-evidence, A4 failed 3/6 return and separate next-chat handoff |
+

@@ -27,6 +27,11 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 
 ## 2. Aktuelle offene Unterprojekte
 
+Neuer Dokumentations-Branch (16.10.2026): `agent/fixed-wing-cas-coverage-ground-alert-decision`, Parent `main`, Dokument `docs/air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md`, Status `PLANNED / DCS_PENDING`. Umfang umfasst jetzt zusätzlich `mission/tests/fixed-wing-cas-response/` und `tools/build-fixed-wing-cas-response-acceptance-1.ps1` für eine source-geprüfte, DCS-pendente MOOSE-Three-Flight-Response-Acceptance. Owner-Beschluss zu H24 Bagram Ground Alert als 2-ship, zur A-10-CAS-Präferenz und zu zulässigen Airborne-CAS-Lücken wird in **Draft-PR #151** vorgelegt; noch keine Merge-Freigabe oder Runtime-Änderung.
+
+**Aktueller Stand 17.10.2026 (Draft PR #151):** CAS Response Acceptance 1–4 wurde branch-lokal in DCS erprobt. A4 **FAIL**: F-16-Wingman sowie beide A-10 verloren, beide F-15E nach Bagram zurueck; A-10 PATTY MOOSE-AAR erfolgreich, aber CAS-AO-/Mission-Fortsetzung ungeklaert. Dokumentierte komplette Ergebnisse und Uebergabe: `docs/handoffs/2026-10-17-fixed-wing-cas-acceptance-1-to-4-handoff.md`. Keine Projektbaseline, kein Merge/Ready ohne Owner-Freigabe.
+
+
 | PR | Branch | Parent/Base | Thema | Primäre Pfade | Governance-Status | Acceptance-Status | Nachfolger | Produktionsrelevanz |
 |---:|---|---|---|---|---|---|---|---|
 | 3 | `design/warehouses-and-concealment` | `main` | frühe Logistics-/Warehouse-/MOOSE-Baseline | `docs/`, `mission/tests/`, `vendor/moose/` | `DRAFT`; Altbestand | keine repositoryweite Acceptance | 4 | Grundlage vieler späterer Stacks; vor Integration neu bewerten |
@@ -201,3 +206,6 @@ merge commit: db4c2e72eb38a09b30045aa6abb3a4c49f40540c
 accepted branch head: 065ded12cffd987b3458bb661025f6cd9c669da5
 A11: ACCEPTED_TECHNICAL_BASELINE
 ```
+
+
+**Stand 26.10.2026 (Draft PR #151, A5):** Der Owner hat ausschliesslich den internen A5-CAS-Holding-Clear nach bestaetigtem Two-Ship-Join genehmigt. Neue A5-Quelle `mission/tests/fixed-wing-cas-response/src/acceptance-5-three-flight-joined-aar-resume.lua`, Builder `tools/build-fixed-wing-cas-response-acceptance-5.ps1`, Testvertrag `mission/tests/fixed-wing-cas-response/ACCEPTANCE-5.md`. A4 bleibt FAIL und unveraendert, A5 `SOURCE_IMPLEMENTED / DCS_PENDING`, keine produktive Freigabe. Vollstaendige MOOSE-Reconciliation in `docs/air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md` §§10.11–10.14. Keine lokale Build-/Hash- oder DCS-Evidenz vor Owner-Ausgabe.

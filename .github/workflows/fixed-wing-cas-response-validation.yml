@@ -1,0 +1,113 @@
+name: Fixed-wing CAS response static validation
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/fixed-wing-cas-response-validation.yml'
+      - 'mission/tests/fixed-wing-cas-response/**'
+      - 'scripts/air-operations/OMW_FixedWingCas*.lua'
+      - 'tools/build-fixed-wing-cas-response-acceptance-*.ps1'
+  workflow_dispatch:
+
+jobs:
+  acceptance-1-static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Lua 5.1 syntax checker
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.1
+      - name: Validate Lua 5.1 source syntax
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/src/acceptance-1-three-flight-c2.lua
+      - name: Build acceptance bundle with PowerShell
+        shell: pwsh
+        run: ./tools/build-fixed-wing-cas-response-acceptance-1.ps1
+      - name: Preview generated bundle header
+        run: head -n 18 mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_1.lua
+      - name: Validate generated Lua 5.1 bundle syntax
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_1.lua
+
+  acceptance-2-static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Lua 5.1 syntax checker
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.1
+      - name: Validate Acceptance 2 Lua 5.1 source syntax
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/src/acceptance-2-three-flight-joined-departure.lua
+      - name: Build Acceptance 2 bundle with PowerShell
+        shell: pwsh
+        run: ./tools/build-fixed-wing-cas-response-acceptance-2.ps1
+      - name: Validate Acceptance 2 generated Lua 5.1 bundle
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_2.lua
+
+  acceptance-3-static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Lua 5.1 syntax checker
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.1
+      - name: Validate Acceptance 3 Lua 5.1 source syntax
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/src/acceptance-3-three-flight-cruise-rtb.lua
+      - name: Build Acceptance 3 bundle with PowerShell
+        shell: pwsh
+        run: ./tools/build-fixed-wing-cas-response-acceptance-3.ps1
+      - name: Validate Acceptance 3 generated Lua 5.1 bundle
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_3.lua
+
+  acceptance-4-static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Lua 5.1 syntax checker
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.1
+      - name: Validate Acceptance 4 Lua 5.1 source syntax
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/src/acceptance-4-three-flight-joined-aar.lua
+      - name: Build Acceptance 4 bundle with PowerShell
+        shell: pwsh
+        run: ./tools/build-fixed-wing-cas-response-acceptance-4.ps1
+      - name: Validate Acceptance 4 generated Lua 5.1 bundle
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_4.lua
+
+
+  acceptance-5-static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.1
+      - name: Validate shared policy and observer source
+        run: |
+          for source in scripts/air-operations/OMW_FixedWingCas*.lua mission/tests/fixed-wing-cas-response/src/acceptance-5-three-flight-joined-aar-resume.lua; do luac5.1 -p "$source"; done
+          lua5.1 mission/tests/fixed-wing-cas-response/unit/test-fuel-recovery.lua
+          lua5.1 mission/tests/fixed-wing-cas-response/unit/test-runtime-replay.lua
+      - name: Refuse an unapproved DCS candidate build
+        shell: pwsh
+        run: |
+          $blocked = $false
+          try { & ./tools/build-fixed-wing-cas-response-acceptance-5.ps1 }
+          catch {
+            if ($_.Exception.Message -notmatch 'DCS release is BLOCKED') { throw }
+            $blocked = $true
+          }
+          if (-not $blocked) { throw 'Unreleased A5-6 build did not fail closed' }
+      - name: Build A5-6 through the guarded PowerShell builder
+        shell: pwsh
+        run: ./tools/build-fixed-wing-cas-response-acceptance-5.ps1 -AllowBlockedDiagnosticBuild
+      - name: Validate composed A5-6 Lua 5.1 bundle
+        run: luac5.1 -p mission/tests/fixed-wing-cas-response/dist/OMW_FixedWing_CAS_Response_Acceptance_5.lua
+

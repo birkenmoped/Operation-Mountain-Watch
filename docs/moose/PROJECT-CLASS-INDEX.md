@@ -43,6 +43,13 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW`](MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW.md)
 - [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md)
 
+### Fixed-Wing CAS response acceptance (source-reviewed; DCS pending)
+
+Acceptance 4 erweitert den source-reviewed (DCS_PENDING) Scope um `AUFTRAG:SetMissionSpeed`, Kandahar-`SetMissionHoldingCoord`, `FLIGHTGROUP:Refuel`, `OnAfterRefueled`, `UNIT:IsTanker`, `FLIGHTGROUP.refueltype` und den vorhandenen OMW-AAR-Controller-Adapter `GetActive(area,profile)`. MOOSE pausiert und setzt den CAS-Missions-Lifecycle nach Refuel fort; die neue konkrete CAS-Integration ist **nicht** DCS-validiert. Siehe [A4-Testvertrag](../../mission/tests/fixed-wing-cas-response/ACCEPTANCE-4.md).
+
+
+Die branchgebundene [Three-Flight-CAS-Acceptance](../../mission/tests/fixed-wing-cas-response/README.md) verwendet vorhandene und in der eingebetteten v26-`Moose.lua` source-gepruefte `COMMANDER`-, `AIRWING`-, `SQUADRON`-, `AUFTRAG`, `FLIGHTGROUP`, `OPSGROUP`, `GROUP`, `ZONE_RADIUS`- und `SCHEDULER`-Schnittstellen: `COMMANDER:AddMission`, `AUFTRAG:NewCAS`, `AUFTRAG:AssignSquadrons`, `AUFTRAG:SetRequiredAssets`, `OnAfterOpsOnMission`, `OnAfterElementAirborne`, `CountElements`, `GROUP:IsAirborne(true)` sowie passive Zone-/Unit-Koordinatenpruefung. Das ist **keine** neue `VALIDATED`-Einstufung und keine behauptete CAS- oder ATC-Runtime-Acceptance. Eine Native-DCS-Kontrollalternative wurde nicht genehmigt oder implementiert.
+
 ## 2. Statusbedeutung
 
 ```text
@@ -966,3 +973,74 @@ FLIGHTGROUP
 Der allgemeine Base-31-Scope ist source-implemented und DCS-pending. Der geerbte
 geroutete STORAGE-Vertrag bleibt auf einen Carrier begrenzt; daraus folgt keine
 allgemeine Multi-Carrier-Freigabe.
+
+
+### 23.10.2026 – Fixed-Wing-CAS A5 Departure-Marshalling / Mission-Queue-Gate
+
+Owner-authorized design direction recorded in `docs/air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md` section 10.11. Pinned `Moose.lua` 2.9.18 was inspected for `AUFTRAG:NewORBIT`, `AUFTRAG:NewORBIT_CIRCLE`, `AUFTRAG:NewORBIT_RACETRACK`, `OPSGROUP:AddMission`, `AUFTRAG:AddConditionPush`, `AUFTRAG:SetMissionHoldingCoord`, and `OPSGROUP:RouteToMission`. The intended separation is a one-shot MOOSE ORBIT for formation joining and a resumable MOOSE CAS mission without departure holding. Exact handoff/queue behavior for COMMANDER-assigned FLIGHTGROUP must be source-proven before runtime changes; the methods' independent existence does not validate the composition. No internal AUFTRAG mutation or replacement of MOOSE's mission/AAR/recovery FSM is authorized. **Status: SOURCE_REVIEWED / QUEUE_HANDOFF_PENDING / DCS_PENDING.**
+
+
+### 24.10.2026 – OPSGROUP queue ordering for fixed-wing CAS departure ORBIT
+
+Pinned MOOSE 2.9.18 source reconciliation: `COMMANDER:onafterMissionAssign` hands to `LEGION:MissionRequest`; `LEGION` invokes `flightgroup:AddMission(CAS)` before scheduling `__OpsOnMission(5, flightgroup, CAS)`. `OPSGROUP:_GetNextMission` sorts priority/start time, `_QueueUpdate` starts a scheduled mission when none is current, and an urgent higher-priority arrival cancels the current mission. Therefore inserting an ORBIT solely in `COMMANDER.OnAfterOpsOnMission` does **not** prove ORBIT-before-CAS ordering; urgent priority may cancel a running CAS. `OPSGROUP:onafterMissionDone`/`_CheckGroupDone` can continue queued work when present, but the atomic initial handoff is unresolved. See decision doc section 10.12. Status: `SOURCE_REVIEWED / RACE_IDENTIFIED / RUNTIME_PENDING / DCS_PENDING`. No owner approval for AUFTRAG internals mutation.
+
+
+### 25.10.2026 – AUFTRAG start-condition bypass for LEGION flightgroups
+
+Pinned MOOSE 2.9.18: `AUFTRAG:AddConditionStart` records a condition and `AUFTRAG:IsReadyToGo` evaluates it; however `OPSGROUP:_GetNextMission` defines `isReadyToGo=(mission:IsReadyToGo() or self.legion)`. Consequently, for a LEGION/AIRWING-owned FLIGHTGROUP, `AddConditionStart` cannot be relied on as a hard gate preventing premature CAS mission startup. `OPSGROUP:_QueueUpdate` and `onafterMissionStart` can then initiate CAS routing. A separate ORBIT queued only inside COMMANDER `OnAfterOpsOnMission` remains non-atomic. Owner-approved public-API design exploration continues, but a one-field post-join `AUFTRAG` internal clear requires explicit additional owner approval. See CAS decision document §10.13. Status: SOURCE_REVIEWED / A5_RUNTIME_PENDING / DCS_PENDING.
+
+
+### 26.10.2026 – Fixed-wing CAS A5 owner-approved one-shot AUFTRAG holding clear
+
+Pinned MOOSE 2.9.18: `AUFTRAG:GetMissionHoldingCoord` returns `missionHoldingCoord`; `AUFTRAG:SetMissionHoldingCoord` does not support a nil clear (dereferences Coordinate). `OPSGROUP:RouteToMission` reinserts the holding waypoint when a value remains on AUFTRAG after AAR MissionStart. The owner explicitly approved **only** setting `mission.missionHoldingCoord=nil` once after confirmed two-element join; combined with persistent `joinedAt` used by `AUFTRAG:AddConditionPush`. New harness: `mission/tests/fixed-wing-cas-response/src/acceptance-5-three-flight-joined-aar-resume.lua`; acceptance `mission/tests/fixed-wing-cas-response/ACCEPTANCE-5.md`. All subsequent route/Refuel/RTB decisions remain with MOOSE. No public clear API claimed, and no other internals authorized. Status SOURCE_IMPLEMENTED / DCS_PENDING; NOT VALIDATED.
+
+
+### 26.10.2026 – Departure Racetrack design source check
+
+Owner selects Racetrack as the target geometry for fixed-wing CAS departure marshalling. Pinned `Moose.lua` 2.9.18: `AUFTRAG:SetMissionHoldingCoord` has only coordinate/altitude/speed/duration, and `OPSGROUP:RouteToMission` invokes `CONTROLLABLE:TaskOrbit` with only 3 arguments, producing `AI.Task.OrbitPattern.CIRCLE`. By contrast, public `CONTROLLABLE:TaskOrbit(Coord, Altitude, Speed, CoordRaceTrack)` provides native `RACE_TRACK` with two points, and `AUFTRAG:NewORBIT_RACETRACK` provides a separate orbit mission. Neither constitutes a proven public option to turn the existing CAS departure holding into Racetrack without crossing the documented COMMANDER/LEGION queue race. The already owner-approved post-join `mission.missionHoldingCoord=nil` remains the **only** authorized internal exception. No new runtime and no MIZ mutation. See CAS decision §10.15. Status: `SOURCE_REVIEWED / RACETRACK_HOOK_PENDING / DCS_PENDING`.
+
+
+### 26.10.2026 – A5-2 source correction: preserve MOOSE holding exit before clear
+
+`FLIGHTGROUP:Status()` in pinned `Moose.lua` 2.9.18 guards its MOOSE-owned holding-release event by `mission.missionHoldingCoord and self.isHoldingAtHoldingPoint==true`. A5-1 cleared the internal coordinate too early; this suppresses the native `mission:IsReadyToPush() -> self.flaghold:Set(1)` transition. A5-2 latches joined state, then relies on MOOSE `FLIGHTGROUP:Status` to release the running controlled orbit; observer clears the single owner-approved `mission.missionHoldingCoord=nil` **only after** public `USERFLAG:Is(1)` and flight's `isHoldingAtHoldingPoint==false`. No additional internal writes, native DCS controller or route FSM. This is SOURCE_REVIEWED only; DCS_PENDING. Racetrack geometry remains a separate unimplemented gate.
+
+
+### 26.10.2026 – A5-3 terrain-selected native MOOSE TaskOrbit race-track extension
+
+Owner-authorized A5 test-scope extension of `CONTROLLABLE.TaskOrbit(Coord,Altitude,Speed,CoordRaceTrack)` only when its `Coord` is the **identical** `AUFTRAG` departure-holding coordinate. The pinned MOOSE 2.9.18 `OPSGROUP:RouteToMission` constructor otherwise supplies no `CoordRaceTrack` and builds CIRCLE. Before COMMANDER assignment, install one delegating test-scope `CONTROLLABLE.TaskOrbit` adapter; all unrelated calls use original MOOSE method. The new fourth argument invokes the MOOSE-native `AI.Task.OrbitPattern.RACE_TRACK`, not a custom DCS controller. `COORDINATE:Translate` plus `GetLandHeight` select lowest sampled terrain of eight directions (5NM standoff +8NM leg, 2500ft sampled clearance), dynamic minimum Bagram 8500ft/Kandahar 6500ft MSL. No terrain/turn/ATC DCS safety proof yet. Preserve FLIGHTGROUP:Status native Push/UserFlag release, then only the independently approved post-join holding-field nil. Log-based first A5-1 test FAIL; see Acceptance 5 and project design §10.17. Status: SOURCE_IMPLEMENTED / DCS_PENDING.
+
+
+### 27.10.2026 – A5-4 FLIGHTGROUP RTB and time-bounded CAS lifecycle
+
+Pinned MOOSE 2.9.18 public `FLIGHTGROUP:RTB(Airbase)` remains the sole final flight-return action (already invoked by A5 fuel-low fallback). MOOSE `OnAfterElementTakeoff`, `OnAfterRTB`, `OnAfterRefueled` are used as lifecycle hooks; `FLIGHTGROUP:GetCoordinate()`, `homebase:GetCoordinate()`, `COORDINATE:Get2DDistance()`, `UTILS.KnotsToMps()` provide conservative dynamic return estimate. A5 test-only guard tracks monotonic `timer.getTime()` from first real takeoff and CAS-AO first full two-ship entry; policy 150/180/240 min AO and 4/5/8 h planned, 5/6/10 h absolute for F16/F15E/A10. Once final RTB was requested (or observed), do not initiate another OMW AAR or early test AAR. This is a domain-policy guard around MOOSE, **not** native DCS route control or duplicated MOOSE flight FSM. No proof of landing within ceiling until DCS runtime. Relevant source: `mission/tests/fixed-wing-cas-response/src/acceptance-5-three-flight-joined-aar-resume.lua`, Acceptance-5 A5-4.
+
+A5-4 AO time is sampled in the existing 15-second observer only while both aircraft are alive and inside the CAS ZONE_RADIUS; `stationSeconds` is not reset after MOOSE refueling, while the first-takeoff `timer.getTime()` sortie clock remains monotonic. This is time-accounting only, not a new MOOSE route task.
+
+
+## 28.10.2026 – A5-4 negative Evidenz und neuer Fuel-/Recovery-Gate
+
+[Verlustrekonstruktion](../../mission/tests/fixed-wing-cas-response/results/2026-10-28-acceptance-5-4-loss-reconstruction.md): A5-4 FAIL. `FLIGHTGROUP:GetFuelMin` verwendet das schlechteste Element; die bestehende 30-%-Schwelle ist keine streckenabhaengige Bingo-Berechnung. Der verbose>=4-Diagnoseblock berechnet lediglich lokale Restflugzeitwerte, keine oeffentliche Recovery-Policy. `RTB` kann bei laufenden Tasks suspendiert werden. `_LandAtAirbase` setzt `currbase` bereits vor physischer Landung; Post-RTB-Refuel mit erneutem RTB zur gleichen Base benoetigt einen gesondert geprueften Handoff.
+
+[Konkreter Korrekturvertrag](FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md) erfasst die oeffentlichen `UNIT:GetFuel/GetCurrentFuelKgs/GetFuelMassMax`, `FLIGHTGROUP:SetFuelLowThreshold/Refuel/RTB`, `AUFTRAG:SetProhibitAfterburner` und Callback-Grenzen. Dieser Absatz dokumentierte zunaechst den offenen Gate; der nachfolgende A5-5-Eintrag erfasst seine bedingte Freigabe und Implementierung. Keine neue praktisch bestaetigte Methode und keine Uebertragung des AAR-7-Tanker-PASS auf Fixed-Wing-Receiver-Recovery.
+
+
+## 28.10.2026 – A5-5 freigegebener Fuel-/Recovery-Adapter
+
+Status `SOURCE_IMPLEMENTED / STATIC_TESTED / DCS_PENDING`, nicht VALIDATED. [Korrekturvertrag](FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md) enthaelt Inheritance, gezielte Pruefung offizieller OPS-Demos auf develop und bedingte Owner-Freigabe vom 28.10.2026. Gemeinsame Quellen: `scripts/air-operations/OMW_FixedWingCasFuelPolicy.lua`, `OMW_FixedWingCasProfiles.lua`, `OMW_FixedWingCasRecovery.lua`; Komposition im Acceptance-5-Builder.
+
+Neu verwendete/konkret gepruefte Schnittstellen: UNIT `InAir`, `GetCurrentFuelKgs`, zweiter Rueckgabewert `GetFuelMassMax`, `IsTanker`; POSITIONABLE `GetAirspeedTrue/GetAirspeedIndicated` (IAS-Approximation); COORDINATE `GetWindVec3/GetIntermediateCoordinate/GetLandHeight`; AIRBASE `GetZone` und ZONE_RADIUS `GetRadius`; FLIGHTGROUP `SetProhibitAfterburner/SetAllowAfterburner`, `SetFuelLowRTB/SetFuelLowRefuel/SetFuelLowThreshold`, `MissionCancel/RTB/Refuel`, `OnBeforeMissionStart/OnBeforeRTB`, `OnAfterElementTakeoff/ElementLanded/ElementDead/RTB/Refuel/Refueled/FuelLow/FuelCritical/MissionDone`; AUFTRAG `SetProhibitAfterburner/SetAllowAfterburner`, `SetMissionSpeed/IsOver`; LEGION `OnAfterLegionAssetReturned` mit exakter `asset.flightgroup`-Identitaet; MESSAGE `New(...):ToAll()` fuer FAIL/STOP. AAR `GetActive/GetStation` wird unveraendert wiederverwendet.
+
+Nur zusaetzliche interne Mutation: `f.currbase=nil` unmittelbar vor oeffentlichem RTB nach tatsaechlich beendetem Post-RTB-Recovery-AAR, finaler Recovery, airborne, gleicher Base, ohne Land-/Return-Evidenz; einmal pro Zyklus. Die bestehenden eng begrenzten Departure-Ausnahmen bleiben erhalten. Keine weitere globale Anpassung, kein Moose.lua-Patch, keine nativen DCS-Aufgaben. 23 Lua-5.1-Vertragstests sind keine DCS-Flugvalidierung. Nativer Anflug/Holding, Terrain, AAR-Kapazitaet/Formation und sechs Landungen/exakte Returns sind offen.
+
+
+
+## A5-6 lesende Departure-Diagnose (30.10.2026, SOURCE_VERIFIED_ONLY)
+
+`OPSGROUP:GetTaskCurrent()` liefert die native MOOSE-Taskqueue-Evidenz;
+`GetWaypointCurrent()` den aktuellen MOOSE-Wegpunkt, `GetState()` den FSM-Zustand.
+Pinned Moose.lua 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54, Quellenstellen
+223048 / 222190 / FLIGHTGROUP:IsAirborne 203939 / QueueUpdate ca. 225404.
+Verwendung im A5-Harness nur lesend. Das sind keine DCS-Controller-Tasks und
+kein Nachweis der tatsaechlich geflogenen Bahn. `TaskOrbit`-Rueckgabe wird auf
+Race-Track und point2 geprueft. Keine Methode/Geometrie wird dadurch VALIDATED.
+Siehe `FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md`, A5-6-Sperre.

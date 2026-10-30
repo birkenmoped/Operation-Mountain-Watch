@@ -271,6 +271,10 @@ MOOSE mission execution
 
 Die Umsetzung darf keine unbegrenzten Spawn-Ressourcen erzeugen. Alert-Missionen binden reale strategische Verfügbarkeit gemäß CampaignState und den jeweils geltenden Air-Ops-/Warehouse-Verträgen.
 
+### Fixed-Wing-CAS- und Ground-Alert-Einsatzplanung
+
+Die am 16.10.2026 vom Projektinhaber bestätigte fachliche CAS-Planungsrichtung (zweiflugzeugstarke Bagram-Ground-Alert-Bereitschaft H24, bedarfsgerechte Airborne-CAS-Abdeckung mit zulässigen Lücken, bevorzugte taktische A-10-Präsenz aus Kandahar und Nutzung vorhandener AAR-Tracks) ist gesondert festgehalten in [`OMW-AIR-FIXED-WING-CAS-COVERAGE-GROUND-ALERT`](air-operations-fixed-wing-cas-coverage-and-ground-alert-decision.md). Der Entwurf ist auf dem Integrationsbranch `PLANNED` und erzeugt **keine** jetzt DCS-validierte Ground-Alert-Runtime, automatische Flugplanung oder neue Ressourcenhoheit. Die in diesem Dokument festgelegten Alert-Datenfelder und MOOSE-/CampaignState-Grenzen bleiben maßgeblich.
+
 ## 8. AAR als erster vorgesehener Integrationsnachweis
 
 Die bestehende AAR-Architektur wird **nicht während ihrer laufenden Finalisierung umgebaut**.
