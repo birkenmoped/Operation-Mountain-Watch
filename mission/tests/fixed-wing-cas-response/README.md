@@ -162,3 +162,14 @@ Die On-Station-Uhr summiert nur Intervalle, in denen beide Luftfahrzeuge tatsaec
 ## A5-5 – aktueller Source-Kandidat
 
 Der [aktuelle A5-5-Vertrag](ACCEPTANCE-5.md) ersetzt die historischen A5-4-Fuel-/AAR-Sperren. Drei gemeinsame Module fuer individuelle Fuel-Bilanz, explizite Testprofile und MOOSE-Recovery-Anfragen werden vom bestehenden Acceptance-5-Builder eingebettet. 45-Minuten-Fuel-Testzuschlag, frueher Joker/Bingo, KRUSTY-Zugang und streng begrenzte Post-RTB-AAR-Ausnahme sind bedingt owner-freigegeben und source-implementiert. 23 Lua-5.1-Vertragstests bestanden; DCS_PENDING. Erster naechster Schritt bleibt echter lokaler Pull/PowerShell-Build mit realer Commit-/Hashausgabe; keine MIZ-/DCS-Anweisung vor diesem Nachweis.
+
+
+
+## Aktuell 30.10.2026 – A5-5 Regression
+
+A5-5 ist FAIL: alle drei Two-Ships gehen 70–105 s nach Join aufgrund der
+neuen Fuel-Policy RTB. Sechs Home-Landungen und drei exakte Asset-Returns,
+kein AO-Eintritt. [Ergebnisbericht](results/2026-10-30-acceptance-5-5-premature-recovery-fail.md).
+A5-6 korrigiert die Prognose-/Transit-/Landing-Diagnose im Source und prueft
+konstruierte Racetrack-Tasks statt nur Konfigurationsabsichten. Die fruehen
+engen Kreise bleiben **OPEN / DCS_RELEASE_BLOCKED**. Kein erneuter A5-5-Lauf.

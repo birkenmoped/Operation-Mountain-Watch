@@ -16,7 +16,7 @@ function Recovery.Bind(spec)
   assert(spec.flight and spec.mission and spec.policy and spec.now and spec.routes and spec.tankers and spec.log)
   local a = setmetatable({ spec = spec, flight = spec.flight, mission = spec.mission,
     policy = spec.policy, landed = {}, returned = false, aarCount = 0,
-    firstTakeoffS = nil, stationS = 0, finalReason = nil }, Adapter)
+    firstTakeoffS = nil, stationS = 0, finalReason = nil, sampleHistory = {} }, Adapter)
   local f = a.flight
   local beforeStart = f.OnBeforeMissionStart
   f.OnBeforeMissionStart = function(self, from, event, to, mission)
@@ -123,16 +123,23 @@ function Adapter:Destination() return self.flight.destbase or self.flight.homeba
 
 function Adapter:Sample(joined)
   local units, ids, n = self.flight:GetGroup():GetUnits() or {}, {}, 0
+  local alive = 0
   for _, u in pairs(units) do
     if u and u:IsAlive() then
+      alive = alive + 1
       local id, airborne = u:GetName(), u:InAir()
       local _, internalKg = u:GetFuelMassMax()
+      local qualifying = false
+      if self.spec.qualifySample then
+        qualifying, self.sampleHistory[id] = self.spec.qualifySample(u, self.spec.now(), self.sampleHistory[id])
+      end
       self.policy:Observe(id, self.spec.now(), u:GetCurrentFuelKgs(), internalKg,
-        airborne, joined and not self.aarRequested and not self.flight:IsGoing4Fuel())
+        airborne, joined and self.departureComplete and qualifying
+          and not self.aarRequested and not self.flight:IsGoing4Fuel())
       if airborne then ids[id] = u; n = n + 1 end
     end
   end
-  self.airborneUnits, self.airborneCount = ids, n
+  self.airborneUnits, self.airborneCount, self.aliveCount = ids, n, alive
   return ids, n
 end
 
@@ -206,7 +213,8 @@ function Adapter:CheckFuel(reason)
     routeTimeS = home.maxTimeS, reserveS = self.spec.reserveS })
   for id, e in pairs(home.elements) do
     self:Log("ELEMENT_RECOVERY_BUDGET", { element = id, availableKg = e.availableKg,
-      tripKg = e.tripKg, allowanceKg = e.allowanceKg, marginKg = e.marginKg, rateKgS = e.rateKgS })
+      tripKg = e.tripKg, allowanceKg = e.allowanceKg, marginKg = e.marginKg, rateKgS = e.rateKgS,
+      rateBasis = e.rateBasis })
   end
   if self.aarRequested or self.flight:IsGoing4Fuel() then
     -- An underway AAR is not interrupted by sortie ceilings. Access loss remains FAIL.
@@ -257,10 +265,19 @@ function Adapter:CheckFuel(reason)
     if not self:RequestAar(reason, false) then self:CloseCas(reason); self:RequestRtb() end
   elseif self.joined and not self.inAo then
     local onward = self:Budget(self:Destination(), true)
-    if not onward.valid or not onward.safe then
-      -- Before committing the remaining transit, refuel if safely accessible; else return.
+    if not onward.valid then
+      self:Fail(onward.reason or "INVALID_ONWARD_BUDGET")
+      self:CloseCas("INVALID_ONWARD_BUDGET"); self:RequestRtb(); return
+    end
+    if not onward.safe then
+      -- Request reachable AAR; otherwise preserve the positive home option while monitoring.
       if not self:RequestAar("TRANSIT_AND_RECOVERY_MARGIN", false) then
-        self:CloseCas("TRANSIT_NOT_FUEL_SUPPORTED"); self:RequestRtb()
+        -- A missing *current* tanker is not proof that a planned later AAR
+        -- cannot occur. Keep re-evaluating while the safe HOME option exists.
+        -- The imminent/unsafe-home branches above remain authoritative.
+        self:Log("TRANSIT_AAR_PENDING", { reason = "ONWARD_BUDGET_REQUIRES_AAR",
+          homeMarginKg = home.marginKg, onwardMarginKg = onward.marginKg,
+          onwardReason = onward.reason })
       end
     end
   end
@@ -275,7 +292,9 @@ function Adapter:Tick(joined, inAo)
   if onStation and self.lastStationS then self.stationS = self.stationS + now - self.lastStationS end
   self.lastStationS = onStation and now or nil
   if n == 0 then
-    if self.joined and next(self.landed) == nil then self:Fail("ALL_ELEMENTS_MISSING_BEFORE_LANDING") end
+    if self.joined and self.aliveCount == 0 and next(self.landed) == nil then
+      self:Fail("ALL_ELEMENTS_MISSING_BEFORE_LANDING")
+    end
     return
   end
   local home = self:Budget(self:Destination())
@@ -293,9 +312,10 @@ function Adapter:Tick(joined, inAo)
       and now - self.rtbRequestedS > 2 * self.spec.observerPeriodS then
     self:Fail("RTB_TRANSITION_NOT_CONFIRMED")
   end
-  if n < 2 and self.joined and not self.returned and next(self.landed) == nil then
+  if self.aliveCount < 2 and self.joined and not self.returned and next(self.landed) == nil then
     self:Fail("TWO_SHIP_ELEMENT_MISSING")
   end
 end
 
 return Recovery
+

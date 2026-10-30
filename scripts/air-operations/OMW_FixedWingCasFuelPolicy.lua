@@ -27,18 +27,21 @@ function Tracker:Observe(id, timeS, fuelKg, internalKg, airborne, qualifying)
   e.fuelKg, e.internalKg, e.airborne = fuelKg, internalKg, airborne == true
   local last = e.points[#e.points]
   if last and timeS == last.t and fuelKg == last.f then return true end
-  -- Refuelling, shutdown, non-monotonic time and invalid phases are not low burn.
+  -- Only sustained level cruise may update the long-horizon recovery rate.
+  -- Join/climb/acceleration consumption is already debited from available fuel;
+  -- extrapolating it over the reserve caused the A5-5 immediate-RTB regression.
   if not airborne or not qualifying or (last and (timeS <= last.t or fuelKg > last.f)) then
     e.points = {}
-    e.rateKgS = internalKg * self.spec.referenceFractionPerS
+    e.rateKgS = math.max(e.rateKgS or 0, internalKg * self.spec.referenceFractionPerS)
     return true
   end
   e.points[#e.points + 1] = { t = timeS, f = fuelKg }
   while #e.points > 2 and e.points[2].t <= timeS - 300 do table.remove(e.points, 1) end
-  e.rateKgS = internalKg * self.spec.referenceFractionPerS
+  e.rateKgS = math.max(e.rateKgS or 0, internalKg * self.spec.referenceFractionPerS)
   local first = e.points[1]
-  if first and timeS - first.t >= 60 then
+  if first and timeS - first.t >= (self.spec.cruiseSampleS or 120) then
     e.rateKgS = math.max(e.rateKgS, (first.f - fuelKg) / (timeS - first.t))
+    e.rateBasis = "QUALIFIED_CRUISE_WITH_REFERENCE_FLOOR"
   end
   return true
 end
@@ -62,7 +65,8 @@ function Tracker:Assess(routeTimes, extraS)
     local allowance = (self.spec.reserveS + (extraS or 0)) * e.rateKgS
     local margin = e.fuelKg - trip - allowance
     result.elements[id] = { availableKg = e.fuelKg, tripKg = trip,
-      allowanceKg = allowance, rateKgS = e.rateKgS, marginKg = margin }
+      allowanceKg = allowance, rateKgS = e.rateKgS, marginKg = margin,
+      rateBasis = e.rateBasis or "A5_4_RECOVERY_REFERENCE" }
     result.marginKg = math.min(result.marginKg, margin)
     result.maxTimeS = math.max(result.maxTimeS, travelS)
     if margin <= 0 then result.safe = false end
@@ -72,3 +76,4 @@ function Tracker:Assess(routeTimes, extraS)
 end
 
 return Policy
+

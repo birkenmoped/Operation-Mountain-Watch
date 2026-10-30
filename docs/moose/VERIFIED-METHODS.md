@@ -1107,3 +1107,16 @@ hochgestuft.
 | MESSAGE New/ToAll | sichtbares FAIL/STOP; Recovery-Observer bleibt aktiv |
 
 Quellen `scripts/air-operations/OMW_FixedWingCas{FuelPolicy,Profiles,Recovery}.lua`; Vertragspruefung `mission/tests/fixed-wing-cas-response/unit/test-fuel-recovery.lua`: 23 Tests unter Lua 5.1. Reale DCS-Testevidenz fuer A5-5 fehlt. AAR-7-Tanker-PASS wird nicht auf diesen Receiver-Adapter uebertragen.
+
+
+
+## A5-6 lesende Departure-Diagnose (30.10.2026, SOURCE_VERIFIED_ONLY)
+
+`OPSGROUP:GetTaskCurrent()` liefert die native MOOSE-Taskqueue-Evidenz;
+`GetWaypointCurrent()` den aktuellen MOOSE-Wegpunkt, `GetState()` den FSM-Zustand.
+Pinned Moose.lua 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54, Quellenstellen
+223048 / 222190 / FLIGHTGROUP:IsAirborne 203939 / QueueUpdate ca. 225404.
+Verwendung im A5-Harness nur lesend. Das sind keine DCS-Controller-Tasks und
+kein Nachweis der tatsaechlich geflogenen Bahn. `TaskOrbit`-Rueckgabe wird auf
+Race-Track und point2 geprueft. Keine Methode/Geometrie wird dadurch VALIDATED.
+Siehe `FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md`, A5-6-Sperre.

@@ -1031,3 +1031,16 @@ Status `SOURCE_IMPLEMENTED / STATIC_TESTED / DCS_PENDING`, nicht VALIDATED. [Kor
 Neu verwendete/konkret gepruefte Schnittstellen: UNIT `InAir`, `GetCurrentFuelKgs`, zweiter Rueckgabewert `GetFuelMassMax`, `IsTanker`; POSITIONABLE `GetAirspeedTrue/GetAirspeedIndicated` (IAS-Approximation); COORDINATE `GetWindVec3/GetIntermediateCoordinate/GetLandHeight`; AIRBASE `GetZone` und ZONE_RADIUS `GetRadius`; FLIGHTGROUP `SetProhibitAfterburner/SetAllowAfterburner`, `SetFuelLowRTB/SetFuelLowRefuel/SetFuelLowThreshold`, `MissionCancel/RTB/Refuel`, `OnBeforeMissionStart/OnBeforeRTB`, `OnAfterElementTakeoff/ElementLanded/ElementDead/RTB/Refuel/Refueled/FuelLow/FuelCritical/MissionDone`; AUFTRAG `SetProhibitAfterburner/SetAllowAfterburner`, `SetMissionSpeed/IsOver`; LEGION `OnAfterLegionAssetReturned` mit exakter `asset.flightgroup`-Identitaet; MESSAGE `New(...):ToAll()` fuer FAIL/STOP. AAR `GetActive/GetStation` wird unveraendert wiederverwendet.
 
 Nur zusaetzliche interne Mutation: `f.currbase=nil` unmittelbar vor oeffentlichem RTB nach tatsaechlich beendetem Post-RTB-Recovery-AAR, finaler Recovery, airborne, gleicher Base, ohne Land-/Return-Evidenz; einmal pro Zyklus. Die bestehenden eng begrenzten Departure-Ausnahmen bleiben erhalten. Keine weitere globale Anpassung, kein Moose.lua-Patch, keine nativen DCS-Aufgaben. 23 Lua-5.1-Vertragstests sind keine DCS-Flugvalidierung. Nativer Anflug/Holding, Terrain, AAR-Kapazitaet/Formation und sechs Landungen/exakte Returns sind offen.
+
+
+
+## A5-6 lesende Departure-Diagnose (30.10.2026, SOURCE_VERIFIED_ONLY)
+
+`OPSGROUP:GetTaskCurrent()` liefert die native MOOSE-Taskqueue-Evidenz;
+`GetWaypointCurrent()` den aktuellen MOOSE-Wegpunkt, `GetState()` den FSM-Zustand.
+Pinned Moose.lua 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54, Quellenstellen
+223048 / 222190 / FLIGHTGROUP:IsAirborne 203939 / QueueUpdate ca. 225404.
+Verwendung im A5-Harness nur lesend. Das sind keine DCS-Controller-Tasks und
+kein Nachweis der tatsaechlich geflogenen Bahn. `TaskOrbit`-Rueckgabe wird auf
+Race-Track und point2 geprueft. Keine Methode/Geometrie wird dadurch VALIDATED.
+Siehe `FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md`, A5-6-Sperre.

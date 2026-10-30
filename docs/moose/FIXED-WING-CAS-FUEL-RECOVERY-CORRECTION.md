@@ -14,10 +14,29 @@ superseded_by:
 source_branch: agent/fixed-wing-cas-coverage-ground-alert-decision
 source_commit: PENDING_MERGE
 validated_in_dcs: false
-implementation_status: SOURCE_IMPLEMENTED_STATIC_TESTED_DCS_PENDING
+implementation_status: A5_5_RUNTIME_FAIL_A5_6_SOURCE_CORRECTED_DCS_BLOCKED
 ---
 
 # Fixed-Wing CAS – konsolidierter Fuel-/Recovery-Korrekturvertrag
+
+**Aktuell 30.10.2026: A5-5 ist Runtime FAIL. A5-6 enthaelt eine Source-Korrektur der Fuel-Regression und zusaetzliche Departure-Evidenz; DCS-Freigabe bleibt BLOCKED.** Historische A5-5-Aussagen unten sind kein aktueller PASS. Befunde und Grenzen: [A5-5-Ergebnis](../../mission/tests/fixed-wing-cas-response/results/2026-10-30-acceptance-5-5-premature-recovery-fail.md).
+
+## A5-6: Regression korrigieren, Departure nicht als geloest ausgeben
+
+Lifecycle-Inheritance: dieselben Module und MOOSE-FSMs aus §2; gleiche Ressourcenhoheit,
+gleiche physische Two-Ships, gleicher Return-/Recovery-AAR-Vertrag. Geaendert werden nur
+Receiver-Prognose/Entscheidungsgrenze und passive Diagnostik. Keine neue Native-DCS- oder
+Per-Unit-Flugsteuerung, kein weiterer Scheduler, keine Aenderung an Moose.lua.
+
+- Langfristige Verbrauchsrate: A5-4-Referenz als ausdruecklich geloggte Schaetzung, nicht als Flughandbuchwert. Eine beobachtete Rate darf sie erst nach mindestens 120 s zusammenhaengend qualifiziertem Level-Cruise anheben. Qualifizierung: Hoehe innerhalb 1000 ft der Profil-Reiseflughoehe, vertikale Aenderung maximal 500 ft/min, TAS-Aenderung maximal 20 kt/min und Messabstand maximal zwei Observer-Intervalle. Das sind pruefbare Testfilter, keine DCS-abgenommenen Performanceparameter. Bei Phasenwechsel endet das Messfenster; eine bereits belegte Cruise-Rate bleibt konservativ erhalten. Auch diese Schaetzung beweist keine sichere physische Rueckroute.
+- Aktueller Fuelverbrauch aller Phasen reduziert weiterhin den gemessenen Vorrat. Join-/Steigflugverbrauch wird nicht ueber die gesamte Reservezeit extrapoliert. Die genehmigten 2700 s bleiben unveraendert.
+- Eine negative Bilanz Position -> AO -> Home ohne zwischenzeitliche AAR loest bei weiterhin positiver Home-Marge nicht mehr automatisch CAS-Abbruch aus. Ein erreichbarer Tanker kann weiterhin sofort ueber MOOSE angefordert werden. Sonst `TRANSIT_AAR_PENDING` und Neubeurteilung im vorhandenen Takt; es wird weder ein spaeter verfuegbarer Tanker behauptet noch Fuel reserviert. Spaetestens am unveraenderten Home-Entscheidungspunkt wird RTB angefordert. Ungueltige Routen bleiben Fehler, kein Weiterflug aufgrund fehlender Daten.
+- Jede Tankeroption erhaelt einen konkreten, bei Aenderung protokollierten Ablehnungsgrund: Runtime/On-Station, Kompatibilitaet, Zugangsroute/-fuel, Station-Zeitfenster, Offload und Rueckkehr nach AAR.
+- Missing-Element-Diagnostik prueft lebende Elemente getrennt von airborne. Ein lebendes Flugzeug beim Aufsetzen ist nicht verloren. Exakte Home-Landungen und Asset-Return bleiben erforderlich.
+- Racetrack-Adapter prueft die wirklich zurueckgegebene Tasktabelle auf Orbit, Race-Track und point2. Der Marker kennzeichnet ausdruecklich CONSTRUCTED_TASK_NOT_DCS_EXECUTION. `GetTaskCurrent`, `GetWaypointCurrent` und `GetState` liefern passive MOOSE-Queue-/Waypoint-Evidenz, keinen behaupteten DCS-Controllerdump.
+
+**Departure-Blocker:** In der gepinnten Moose.lua fuehrt `OPSGROUP:_QueueUpdate` (ca. 225404) die Flight-Taskqueue nur bei `IsAirborne()` aus; `FLIGHTGROUP:IsAirborne` (203939) prueft den Gruppen-FSM-Zustand. `OPSGROUP:_UpdateStatus` (232024 ff.) setzt den gemeinsamen Airborne-Uebergang nach Elementzustandspruefung. Das belegt eine relevante Grenze vor dem Wingman-Takeoff, aber noch NICHT die Ursache der beobachteten engen Kreise. Ein Eingriff nur am Mission-Holding-Konstruktor beweist keine Steuerung dieser fruehen Phase. Die offizielle [FlightGroup-Dokumentation](https://flightcontrol-master.github.io/MOOSE_DOCS/Documentation/Ops.FlightGroup.html) bestaetigt die verwendeten lesenden Methoden; der gepinnte Source bleibt massgeblich. Kein neuer DCS-Lauf wird hier als freigegeben erklaert. Die fruehe Flugfuehrung muss erst belastbar aufgeloest werden; eine Per-Unit-Controller-Loesung ist nicht durch die bestehende TaskOrbit-Ausnahme genehmigt.
+
 
 ## 1. Ergebnis und Freigabegrenze
 

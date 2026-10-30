@@ -33,10 +33,10 @@ test("burn observations survive duplicate sampling and refuel cannot become nega
   local t = Fuel.New({ referenceFractionPerS = 0.0001, reserveS = 2700 })
   t:Observe("wing", 0, 5000, 10000, true, true)
   t:Observe("wing", 0, 5000, 10000, true, true)
-  t:Observe("wing", 60, 4880, 10000, true, true)
+  t:Observe("wing", 120, 4760, 10000, true, true)
   near(t:Assess({ wing = 100 }).elements.wing.rateKgS, 2)
-  t:Observe("wing", 75, 10000, 10000, true, true)
-  near(t:Assess({ wing = 100 }).elements.wing.rateKgS, 1)
+  t:Observe("wing", 135, 10000, 10000, true, true)
+  near(t:Assess({ wing = 100 }).elements.wing.rateKgS, 2)
 end)
 
 test("invalid, absent and landed element data never produce a safe budget", function()
@@ -300,7 +300,13 @@ test("A10 candidate includes KRUSTY even when tanker is farther than home", func
     GetStation=function() return {nextPlannedHandoverAt=64800} end}
   local home={GetCoordinate=function() return coord(2000,0) end,
     GetZone=function() return {GetRadius=function() return 1000 end} end}
-  local a={airborneUnits={wing=unit},policy=policy,flight={refueltype=0,homebase=home}}
+  local reasons={}
+  local a={airborneUnits={wing=unit},policy=policy,flight={refueltype=0,homebase=home},
+    Log=function(self,event,values) reasons[values.area]=values.reason end}
+  r.onStationAt=nil
+  assert(not Profiles.SelectTanker(p,a,aar,coord(2000,0)))
+  assert(reasons.KRUSTY=="NOT_ON_STATION")
+  r.onStationAt=50000
   local candidate=Profiles.SelectTanker(p,a,aar,coord(2000,0))
   assert(candidate and candidate.area=="KRUSTY")
   aar.GetStation=function() return {nextPlannedHandoverAt=54100} end
@@ -320,4 +326,38 @@ test("departure geometry is fixed by base profile instead of lowest terrain head
   assert(k.angle==45 and k.offsetHeading==315 and k.legNm==3)
 end)
 
+test("ground contact before delayed Landed event is not a missing element", function()
+  local x=fixture();x.adapter:Tick(true,true)
+  x.airborne.lead=false;x.adapter:Tick(true,false)
+  assert(not x.adapter.failure)
+  x.airborne.wing=false;x.adapter:Tick(true,false)
+  assert(not x.adapter.failure)
+end)
+
+test("pending tanker does not cancel transit while home margin remains positive", function()
+  local x=fixture()
+  x.spec.routes=function(ids,destination,viaAo)
+    local result={};for id in pairs(ids) do result[id]=viaAo and 10000 or 1000 end
+    return result
+  end
+  x.adapter:Tick(true,false)
+  assert(not x.adapter.finalReason and #x.calls==0)
+  local pending=false
+  for _,e in ipairs(x.events) do if e.event=="TRANSIT_AAR_PENDING" then pending=true end end
+  assert(pending)
+  x.fuel.wing=3720;x.adapter:Tick(true,false)
+  assert(x.calls[1]=="CANCEL" and x.calls[2]=="RTB")
+end)
+
+test("cruise gate rejects climb and accepts sustained level flight", function()
+  local p=Profiles.Get("CAS_F16")
+  local altitude=8500
+  local u={GetCoordinate=function() return {y=altitude*0.3048} end,GetAirspeedTrue=function() return 200 end}
+  local q,previous=Profiles.RecoverySample(p,u,0,nil);assert(not q)
+  altitude=10000;q,previous=Profiles.RecoverySample(p,u,15,previous);assert(not q)
+  altitude=22000;q,previous=Profiles.RecoverySample(p,u,30,previous);assert(not q)
+  q,previous=Profiles.RecoverySample(p,u,45,previous);assert(q)
+end)
+
 print("Fuel/recovery contract tests: " .. n .. " passed; DCS runtime NOT tested")
+

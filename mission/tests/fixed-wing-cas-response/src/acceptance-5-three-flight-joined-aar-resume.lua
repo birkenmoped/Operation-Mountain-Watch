@@ -1,4 +1,4 @@
--- OMW Fixed-Wing CAS Response Acceptance 5-5: observer/composition of shared recovery policy
+-- OMW Fixed-Wing CAS Response Acceptance 5-6: observer/composition of shared recovery policy
 -- Three genuine MOOSE COMMANDER/AIRWING/AUFTRAG CAS missions, one DCS run.
 -- No DCS event handlers, manually spawned aircraft, fuel interventions or route controllers.
 -- Bagram: MOOSE holding waypoint and conditional release after two-aircraft airborne join.
@@ -151,6 +151,9 @@ local function addObserverHooks(requestId, flight)
     flight = flight, mission = state.requests[requestId].mission,
     policy = FuelPolicy.New(profile), now = timer.getTime,
     reserveS = profile.reserveS, observerPeriodS = OBSERVER_PERIOD_S, sortie = profile.sortie,
+    qualifySample = function(unit, timeS, previous)
+      return Profiles.RecoverySample(profile, unit, timeS, previous)
+    end,
     routes = function(units, destination, viaAo)
       return Profiles.RouteTimes(profile, units, destination, state.ao:GetCoordinate(), viaAo)
     end,
@@ -164,7 +167,7 @@ local function addObserverHooks(requestId, flight)
       for _, key in ipairs(keys) do fields[#fields + 1] = key .. "=" .. tostring(values[key]) end
       log(event, fields)
       if event == "SAFETY_FAIL_STOP" then
-        MESSAGE:New("OMW A5-5 FAIL/STOP: " .. requestId .. " / " .. tostring(values.reason)
+        MESSAGE:New("OMW A5-6 FAIL/STOP: " .. requestId .. " / " .. tostring(values.reason)
           .. ". Test abbrechen; Recovery-Beobachtung bleibt aktiv.", 60):ToAll()
       end
     end,
@@ -258,11 +261,17 @@ CONTROLLABLE.TaskOrbit = function(controllable, coord, altitude, speed, coordRac
         -- Before FLIGHT_ASSIGNED the coordinate identity still scopes this
         -- constructor call to this exact AUFTRAG holding waypoint.
         if not flight or (flight.group and flight.group:GetName() == name) then
+          local task = originalTaskOrbit(controllable, coord, altitude, speed, track.endCoord)
+          assert(task and task.id == "Orbit" and task.params
+            and task.params.pattern == AI.Task.OrbitPattern.RACE_TRACK and task.params.point2,
+            "departure constructor did not produce a two-point racetrack")
           log("DEPARTURE_RACETRACK_TASK_CREATED", {
             "request=" .. requestId, "group=" .. tostring(name),
-            "pattern=RACE_TRACK",
+            "pattern=" .. tostring(task.params.pattern),
+            "point2X=" .. tostring(task.params.point2.x), "point2Y=" .. tostring(task.params.point2.y),
+            "evidence=CONSTRUCTED_TASK_NOT_DCS_EXECUTION",
           })
-          return originalTaskOrbit(controllable, coord, altitude, speed, track.endCoord)
+          return task
         end
       end
     end
@@ -396,6 +405,16 @@ local function observe()
         })
       end
 
+      local task = flight:GetTaskCurrent()
+      local wp = flight:GetWaypointCurrent()
+      log("DEPARTURE_NATIVE_STATE", {
+        "request=" .. requestId, "groupState=" .. tostring(flight:GetState()),
+        "airborneNow=" .. tostring(airborneNow), "alive=" .. tostring(alive),
+        "waypointUid=" .. tostring(wp and wp.uid), "waypointName=" .. tostring(wp and wp.name),
+        "taskId=" .. tostring(task and task.dcstask and task.dcstask.id),
+        "taskDescription=" .. tostring(task and task.description),
+        "evidence=MOOSE_QUEUE_NOT_DCS_CONTROLLER",
+      })
       record.runtime:Tick(record.joinedAt ~= nil, alive == 2 and airborneNow == 2 and inside == 2)
 
       if requestRecord.spec.hold and not record.joinedAt then
@@ -514,4 +533,5 @@ end
 
 state.observers.initial = SCHEDULER:New(nil, start, {}, START_DELAY_S)
 log("HARNESS_LOADED", { "startDelayS=" .. tostring(START_DELAY_S) })
+
 

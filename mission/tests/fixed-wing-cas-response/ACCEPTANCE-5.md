@@ -18,7 +18,19 @@ validated_in_dcs: false
 
 # Fixed-Wing CAS Response – Acceptance 5
 
-**Aktueller Stand 28.10.2026: A5-4 Runtime FAIL; A5-5 SOURCE_IMPLEMENTED / STATIC_TESTED / DCS_PENDING.** Die bedingte Owner-Freigabe fuer die minimalen Fuel-/Recovery-Ergaenzungen ist nach gezielter MOOSE-Pruefung umgesetzt. [Verlustrekonstruktion](results/2026-10-28-acceptance-5-4-loss-reconstruction.md) und [aktueller Korrekturvertrag](../../../docs/moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md). Aeltere A5-1 bis A5-4-Abschnitte sind historische Entwicklungsstaende; insbesondere das AAR-Verbot nach Final-RTB und die 65-%-Testschwelle gelten NICHT fuer A5-5. Vor neuem DCS-Test sind realer Owner-Pull, Build und Hashpruefung erforderlich.
+**Aktueller Stand 30.10.2026: A5-4 und A5-5 Runtime FAIL; A5-6 SOURCE_CORRECTED / DCS_BLOCKED_DEPARTURE.** Die bedingte Owner-Freigabe fuer die minimalen Fuel-/Recovery-Ergaenzungen ist nach gezielter MOOSE-Pruefung umgesetzt. [Verlustrekonstruktion](results/2026-10-28-acceptance-5-4-loss-reconstruction.md) und [aktueller Korrekturvertrag](../../../docs/moose/FIXED-WING-CAS-FUEL-RECOVERY-CORRECTION.md). Aeltere A5-1 bis A5-4-Abschnitte sind historische Entwicklungsstaende; insbesondere das AAR-Verbot nach Final-RTB und die 65-%-Testschwelle gelten NICHT fuer A5-5. Vor neuem DCS-Test sind realer Owner-Pull, Build und Hashpruefung erforderlich.
+
+## Aktuelle Sperre nach A5-5 (30.10.2026)
+
+**A5-5 Runtime FAIL; A5-6 SOURCE_CORRECTED / DCS_BLOCKED_DEPARTURE.**
+[Ergebnisbericht](results/2026-10-30-acceptance-5-5-premature-recovery-fail.md).
+Die A5-5-Abschnitte unten sind historische Staende.
+Der neue Builder erzeugt A5-6 nur als Source-/Diagnosekandidat. Kein neuer DCS-Lauf
+ist allein durch Build/Unit-PASS freigegeben: die vom Owner beobachteten engen
+Kreise vor dem Wingman-Takeoff sind nicht behoben oder positiv erklaert.
+Die qualifizierte Fuel-Prognose und das Transit-AAR-Pending-Verhalten muessen
+zunaechst die aufgezeichneten A5-4/A5-5-Daten bestehen. Danach sind vollstaendige
+Build-/MIZ-Provenienz und die Departure-Aufklaerung erforderlich.
 
 ## Ausgangslage und Owner-Ausnahme
 
@@ -145,3 +157,4 @@ Dieser Abschnitt und der [Korrekturvertrag](../../../docs/moose/FIXED-WING-CAS-F
 `SAFETY_FAIL_STOP` wird sichtbar mit MESSAGE gemeldet: ungueltige/ungesicherte Recovery-/AAR-Marge, verlorener ausgewaehlter Tanker, fehlender RTB-Uebergang, fehlendes/verlorenes Element vor Landung, Landung nach geplanter Sortiegrenze oder drohendes absolutes Return-Limit. Auch ungeeignete Departure-/Recovery-Geometrie, gefaehrliche Trennung, unerwartetes langes Holding oder Sinkflug ins Terrain sind sofort FAIL; kein stundenlanges Weiterlaufen zur erzwungenen Verlustbestaetigung. Die Diagnose deaktiviert keinen weiter benoetigten Recovery-Observer und despawnt keine Gruppe.
 
 PASS ist erst nach vollstaendiger realer Provenienz und Owner-Auswertung moeglich. Nicht ausgeloeste AAR-/Recovery-AAR-Pfade bleiben einzeln offen. AAR-7 ist keine Abnahme dieses Receiver-Lifecycles. Nach normalem Asset-Return entstehendes Cleanup ist kein neuer Flugverlust.
+

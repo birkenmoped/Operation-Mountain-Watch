@@ -9,6 +9,24 @@ local function coordinate(object)
   if object.GetCoordinate then return object:GetCoordinate() end
 end
 
+-- Read-only public UNIT telemetry. A phase gate, not an engine-state detector.
+-- This deliberately excludes departure holding, climb and changing airspeed.
+function Profiles.RecoverySample(profile, unit, timeS, previous)
+  if previous and previous.timeS == timeS then return previous.qualified, previous end
+  local c = unit:GetCoordinate()
+  local speed = unit:GetAirspeedTrue()
+  local altitude = c and c.y
+  local sample = { timeS = timeS, altitude = altitude, speed = speed, qualified = false }
+  if not previous or not finite(altitude) or not finite(speed)
+      or not finite(previous.altitude) or not finite(previous.speed) then return false, sample end
+  local dt = timeS - previous.timeS
+  if dt <= 0 or dt > 2 * profile.observerPeriodS then return false, sample end
+  sample.qualified = math.abs(altitude - UTILS.FeetToMeters(profile.cruiseAltitudeFt)) <= UTILS.FeetToMeters(1000)
+    and math.abs(altitude - previous.altitude) / dt <= UTILS.FeetToMeters(500) / 60
+    and math.abs(speed - previous.speed) / dt <= UTILS.KnotsToMps(20) / 60
+  return sample.qualified, sample
+end
+
 function Profiles.Get(id)
   local p = {
     reserveS = 45 * 60, cruiseAltitudeFt = 22000, observerPeriodS = 15,
@@ -101,54 +119,71 @@ local donorReservePct = { NELSON = 9.5482, PATTY = 7.9209, KRUSTY = 6.6384,
   MILHOUSE = 6.6748, LISA = 7.6182, MOE = 8.4708 }
 
 function Profiles.SelectTanker(profile, adapter, aar, ao)
-  if not aar or not aar.GetActive or not aar.GetStation then return nil end
-  local choice
-  for _, area in ipairs(profile.areas) do
+  local function diagnostic(area, reason, values)
+    adapter.tankerDiagnostics = adapter.tankerDiagnostics or {}
+    if adapter.tankerDiagnostics[area] == reason then return end
+    adapter.tankerDiagnostics[area] = reason
+    if adapter.Log then
+      values = values or {}; values.area, values.reason = area, reason
+      adapter:Log("AAR_CANDIDATE_EVALUATED", values)
+    end
+  end
+  if not aar or not aar.GetActive or not aar.GetStation then
+    diagnostic("ALL", "AAR_INTERFACE_UNAVAILABLE"); return nil
+  end
+  local function evaluate(area)
     local r, station = aar.GetActive(area, profile.receiver), aar.GetStation(area, profile.receiver)
-    if r and r.onStationAt and not r.egressOrdered and not r.lossHandled
-        and r.group and r.group:IsAlive() and r.flightGroup and station then
-      local donor = r.group:GetUnit(1)
-      local tanker, system
-      if donor then tanker, system = donor:IsTanker() end
-      if tanker and system == adapter.flight.refueltype then
-        local target = r.group:GetCoordinate()
-        local times = Profiles.RouteTimes(profile, adapter.airborneUnits, target, ao, false)
-        local budget = times and adapter.policy:Assess(times)
-        local _, donorInternal = donor:GetFuelMassMax()
-        local donorFuel = donor:GetCurrentFuelKgs()
-        local threshold = r.areaSpec and r.areaSpec.fuelLowPct
-        if budget and budget.valid and budget.safe and finite(donorInternal) and donorInternal > 0
-            and finite(donorFuel) and finite(threshold) and finite(station.nextPlannedHandoverAt) then
-          local remainingWindow = station.nextPlannedHandoverAt - timer.getAbsTime()
-          local accessAndService = budget.maxTimeS + profile.reserveS
-          local intake, postAarUnits = 0, {}
-          for id in pairs(budget.elements) do
-            postAarUnits[id] = { GetCoordinate = function() return target end }
-          end
-          local home = adapter.flight.destbase or adapter.flight.homebase
-          local postTimes = home and Profiles.RouteTimes(profile, postAarUnits, home, ao, false)
-          local postSafe = postTimes ~= nil
-          for id, e in pairs(budget.elements) do
-            -- Fill internal tanks after spending access fuel; do not assume external-tank refill.
-            local internal = adapter.policy.elements[id].internalKg
-            local arrivalFuel = math.max(0, e.availableKg - e.tripKg - e.allowanceKg)
-            intake = intake + math.max(0, internal - arrivalFuel)
-            local postFuel = math.max(internal, arrivalFuel)
-            if not postTimes or not postTimes[id]
-                or postFuel <= (postTimes[id] + profile.reserveS) * e.rateKgS then
-              postSafe = false
-            end
-          end
-          local predictedDonorBurn = donorInternal * donorReservePct[area] / 100 / (45 * 60) * accessAndService
-          local excess = donorFuel - donorInternal * threshold / 100 - predictedDonorBurn - intake
-          if postSafe and remainingWindow > accessAndService and excess > 0 then
-            local candidate = { area = area, coordinate = target, runtime = r, marginKg = budget.marginKg,
-              donorExcessKg = excess, accessS = budget.maxTimeS }
-            if not choice or candidate.accessS < choice.accessS then choice = candidate end
-          end
-        end
+    if not r or not station then return nil, "NO_ACTIVE_RUNTIME" end
+    if not r.onStationAt then return nil, "NOT_ON_STATION" end
+    if r.egressOrdered or r.lossHandled or not r.group or not r.group:IsAlive() or not r.flightGroup then
+      return nil, "RUNTIME_UNAVAILABLE"
+    end
+    local donor = r.group:GetUnit(1)
+    if not donor then return nil, "DONOR_UNIT_UNAVAILABLE" end
+    local tanker, system = donor:IsTanker()
+    if not tanker or system ~= adapter.flight.refueltype then return nil, "INCOMPATIBLE_SYSTEM" end
+    local target = r.group:GetCoordinate()
+    if not target then return nil, "DONOR_COORDINATE_UNAVAILABLE" end
+    local times, routeReason = Profiles.RouteTimes(profile, adapter.airborneUnits, target, ao, false)
+    if not times then return nil, routeReason or "AAR_ROUTE_UNPROVEN" end
+    local budget = adapter.policy:Assess(times)
+    if not budget.valid or not budget.safe then return nil, "AAR_ACCESS_BUDGET_UNSAFE" end
+    local _, donorInternal = donor:GetFuelMassMax()
+    local donorFuel = donor:GetCurrentFuelKgs()
+    local threshold = r.areaSpec and r.areaSpec.fuelLowPct
+    if not finite(donorInternal) or donorInternal <= 0 or not finite(donorFuel)
+        or not finite(threshold) or not finite(station.nextPlannedHandoverAt) then
+      return nil, "DONOR_FUEL_OR_WINDOW_UNKNOWN"
+    end
+    local remainingWindow = station.nextPlannedHandoverAt - timer.getAbsTime()
+    local accessAndService = budget.maxTimeS + profile.reserveS
+    if remainingWindow <= accessAndService then return nil, "INSUFFICIENT_STATION_WINDOW" end
+    local intake, postAarUnits = 0, {}
+    for id in pairs(budget.elements) do
+      postAarUnits[id] = { GetCoordinate = function() return target end }
+    end
+    local home = adapter.flight.destbase or adapter.flight.homebase
+    local postTimes = home and Profiles.RouteTimes(profile, postAarUnits, home, ao, false)
+    if not postTimes then return nil, "POST_AAR_HOME_ROUTE_UNKNOWN" end
+    for id, e in pairs(budget.elements) do
+      local internal = adapter.policy.elements[id].internalKg
+      local arrivalFuel = math.max(0, e.availableKg - e.tripKg - e.allowanceKg)
+      intake = intake + math.max(0, internal - arrivalFuel)
+      if not postTimes[id] or math.max(internal, arrivalFuel) <= (postTimes[id] + profile.reserveS) * e.rateKgS then
+        return nil, "POST_AAR_HOME_BUDGET_UNSAFE"
       end
     end
+    local predictedDonorBurn = donorInternal * donorReservePct[area] / 100 / (45 * 60) * accessAndService
+    local excess = donorFuel - donorInternal * threshold / 100 - predictedDonorBurn - intake
+    if excess <= 0 then return nil, "INSUFFICIENT_DONOR_OFFLOAD" end
+    return { area = area, coordinate = target, runtime = r, marginKg = budget.marginKg,
+      donorExcessKg = excess, accessS = budget.maxTimeS }, "ELIGIBLE"
+  end
+  local choice
+  for _, area in ipairs(profile.areas) do
+    local candidate, reason = evaluate(area)
+    diagnostic(area, reason, candidate and { accessS = candidate.accessS, marginKg = candidate.marginKg })
+    if candidate and (not choice or candidate.accessS < choice.accessS) then choice = candidate end
   end
   return choice
 end
@@ -179,3 +214,4 @@ function Profiles.Departure(profile, base, ao)
 end
 
 return Profiles
+
